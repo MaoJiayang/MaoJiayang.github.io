@@ -1,75 +1,774 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>核子猫猫17号的页面</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.92em' font-size='70'>🚀</text></svg>">
-  <style>
-    :root {
-      --bg: #ebf0f4;
-      --panel: #ffffff;
-      --border: #cfd7de;
-      --text: #24292e;
-      --muted: #586069;
-      --accent: #0366d6;
-      --font: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #121416;
-        --panel: #1b1e22;
-        --border: #2d333b;
-        --text: #c9d1d9;
-        --muted: #8b949e;
-        --accent: #58a6ff;
-      }
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: var(--font);
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .card {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 2.5rem 3rem;
-      max-width: 480px;
-      width: 90%;
-      text-align: center;
-    }
-    h1 { font-size: 20px; margin-bottom: 0.4rem; }
-    .sub { font-size: 13px; color: var(--muted); margin-bottom: 2rem; }
-    a.btn {
-      display: inline-block;
-      padding: 10px 24px;
-      background: var(--accent);
-      color: #fff;
-      border-radius: 5px;
-      text-decoration: none;
-      font-size: 14px;
-      font-weight: 600;
-      transition: opacity 0.2s;
-    }
-    a.btn:hover { opacity: 0.85; }
-    .btn-list { display: flex; flex-direction: column; gap: 12px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>atomickitty17th</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@300;400;500&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e0d;
+    --bg-2: #161614;
+    --bg-3: #1e1e1b;
+    --amber: #e09c3a;
+    --amber-dim: #8a5e1e;
+    --amber-muted: #2a1e0a;
+    --text: #e8e4db;
+    --text-muted: #7a7568;
+    --text-dim: #4a4840;
+    --border: #2a2825;
+    --border-lit: #3a3830;
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-body: 'Lora', serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ——— i18n ——— */
+  html[lang="en"] .zh { display: none !important; }
+  html[lang="zh"] .en { display: none !important; }
+
+  /* ——— NAV ——— */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 48px;
+    background: rgba(14,14,13,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 16px;
+    color: var(--amber);
+    letter-spacing: 0.02em;
+    text-decoration: none;
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--amber); }
+
+  .lang-toggle {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: transparent;
+    border: 1px solid var(--border-lit);
+    color: var(--text-muted);
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+  }
+
+  .lang-toggle:hover {
+    border-color: var(--amber-dim);
+    color: var(--amber);
+  }
+
+  /* ——— MAIN LAYOUT ——— */
+  main {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 48px;
+  }
+
+  /* ——— HERO ——— */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-top: 80px;
+  }
+
+  .hero-tag {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .hero-tag::before {
+    content: '';
+    display: block;
+    width: 32px;
+    height: 1px;
+    background: var(--amber);
+  }
+
+  .hero-name {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(52px, 8vw, 96px);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 32px;
+  }
+
+  .hero-name > .en,
+  .hero-name > .zh {
+    display: block;
+  }
+
+  .hero-name .name-sub {
+    display: block;
+    color: var(--text-dim);
+    font-weight: 400;
+  }
+
+  .hero-desc {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 18px;
+    color: var(--text-muted);
+    max-width: 520px;
+    line-height: 1.7;
+    margin-bottom: 48px;
+  }
+
+  .hero-desc.zh { font-style: normal; }
+
+  .hero-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 56px;
+  }
+
+  .tag {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    padding: 5px 12px;
+    border: 1px solid var(--border-lit);
+    color: var(--text-muted);
+    border-radius: 2px;
+  }
+
+  .tag.lit {
+    border-color: var(--amber-dim);
+    color: var(--amber);
+    background: var(--amber-muted);
+  }
+
+  .hero-cta {
+    display: flex;
+    gap: 16px;
+  }
+
+  .btn {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 12px 24px;
+    text-decoration: none;
+    transition: all 0.2s;
+    border-radius: 2px;
+  }
+
+  .btn-primary {
+    background: var(--amber);
+    color: #0e0e0d;
+    font-weight: 500;
+  }
+
+  .btn-primary:hover { background: #f0b050; }
+
+  .btn-secondary {
+    border: 1px solid var(--border-lit);
+    color: var(--text-muted);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--amber-dim);
+    color: var(--amber);
+  }
+
+  /* ——— SECTION COMMON ——— */
+  section {
+    padding: 96px 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    margin-bottom: 56px;
+  }
+
+  .section-num {
+    font-size: 11px;
+    color: var(--amber);
+    letter-spacing: 0.15em;
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  /* ——— ABOUT ——— */
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: start;
+  }
+
+  .about-text p {
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.85;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+  }
+
+  .about-text p strong {
+    color: var(--text);
+    font-style: italic;
+  }
+
+  .about-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .info-block {
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--amber-dim);
+    background: var(--bg-2);
+  }
+
+  .info-block-label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 8px;
+  }
+
+  .info-block-value {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  .info-block-value a {
+    color: var(--amber);
+    text-decoration: none;
+  }
+
+  /* ——— PLAYGROUND ——— */
+  .playground-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2px;
+  }
+
+  .project-card {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    padding: 28px;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .project-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--amber);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s;
+  }
+
+  .project-card:hover { background: var(--bg-3); border-color: var(--border-lit); }
+  .project-card:hover::before { transform: scaleX(1); }
+
+  .project-type {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--amber);
+  }
+
+  .project-name {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .project-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    flex: 1;
+  }
+
+  .project-arrow {
+    font-size: 12px;
+    color: var(--text-dim);
+    align-self: flex-end;
+    transition: color 0.2s, transform 0.2s;
+  }
+
+  .project-card:hover .project-arrow { color: var(--amber); transform: translateX(4px); }
+
+  /* ——— INTERESTS ——— */
+  .interests-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1px;
+    background: var(--border);
+  }
+
+  .interest-item {
+    background: var(--bg);
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .interest-icon { font-size: 22px; margin-bottom: 4px; }
+
+  .interest-name {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .interest-note { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+  /* ——— FOOTER ——— */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 40px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .footer-name { font-family: var(--font-display); font-size: 13px; color: var(--text-dim); }
+
+  .footer-links { display: flex; gap: 24px; }
+
+  .footer-links a { font-size: 12px; color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--amber); }
+
+  /* ——— STATUS INDICATOR ——— */
+  .status-dot {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .status-dot::before {
+    content: '';
+    display: block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #4ade80;
+    box-shadow: 0 0 6px #4ade8088;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* ——— RESPONSIVE ——— */
+  @media (max-width: 768px) {
+    nav { padding: 16px 24px; }
+    .nav-links { display: none; }
+    main { padding: 0 24px; }
+    .about-grid { grid-template-columns: 1fr; gap: 40px; }
+    .hero-name { font-size: clamp(42px, 12vw, 72px); }
+  }
+</style>
 </head>
+
 <body>
-  <div class="card">
-    <div style="font-size:48px;margin-bottom:1rem;">🚀</div>
-    <h1>伊卡洛斯星服务器</h1>
-    <p class="sub">by 核子猫猫17号</p>
-    <div class="btn-list">
-      <a class="btn" href="commands.html">📋 指令速查表</a>
-      <a class="btn" href="battleship.html" style="background:#1a7f3c;">⚓ 指挥官：决战大洋</a>
-    </div>
+
+<nav>
+  <a class="nav-logo" href="#">
+    <span class="en">AK·17</span>
+    <span class="zh">核猫·17</span>
+  </a>
+  <div class="nav-right">
+    <ul class="nav-links">
+      <li><a href="#about"><span class="en">About</span><span class="zh">关于</span></a></li>
+      <li><a href="#playground"><span class="en">Playground</span><span class="zh">作品</span></a></li>
+      <li><a href="#interests"><span class="en">Interests</span><span class="zh">兴趣</span></a></li>
+      <li><a href="https://github.com/MaoJiayang" target="_blank">GitHub</a></li>
+    </ul>
+    <button class="lang-toggle" id="lang-btn" onclick="toggleLang()">EN</button>
   </div>
+</nav>
+
+<main>
+
+  <!-- HERO -->
+  <section class="hero" style="border-top: none;">
+    <div class="hero-tag">
+      <span class="status-dot">
+        <span class="en">available for connections</span>
+        <span class="zh">欢迎连接</span>
+      </span>
+    </div>
+
+    <h1 class="hero-name">
+      <span class="en">atomickitty<span class="name-sub">17th</span></span>
+      <span class="zh">核子猫猫<span class="name-sub">17号</span></span>
+    </h1>
+
+    <p class="hero-desc en">
+      Building systems that let other systems build themselves —
+      AI agent infrastructure by day, server commander by night.
+    </p>
+    <p class="hero-desc zh">
+      让系统自我迭代的人——白天构建 AI Agent 基础设施，晚上指挥星际战舰。
+    </p>
+
+    <div class="hero-tags">
+      <span class="tag lit en">AI Infra</span>
+      <span class="tag lit zh">AI 基础设施</span>
+      <span class="tag lit en">Agent Systems</span>
+      <span class="tag lit zh">Agent 系统</span>
+      <span class="tag en">Low-code Platforms</span>
+      <span class="tag zh">低代码平台</span>
+      <span class="tag en">Space Engineers</span>
+      <span class="tag zh">太空工程师</span>
+      <span class="tag en">Amsterdam · NL</span>
+      <span class="tag zh">荷兰·阿姆斯特丹</span>
+    </div>
+
+    <div class="hero-cta">
+      <a href="#playground" class="btn btn-primary">
+        <span class="en">View Playground</span>
+        <span class="zh">查看作品</span>
+      </a>
+      <a href="https://github.com/MaoJiayang" target="_blank" class="btn btn-secondary">GitHub →</a>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <h2 class="section-title">
+        <span class="en">About</span>
+        <span class="zh">关于</span>
+      </h2>
+    </div>
+
+    <div class="about-grid">
+      <div class="about-text">
+        <div class="en">
+          <p>
+            I'm a software engineer focused on <strong>AI agent infrastructure</strong> —
+            the plumbing that makes intelligent systems work reliably at scale.
+            Currently building low-code workflow tools and secure execution environments
+            for agent platforms in the education sector.
+          </p>
+          <p>
+            I tend to approach problems from <strong>first principles</strong>:
+            before reaching for a framework, I want to understand what's actually
+            happening underneath. This applies equally to distributed systems,
+            economics, and game design.
+          </p>
+          <p>
+            Outside of work, I run a Space Engineers multiplayer server —
+            which has turned into its own kind of systems engineering project,
+            complete with faction dynamics, combat log analysis, and custom mod pipelines.
+          </p>
+        </div>
+        <div class="zh">
+          <p>
+            我是一名专注于 <strong>AI Agent 基础设施</strong> 的软件工程师——负责让智能系统在规模化场景下稳定运行的底层管道。目前在教育领域的 AI 平台构建低代码工作流工具与安全执行环境。
+          </p>
+          <p>
+            我习惯从 <strong>第一性原理</strong> 出发思考问题：在引入框架之前，先搞清楚底层究竟发生了什么。这套方法同样适用于分布式系统、经济学和游戏设计。
+          </p>
+          <p>
+            业余时间，我在运营一台太空工程师多人服务器——这本身已经成为一个系统工程项目，涉及派系动态、战斗日志分析和自定义 Mod 流水线。
+          </p>
+        </div>
+      </div>
+
+      <div class="about-sidebar">
+        <div class="info-block">
+          <div class="info-block-label">
+            <span class="en">Currently</span>
+            <span class="zh">目前</span>
+          </div>
+          <div class="info-block-value">
+            <div class="en">AI Agent Infrastructure Engineer<br>
+            <span style="color:var(--text-muted);font-size:12px;">Education-sector AI platform</span></div>
+            <div class="zh">AI Agent 基础设施工程师<br>
+            <span style="color:var(--text-muted);font-size:12px;">教育领域 AI 平台</span></div>
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="info-block-label">
+            <span class="en">Location</span>
+            <span class="zh">所在地</span>
+          </div>
+          <div class="info-block-value">
+            <span class="en">Amsterdam, Netherlands</span>
+            <span class="zh">阿姆斯特丹，荷兰</span>
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="info-block-label">
+            <span class="en">Links</span>
+            <span class="zh">链接</span>
+          </div>
+          <div class="info-block-value">
+            <a href="https://github.com/MaoJiayang" target="_blank">github.com/MaoJiayang</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLAYGROUND -->
+  <section id="playground">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <h2 class="section-title">Playground</h2>
+    </div>
+
+    <div class="playground-grid">
+
+      <a class="project-card" href="./commands.html">
+        <div class="project-type">
+          <span class="en">Utility · Reference</span>
+          <span class="zh">实用 · 速查</span>
+        </div>
+        <div class="project-name">
+          <span class="en">SE Commands</span>
+          <span class="zh">服务器指令速查</span>
+        </div>
+        <div class="project-desc">
+          <span class="en">Quick-reference sheet for Space Engineers Icarus server commands — hangar, market, storage and more.</span>
+          <span class="zh">伊卡洛斯星服务器指令手册——船坞、市场、仓库等功能全覆盖。</span>
+        </div>
+        <div class="project-arrow">→</div>
+      </a>
+
+      <a class="project-card" href="./battleship.html">
+        <div class="project-type">
+          <span class="en">Interactive · Game</span>
+          <span class="zh">互动 · 游戏</span>
+        </div>
+        <div class="project-name">
+          <span class="en">Naval Commander</span>
+          <span class="zh">指挥官：决战大洋</span>
+        </div>
+        <div class="project-desc">
+          <span class="en">Turn-based naval strategy. Deploy your fleet, call airstrikes, use sonar, and outmaneuver the AI.</span>
+          <span class="zh">回合制海战策略游戏。部署舰队、呼叫空袭、运用声纳，智胜 AI 对手。</span>
+        </div>
+        <div class="project-arrow">→</div>
+      </a>
+
+    </div>
+  </section>
+
+  <!-- INTERESTS -->
+  <section id="interests">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <h2 class="section-title">
+        <span class="en">Interests</span>
+        <span class="zh">兴趣</span>
+      </h2>
+    </div>
+
+    <div class="interests-list">
+      <div class="interest-item">
+        <div class="interest-icon">⚙</div>
+        <div class="interest-name">
+          <span class="en">Space Engineers</span>
+          <span class="zh">太空工程师</span>
+        </div>
+        <div class="interest-note">
+          <span class="en">Server admin, faction PvP, combat log analysis, mod design</span>
+          <span class="zh">服务器运营、派系对战、战斗日志分析、Mod 设计</span>
+        </div>
+      </div>
+      <div class="interest-item">
+        <div class="interest-icon">◎</div>
+        <div class="interest-name">
+          <span class="en">Agent Systems</span>
+          <span class="zh">Agent 系统</span>
+        </div>
+        <div class="interest-note">
+          <span class="en">MCP, sandboxed execution, context management, tool calling architectures</span>
+          <span class="zh">MCP、沙箱执行、上下文管理、工具调用架构</span>
+        </div>
+      </div>
+      <div class="interest-item">
+        <div class="interest-icon">◻</div>
+        <div class="interest-name">
+          <span class="en">Economics</span>
+          <span class="zh">经济学</span>
+        </div>
+        <div class="interest-note">
+          <span class="en">First-principles macro: Cantillon, Minsky, credit cycles</span>
+          <span class="zh">第一性原理宏观经济：坎蒂隆、明斯基、信贷周期</span>
+        </div>
+      </div>
+      <div class="interest-item">
+        <div class="interest-icon">◈</div>
+        <div class="interest-name">
+          <span class="en">Travel & Photography</span>
+          <span class="zh">旅行与摄影</span>
+        </div>
+        <div class="interest-note">
+          <span class="en">Collecting perspectives as much as places</span>
+          <span class="zh">收集视角，也收集地方</span>
+        </div>
+      </div>
+      <div class="interest-item">
+        <div class="interest-icon">♬</div>
+        <div class="interest-name">
+          <span class="en">Concerts</span>
+          <span class="zh">音乐现场</span>
+        </div>
+        <div class="interest-note">
+          <span class="en">Live music as a system of attention</span>
+          <span class="zh">现场音乐是一种注意力系统</span>
+        </div>
+      </div>
+      <div class="interest-item">
+        <div class="interest-icon">文</div>
+        <div class="interest-name">
+          <span class="en">Linguistics</span>
+          <span class="zh">语言学</span>
+        </div>
+        <div class="interest-note">
+          <span class="en">Etymology, classical Chinese, how language encodes cognition</span>
+          <span class="zh">词源学、古汉语、语言如何编码认知</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-name">
+      <span class="en">atomickitty17th</span>
+      <span class="zh">核子猫猫17号</span>
+    </div>
+    <div class="footer-links">
+      <a href="https://github.com/MaoJiayang" target="_blank">GitHub</a>
+    </div>
+  </footer>
+
+</main>
+
+<script>
+  function toggleLang() {
+    const html = document.documentElement;
+    const newLang = html.lang === 'zh' ? 'en' : 'zh';
+    html.lang = newLang;
+    document.getElementById('lang-btn').textContent = newLang === 'zh' ? 'EN' : '中文';
+    document.title = newLang === 'zh' ? '核子猫猫17号' : 'atomickitty17th';
+    localStorage.setItem('lang', newLang);
+  }
+
+  (function () {
+    const saved = localStorage.getItem('lang') || 'zh';
+    document.documentElement.lang = saved;
+    document.getElementById('lang-btn').textContent = saved === 'zh' ? 'EN' : '中文';
+    document.title = saved === 'zh' ? '核子猫猫17号' : 'atomickitty17th';
+  })();
+</script>
+
 </body>
 </html>
