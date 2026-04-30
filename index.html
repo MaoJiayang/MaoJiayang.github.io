@@ -30,6 +30,16 @@
 
   html { scroll-behavior: smooth; }
 
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
   body {
     background: var(--bg);
     color: var(--text);
@@ -99,7 +109,7 @@
     font-size: 12px;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    transition: color 0.2s;
+    transition: color 0.2s ease;
   }
 
   .nav-links a:hover { color: var(--amber); }
@@ -115,7 +125,7 @@
     padding: 5px 10px;
     cursor: pointer;
     border-radius: 2px;
-    transition: all 0.2s;
+    transition: color 0.2s ease, border-color 0.2s ease;
   }
 
   .lang-toggle:hover {
@@ -227,8 +237,11 @@
     text-transform: uppercase;
     padding: 12px 24px;
     text-decoration: none;
-    transition: all 0.2s;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
     border-radius: 2px;
+    will-change: transform;
+    display: inline-flex;
+    align-items: center;
   }
 
   .btn-primary {
@@ -237,7 +250,10 @@
     font-weight: 500;
   }
 
-  .btn-primary:hover { background: #f0b050; }
+  .btn-primary:hover { 
+    background: #f0b050; 
+    transform: translateY(-2px);
+  }
 
   .btn-secondary {
     border: 1px solid var(--border-lit);
@@ -247,6 +263,7 @@
   .btn-secondary:hover {
     border-color: var(--amber-dim);
     color: var(--amber);
+    transform: translateY(-2px);
   }
 
   /* ——— SECTION COMMON ——— */
@@ -344,9 +361,10 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    transition: all 0.2s;
+    transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     position: relative;
     overflow: hidden;
+    will-change: transform, border-color, background-color;
   }
 
   .project-card::before {
@@ -357,10 +375,14 @@
     background: var(--amber);
     transform: scaleX(0);
     transform-origin: left;
-    transition: transform 0.3s;
+    transition: transform 0.3s ease;
   }
 
-  .project-card:hover { background: var(--bg-3); border-color: var(--border-lit); }
+  .project-card:hover { 
+    background: var(--bg-3); 
+    border-color: var(--border-lit); 
+    transform: translateY(-4px); 
+  }
   .project-card:hover::before { transform: scaleX(1); }
 
   .project-type {
@@ -388,10 +410,11 @@
     font-size: 12px;
     color: var(--text-dim);
     align-self: flex-end;
-    transition: color 0.2s, transform 0.2s;
+    transition: color 0.3s ease, transform 0.3s ease;
+    will-change: transform, color;
   }
 
-  .project-card:hover .project-arrow { color: var(--amber); transform: translateX(4px); }
+  .project-card:hover .project-arrow { color: var(--amber); transform: translateX(6px); }
 
   /* ——— INTERESTS ——— */
   .interests-list {
@@ -407,9 +430,21 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+    transition: background-color 0.3s ease;
+  }
+  .interest-item:hover {
+    background: var(--bg-2);
   }
 
-  .interest-icon { font-size: 22px; margin-bottom: 4px; }
+  .interest-icon { 
+    font-size: 22px; 
+    margin-bottom: 4px;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    will-change: transform;
+  }
+  .interest-item:hover .interest-icon {
+    transform: scale(1.1) rotate(4deg);
+  }
 
   .interest-name {
     font-family: var(--font-display);
@@ -453,6 +488,7 @@
     background: #4ade80;
     box-shadow: 0 0 6px #4ade8088;
     animation: pulse 2s ease-in-out infinite;
+    will-change: opacity;
   }
 
   @keyframes pulse {
