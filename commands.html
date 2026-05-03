@@ -38,8 +38,13 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font-sans);background:var(--bg-main);color:var(--text-main);line-height:1.5;-webkit-font-smoothing:antialiased}
 .wrap{max-width:960px;margin:0 auto;padding:1.5rem 2rem;background:var(--bg-panel);min-height:100vh;box-shadow:0 0 15px rgba(0,0,0,0.03);border-left:1px solid var(--border);border-right:1px solid var(--border)}
-#q{width:100%;padding:10px 14px;font-size:14px;border:1px solid var(--border);border-radius:4px;background:var(--bg-main);color:var(--text-main);margin-bottom:1rem;font-family:inherit;transition:all 0.2s}
+@keyframes search-pulse{0%,100%{box-shadow:0 0 0 0 rgba(88,166,255,0)}50%{box-shadow:0 0 0 6px rgba(88,166,255,0.18);border-color:var(--border-focus)}}
+.search-wrap{position:relative;margin-bottom:1rem}
+.search-ic{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--text-muted);pointer-events:none;transition:color 0.2s;flex-shrink:0}
+.search-wrap:focus-within .search-ic{color:var(--accent)}
+#q{width:100%;padding:10px 14px 10px 38px;font-size:14px;border:1px solid var(--border);border-radius:4px;background:var(--bg-main);color:var(--text-main);margin-bottom:0;font-family:inherit;transition:border-color 0.2s,box-shadow 0.2s,background 0.2s;animation:search-pulse 1.8s ease 0.5s 1}
 #q:focus{outline:none;border-color:var(--border-focus);background:var(--bg-panel);box-shadow:0 0 0 3px rgba(88,166,255,0.1)}
+@media (prefers-reduced-motion:reduce){#q{animation:none}}
 .ftabs{display:grid;grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:8px;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px dashed var(--border)}
 .ftab{display:flex;align-items:center;justify-content:center;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:var(--bg-panel);color:var(--text-muted);transition:all 0.2s;font-weight:500;box-shadow:0 1px 2px rgba(0,0,0,0.02);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ftab:hover{background:var(--bg-main);color:var(--text-main);border-color:var(--border-focus)}
@@ -62,6 +67,11 @@ td{padding:12px 14px;vertical-align:top;overflow:hidden}
 .opt{opacity:0.7;font-weight:normal}
 .hide{display:none!important}
 .nores{padding:3rem;text-align:center;color:var(--text-muted);background:var(--bg-main);border:1px dashed var(--border);border-radius:4px;font-size:14px;font-weight:500}
+details.note{display:block;margin-top:5px}
+details.note summary{display:inline-block;font-size:11px;color:var(--accent);border:1px dashed var(--border);border-radius:3px;padding:1px 7px;cursor:pointer;list-style:none;user-select:none}
+details.note summary::-webkit-details-marker{display:none}
+details.note .note-body{margin-top:4px;font-size:11.5px;background:var(--bg-main);border:1px solid var(--border);border-radius:4px;padding:6px 10px;line-height:1.7;color:var(--text-muted)}
+details.note .note-body code{font-family:var(--font-mono);font-size:11px;background:var(--bg-panel);padding:1px 4px;border-radius:2px;border:1px solid var(--border);color:var(--accent);word-break:break-all}
 
 @media (max-width: 768px) {
   .wrap { padding: 1rem; border-left: none; border-right: none; }
@@ -81,7 +91,10 @@ td{padding:12px 14px;vertical-align:top;overflow:hidden}
 }
 </style>
 <div class="wrap">
-<input id="q" type="text" placeholder="搜索想做的事或指令关键词…">
+<div class="search-wrap">
+<svg class="search-ic" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z" fill="currentColor"/></svg>
+<input id="q" type="text" placeholder="搜索想做的事或指令关键词…" autocomplete="off">
+</div>
 <div class="ftabs" id="tabs"></div>
 <div style="font-size:12.5px;color:var(--text-muted);margin-top:-0.5rem;margin-bottom:1.5rem;padding:10px 14px;background:var(--bg-main);border-left:3px solid var(--accent);border-radius:0 4px 4px 0;line-height:1.6;">
   <div style="margin-bottom:6px;color:var(--text-main);">ℹ️ <strong>终端输入防踩坑指南：</strong></div>
@@ -94,9 +107,9 @@ td{padding:12px 14px;vertical-align:top;overflow:hidden}
 <div class="sec" data-sec="hangar">
 <div class="sec-h"><span class="sec-t">🚁 存取飞船</span><span class="sec-s">船坞系统</span></div>
 <table><thead><tr><th style="width:19%">想做什么</th><th style="width:39%">指令</th><th style="width:42%">说明 / 注意</th></tr></thead><tbody>
-<tr class="row"><td class="c1">保存飞船</td><td class="c2"><span class="cmd">!网格 保存</span> <span class="cmd opt">[船名]</span><span class="al">!hangar save / !h save</span></td><td class="c3">把眼前的船存入船坞；不填名字默认存当前船</td></tr>
-<tr class="row"><td class="c1">取出飞船</td><td class="c2"><span class="cmd">!网格 加载</span> <span class="cmd opt">[船名]</span><span class="al">!hangar load / !h load</span></td><td class="c3">在你面前生成，按与保存位置的距离收费</td></tr>
-<tr class="row"><td class="c1">原地取出</td><td class="c2"><span class="cmd">!网格 原地加载</span> <span class="cmd opt">[船名]</span><span class="al">!hangar loadlocal</span></td><td class="c3">⚠️ 按保存时方向/位置生成，原位有网格会K爆！</td></tr>
+<tr class="row"><td class="c1">保存飞船</td><td class="c2"><span class="cmd">!网格 保存</span> <span class="cmd opt">[船名]</span> <span class="cmd opt">[true/false]</span><span class="al">!hangar save / !h save</span></td><td class="c3">不填名字默认存眼前的船；第二参数 true = 模糊匹配船名（有重名时用）<details class="note"><summary>示例</summary><div class="note-body"><code>!网格 保存</code> 保存眼前看到的船（推荐）<br><code>!网格 保存 矿机</code> 保存名字叫「矿机」的船<br><code>!网格 保存 矿机 true</code> 保存名字含「矿机」的船（有重名时用）</div></details></td></tr>
+<tr class="row"><td class="c1">取出飞船</td><td class="c2"><span class="cmd">!网格 加载</span> <span class="cmd opt">[船名]</span> <span class="cmd opt">[模糊]</span> <span class="cmd opt">[原地]</span> <span class="cmd opt">[完全原地]</span><span class="al">!hangar load / !h load</span></td><td class="c3">在你面前生成，按与保存位置的距离收费；距离 &lt;1km 免费<details class="note"><summary>参数说明与费用</summary><div class="note-body">第二参数：模糊匹配 true/false<br>第三参数：是否原地（即保存时坐标）生成 true/false<br>第四参数：完全原地（无碰撞检测）true/false，<strong style="color:#e05252">可能K爆，后果自负</strong>；仅当第三参数为 true 时有效<br><br>费用 ≈ (估价费+规模费) × (距离倍率+重力倍率)；船厂/市场首次加载免费</div></details></td></tr>
+<tr class="row"><td class="c1">原地取出</td><td class="c2"><span class="cmd">!网格 原地加载</span> <span class="cmd opt">[船名]</span> <span class="cmd opt">[模糊]</span> <span class="cmd opt">[完全原地]</span><span class="al">!hangar loadlocal</span></td><td class="c3">从保存时坐标原地加载；不需人在旁边可远程使用；完全原地参数 true = 无碰撞检测，⚠️ 原位有网格会K爆<details class="note"><summary>示例</summary><div class="note-body"><code>!网格 原地加载 矿机</code> 普通原地加载<br><code>!网格 原地加载 矿机 false true</code> 第一参数 false=精确匹配，第二参数 true=完全原地（危险）</div></details></td></tr>
 <tr class="row"><td class="c1">查看船坞列表</td><td class="c2"><span class="cmd">!网格 列表</span> <span class="cmd opt">[过滤词]</span><span class="al">!hangar list / !h list</span></td><td class="c3">列出所有保存的船；可加关键词过滤</td></tr>
 <tr class="row"><td class="c1">查询保存位置</td><td class="c2"><span class="cmd">!网格 船坞位置</span> <span class="cmd opt">[船名]</span><span class="al">!hangar pos / !h pos</span></td><td class="c3">查看该船保存时所在的坐标</td></tr>
 </tbody></table></div>
@@ -113,11 +126,11 @@ td{padding:12px 14px;vertical-align:top;overflow:hidden}
 <div class="sec" data-sec="storage">
 <div class="sec-h"><span class="sec-t">📦 存取物资</span><span class="sec-s">仓库系统</span></div>
 <table><thead><tr><th style="width:19%">想做什么</th><th style="width:39%">指令</th><th style="width:42%">说明 / 注意</th></tr></thead><tbody>
-<tr class="row"><td class="c1">存入指定物资</td><td class="c2"><span class="cmd">!仓库 存入 [物品] [数量]</span><span class="al">!storage store / !storage save</span></td><td class="c3">从当前船箱子取出物品存入仓库</td></tr>
+<tr class="row"><td class="c1">存入指定物资</td><td class="c2"><span class="cmd">!仓库 存入 [物品] [数量]</span><span class="al">!storage store / !storage save</span></td><td class="c3">不需对准箱子，自动从整个网格收集材料；<strong>重力 &gt;0.5G 时按物品价值收费，需输入两次指令确认</strong></td></tr>
 <tr class="row"><td class="c1">存入所有物资</td><td class="c2"><span class="cmd">!仓库 存入全部</span><span class="al">!storage storeall</span></td><td class="c3">把船里所有东西存进仓库</td></tr>
 <tr class="row"><td class="c1">只存矿石</td><td class="c2"><span class="cmd">!仓库 存入全部矿物</span><span class="al">!storage storeores</span></td><td class="c3">仅存矿石类，其他物品不动</td></tr>
-<tr class="row"><td class="c1">取出指定物资</td><td class="c2"><span class="cmd">!仓库 取出 [物品] [数量]</span> <span class="cmd opt">[箱标记]</span><span class="al">!storage draw</span></td><td class="c3">从仓库取出放进当前船箱子</td></tr>
-<tr class="row"><td class="c1">取出所有物资</td><td class="c2"><span class="cmd">!仓库 取出全部</span> <span class="cmd opt">[箱标记]</span><span class="al">!storage drawall</span></td><td class="c3">取出全部（需对准一个箱子）</td></tr>
+<tr class="row"><td class="c1">取出指定物资</td><td class="c2"><span class="cmd">!仓库 取出 [物品] [数量]</span> <span class="cmd opt">[箱标记]</span><span class="al">!storage draw</span></td><td class="c3">从仓库取出放进当前船箱子<details class="note"><summary>[箱标记] 参数说明</summary><div class="note-body">不填：物品放入你眼前<strong>指向的箱子</strong><br>填写标记字符串：在眼前网格的所有箱子里，找<strong>自定义数据中包含该字符串</strong>的箱子放入<br>示例：<code>!仓库 取出 钢板 100 "零件箱"</code><br>箱子装不下时会尽量装满，剩余返还仓库</div></details></td></tr>
+<tr class="row"><td class="c1">取出所有物资</td><td class="c2"><span class="cmd">!仓库 取出全部</span> <span class="cmd opt">[箱标记]</span><span class="al">!storage drawall</span></td><td class="c3">取出全部（不填箱标记时需对准一个箱子；箱标记用法同上）</td></tr>
 <tr class="row"><td class="c1">取物资到背包</td><td class="c2"><span class="cmd">!仓库 取出到玩家 [物品] [数量]</span><span class="al">!storage drawtoself / !storage drawp</span></td><td class="c3">直接放到玩家背包身上</td></tr>
 <tr class="row"><td class="c1">查看仓库内容</td><td class="c2"><span class="cmd">!仓库 列表</span><span class="al">!storage list</span></td><td class="c3">列出仓库所有物品和数量</td></tr>
 <tr class="row"><td class="c1">按清单存入</td><td class="c2"><span class="cmd">!仓库 存入清单 [清单名称]</span><span class="al">!storage storelist</span></td><td class="c3">按预定义清单批量存入物品</td></tr>
@@ -138,7 +151,8 @@ td{padding:12px 14px;vertical-align:top;overflow:hidden}
 <tr class="row"><td class="c1">查看模板列表</td><td class="c2"><span class="cmd">!模板 列表</span><span class="al">!template list</span></td><td class="c3">列出你所有的模板</td></tr>
 <tr class="row"><td class="c1">删除模板</td><td class="c2"><span class="cmd">!模板 删除 [模板名称]</span><span class="al">!template delete</span></td><td class="c3">删除指定模板</td></tr>
 <tr class="row"><td class="c1">从投影仪存模板</td><td class="c2"><span class="cmd">!模板 从投影创建 [名称]</span><span class="al">!template readprojector</span></td><td class="c3">读取投影仪蓝图创建模板</td></tr>
-<tr class="row"><td class="c1">自动建造/修复</td><td class="c2"><span class="cmd">!网格 自动建造</span><span class="al">!grids autobuild</span></td><td class="c3">自动焊接眼前的船，每方块每秒需 2500 SC；非精英有每日上限</td></tr>
+<tr class="row"><td class="c1">自动建造/修复</td><td class="c2"><span class="cmd">!网格 自动建造</span><span class="al">!grids autobuild</span></td><td class="c3">仅精英工程师可用；每秒扣 25000 SC（银行）；会主动建造蓝图和维修损坏方块；检测到敌人自动停止<details class="note"><summary>注意事项</summary><div class="note-body">若某方块被焊接器主动焊接过，自动建造可能失败 → 拆掉该方块后重试<br>只摆放框架后即可直接使用此功能</div></details></td></tr>
+<tr class="row"><td class="c1">网格工单</td><td class="c2"><span class="cmd">!网格 工单</span> <span class="cmd opt">[船名]</span> <span class="cmd opt">[true/false]</span></td><td class="c3">把网格强制保存用于工单流程；仅检测建造者、无视敌人检测；<strong>你无法自行取出</strong>，PVP 中使用视为主动删除</td></tr>
 </tbody></table></div>
 
 <div class="sec" data-sec="trade">
@@ -168,7 +182,7 @@ td{padding:12px 14px;vertical-align:top;overflow:hidden}
 <table><thead><tr><th style="width:19%">想做什么</th><th style="width:39%">指令</th><th style="width:42%">说明 / 注意</th></tr></thead><tbody>
 <tr class="row"><td class="c1">开启PVE挑战</td><td class="c2"><span class="cmd">!挑战 [挑战名称]</span><span class="al">!challenge / !pirate（海盗专用）</span></td><td class="c3">ch1=矿盗（推荐1级新人），ch2=雇佣兵（推荐15级+）</td></tr>
 <tr class="row"><td class="c1">查看挑战奖励</td><td class="c2"><span class="cmd">!挑战 奖励列表</span><span class="al">!challenge rewardlist / !pirate rewardlist</span></td><td class="c3">查看各挑战的奖励内容列表</td></tr>
-<tr class="row"><td class="c1">PVP匹配</td><td class="c2"><span class="cmd">!决斗 匹配</span></td><td class="c3">在飞船驾驶舱输入；满2人开局；剩余PCU越少失分越多；护盾不清零无法参战</td></tr>
+<tr class="row"><td class="c1">PVP匹配</td><td class="c2"><span class="cmd">!决斗 匹配</span> <span class="cmd opt">[true/false]</span></td><td class="c3">坐在飞船驾驶舱输入；第一人发起后2分钟内可登记；满2人传送开局；剩余PCU越少失分越多<details class="note"><summary>小船模式（加 true 参数）</summary><div class="note-body">只有发起人可选择模式；参与者无法选择<br>限制：最多 500方块 / 8个固定武器 / 不能装自动炮塔<br>小船模式有额外采购票奖励</div></details></td></tr>
 </tbody></table></div>
 
 <div class="sec" data-sec="mission">
@@ -186,6 +200,7 @@ td{padding:12px 14px;vertical-align:top;overflow:hidden}
 <tr class="row"><td class="c1">存入银行</td><td class="c2"><span class="cmd">!银行 存入 [金额]</span></td><td class="c3">把背包里的SC（数字形式）存进银行</td></tr>
 <tr class="row"><td class="c1">从银行取出（数字）</td><td class="c2"><span class="cmd">!银行 取出 [金额]</span></td><td class="c3">取出到背包，以数字余额形式存在</td></tr>
 <tr class="row"><td class="c1">取现（实体货币）</td><td class="c2"><span class="cmd">!银行 取现 [金额]</span></td><td class="c3">变成实体太空货币放入背包</td></tr>
+<tr class="row"><td class="c1">转账给玩家</td><td class="c2"><span class="cmd">!银行 转账 [SteamID] [金额]</span></td><td class="c3">向指定玩家的银行账户转账；可用 <span class="cmd">!info myinfo</span> 互相查询 SteamID</td></tr>
 <tr class="row"><td class="c1">领取活跃奖励</td><td class="c2"><span class="cmd">!活跃点 领取</span></td><td class="c3">自动领取所有可领取的活跃奖励</td></tr>
 <tr class="row"><td class="c1">查询活跃点</td><td class="c2"><span class="cmd">!活跃点 查询</span></td><td class="c3">查看今日活跃点数、可领奖励等信息</td></tr>
 <tr class="row"><td class="c1">兑换礼品码</td><td class="c2"><span class="cmd">!兑换 [兑换码]</span></td><td class="c3">输入兑换码领取奖励</td></tr>
@@ -203,25 +218,44 @@ td{padding:12px 14px;vertical-align:top;overflow:hidden}
 </tbody></table></div>
 
 <div class="sec" data-sec="grid">
-<div class="sec-h"><span class="sec-t">🛸 网格 & 工具</span><span class="sec-s">模式切换 · 清单 · LCD</span></div>
+<div class="sec-h"><span class="sec-t">🛸 网格 & 状态</span><span class="sec-s">模式 · 升空 · 降落 · 位置</span></div>
 <table><thead><tr><th style="width:19%">想做什么</th><th style="width:39%">指令</th><th style="width:42%">说明 / 注意</th></tr></thead><tbody>
-<tr class="row"><td class="c1">转换为飞船</td><td class="c2"><span class="cmd">!toship</span></td><td class="c3">强制转换为动态飞船模式，护盾清零</td></tr>
-<tr class="row"><td class="c1">转换为空间站</td><td class="c2"><span class="cmd">!tostatic</span></td><td class="c3">强制转换为静态空间站模式，护盾清零</td></tr>
-<tr class="row"><td class="c1">让飞船升空</td><td class="c2"><span class="cmd">!网格 升空</span></td><td class="c3">飞船离地变为飞行器（无法直接着地时使用）</td></tr>
-<tr class="row"><td class="c1">着陆飞船</td><td class="c2"><span class="cmd">!网格 降落 [高度]</span></td><td class="c3">嵌入星球表面，高度0~100，越高暴露地面越多</td></tr>
+<tr class="row"><td class="c1">转换为飞船</td><td class="c2"><span class="cmd">!toship</span></td><td class="c3">强制转换为动态飞船模式</td></tr>
+<tr class="row"><td class="c1">转换为空间站</td><td class="c2"><span class="cmd">!tostatic</span></td><td class="c3">强制转换为静态空间站模式</td></tr>
+<tr class="row"><td class="c1">让飞船升空</td><td class="c2"><span class="cmd">!网格 升空</span></td><td class="c3">让网格离开地面，转化失败（嵌入体素）时用；<strong>升空后保持空间站状态，不会坠毁</strong></td></tr>
+<tr class="row"><td class="c1">让飞船入地</td><td class="c2"><span class="cmd">!网格 降落 [高度]</span></td><td class="c3">将网格嵌入星球表面安置基地；高度范围 (0, 100]，越高露出地面越多；可多次调整<details class="note"><summary>使用技巧</summary><div class="note-body">先试较大高度（如 80），确认效果后重复发送用更小的値来微调；
+目标：找到建筑刚好露出地面且不陷入体素的高度</div></details></td></tr>
 <tr class="row"><td class="c1">查看所有网格位置</td><td class="c2"><span class="cmd">!网格位置</span></td><td class="c3">列出你拥有的所有网格坐标</td></tr>
-<tr class="row"><td class="c1">刷新LCD屏幕</td><td class="c2"><span class="cmd">!lcd</span></td><td class="c3">手动刷新LCD面板显示的数据</td></tr>
-<tr class="row"><td class="c1">创建物品清单</td><td class="c2"><span class="cmd">!清单 创建 [名称] [规则]</span></td><td class="c3">规则格式：铁矿=1000 钢板=200 money=50000</td></tr>
-<tr class="row"><td class="c1">从模板创建清单</td><td class="c2"><span class="cmd">!清单 从模板创建 [模板名] [清单名]</span></td><td class="c3">自动索引模板所需全部材料</td></tr>
-<tr class="row"><td class="c1">查看所有清单</td><td class="c2"><span class="cmd">!清单 列表</span></td><td class="c3">列出你的所有清单</td></tr>
-<tr class="row"><td class="c1">删除清单</td><td class="c2"><span class="cmd">!清单 删除 [清单名称]</span></td><td class="c3">删除指定清单</td></tr>
 </tbody></table></div>
 
 <div class="sec" data-sec="safe">
 <div class="sec-h"><span class="sec-t">🛡️ 精英工程师</span><span class="sec-s">特殊许可 & 安全区</span></div>
 <table><thead><tr><th style="width:19%">想做什么</th><th style="width:39%">指令</th><th style="width:42%">说明 / 注意</th></tr></thead><tbody>
-<tr class="row"><td class="c1">召唤安全区</td><td class="c2"><span class="cmd">!安全区 召唤</span></td><td class="c3">以玩家为中心创建200m安全区；需精英工程师凭证，凭证到期自动删除</td></tr>
+<tr class="row"><td class="c1">召唤安全区</td><td class="c2"><span class="cmd">!安全区 召唤</span></td><td class="c3">以玩家为中心创建200m安全区；需精英工程师凭证，凭证到期自动删除<details class="note"><summary>前置条件与限制</summary><div class="note-body">• 周围已有安全区时无法创建（请先删除旧的再重建）<br>• 周围有敌人时无法创建<br>• 如需白名单功能：创建前须先加入一个阵营（可自建）<br>• 已有此指令创建的安全区时，旧的会被自动替换</div></details></td></tr>
 <tr class="row"><td class="c1">删除安全区</td><td class="c2"><span class="cmd">!安全区 删除</span></td><td class="c3">手动删除此指令创建的安全区</td></tr>
+</tbody></table></div>
+
+<div class="sec" data-sec="list">
+<div class="sec-h"><span class="sec-t">📝 清单 & 合同</span><span class="sec-s">物品清单 · 玩家合同</span></div>
+<table><thead><tr><th style="width:19%">想做什么</th><th style="width:39%">指令</th><th style="width:42%">说明 / 注意</th></tr></thead><tbody>
+<tr class="row"><td class="c1">创建物品清单</td><td class="c2"><span class="cmd">!清单 创建 [名称] [规则]</span></td><td class="c3">规则格式：铁矿=1000 钢板=200 money=50000；规则字符串需用英文引号包裹<details class="note"><summary>完整示例</summary><div class="note-body"><code>!清单 创建 料单 "铁矿=1000 钢板=200 money=50000"</code><br>太空货币用 money 表示，多个条目空格分隔</div></details></td></tr>
+<tr class="row"><td class="c1">从模板创建清单</td><td class="c2"><span class="cmd">!清单 从模板创建 [模板名] [清单名]</span></td><td class="c3">自动索引模板所需全部材料，生成对应清单</td></tr>
+<tr class="row"><td class="c1">查看所有清单</td><td class="c2"><span class="cmd">!清单 列表</span></td><td class="c3">列出你的所有清单</td></tr>
+<tr class="row"><td class="c1">删除清单</td><td class="c2"><span class="cmd">!清单 删除 [清单名称]</span></td><td class="c3">删除指定清单</td></tr>
+<tr class="row"><td class="c1">创建合同</td><td class="c2"><span class="cmd">!合同 创建 [清单A] [清单B]</span> <span class="cmd opt">[true/false]</span></td><td class="c3">清单 A 是你<strong>付出</strong>的，B 是你<strong>收取</strong>的；加 true 参数则公开。物品需在仓库，sc 需在银行<details class="note"><summary>使用流程</summary><div class="note-body">① <code>!清单 创建 我给 "铁矿=5000"</code><br>② <code>!清单 创建 我要 "money=500000"</code><br>③ <code>!合同 创建 我给 我要</code>（私密合同）<br>④ 把合同 ID 发给对方 → 对方输入 <code>!合同 接受 [合同ID]</code></div></details></td></tr>
+<tr class="row"><td class="c1">公开 / 私密合同</td><td class="c2"><span class="cmd">!合同 公开 [合同ID] [true/false]</span></td><td class="c3">true = 公开，可被所有人搜索；false = 私密，仅凭 ID 交易</td></tr>
+<tr class="row"><td class="c1">查看合同列表</td><td class="c2"><span class="cmd">!合同 列表</span></td><td class="c3">查看你的合同和其他玩家的公开合同</td></tr>
+<tr class="row"><td class="c1">查看我的合同</td><td class="c2"><span class="cmd">!合同 我的列表</span></td><td class="c3">仅显示你自己创建的全部合同</td></tr>
+<tr class="row"><td class="c1">接受合同</td><td class="c2"><span class="cmd">!合同 接受 [合同ID]</span></td><td class="c3">接受他人合同完成交换；需确保仓库和银行余额满足合同要求</td></tr>
+<tr class="row"><td class="c1">删除合同</td><td class="c2"><span class="cmd">!合同 删除 [合同ID]</span></td><td class="c3">删除你创建的合同；用 <span class="cmd">!合同 我的列表</span> 查询合同 ID</td></tr>
+</tbody></table></div>
+
+<div class="sec" data-sec="lcd">
+<div class="sec-h"><span class="sec-t">🖥️ LCD 注入</span><span class="sec-s">自定义数据关键字</span></div>
+<table><thead><tr><th style="width:19%">想做什么</th><th style="width:39%">配置方式</th><th style="width:42%">说明 / 注意</th></tr></thead><tbody>
+<tr class="row"><td class="c1">设置显示类型</td><td class="c2"><span class="cmd">@@矿石</span> <span class="cmd">@@零件</span> <span class="cmd">@@矿锭</span> <span class="cmd">@@弹药</span> <span class="cmd">@@气体</span> <span class="cmd">@@精炼</span></td><td class="c3">将任意关键字写入 LCD 方块的 <strong>自定义数据</strong>（非聊天框）；服务器自动按类型生成物品数量列表</td></tr>
+<tr class="row"><td class="c1">设置可选参数</td><td class="c2"><span class="cmd">每页条目=N</span> <span class="cmd">当前页=N</span> <span class="cmd">分隔符=X</span> <span class="cmd">自动换页=true</span><details class="note"><summary>完整示例</summary><div class="note-body">在 LCD 自定义数据中写入：<br><code>@@零件 每页条目=5 当前页=1 分隔符=-</code><br>（当前页从 0 开始，第 0 页为第一页）</div></details></td><td class="c3">追加在关键字后，以空格分隔；默认每页 10 条、第 0 页、不自动换页</td></tr>
+<tr class="row"><td class="c1">手动刷新显示</td><td class="c2"><span class="cmd">!lcd</span></td><td class="c3">在<strong>聊天框</strong>中对准目标网格输入，立即刷新该网格所有 LCD 面板的数据</td></tr>
 </tbody></table></div>
 
 <div class="nores" id="nores">没有找到匹配的指令</div>
@@ -251,7 +285,9 @@ const cats=[
   {id:'mission',label:'📋 全服任务'},
   {id:'finance',label:'💰 财务管理'},
   {id:'info',label:'🔍 查询信息'},
-  {id:'grid',label:'🛸 网格工具'},
+  {id:'grid',label:'🛸 网格 & 状态'},
+  {id:'list',label:'📝 清单 & 合同'},
+  {id:'lcd',label:'🖥️ LCD 注入'},
   {id:'safe',label:'🛡️ 精英工程师'},
 ];
 let cur='all';
@@ -283,6 +319,7 @@ function filter(){
   nores.style.display=any?'none':'block';
 }
 q.addEventListener('input',filter);
+filter();
 </script>
 </body>
 </html>
