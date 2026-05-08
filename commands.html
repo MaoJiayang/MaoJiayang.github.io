@@ -90,7 +90,8 @@ details.note .note-body code{font-family:var(--font-mono);font-size:11px;backgro
   .sec-s { margin-left: 0; margin-top: 4px; width: 100%; text-align: center; }
 }
 /* 智能联想面板（悬浮） */
-#sem-panel{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:100;border-radius:4px;box-shadow:0 6px 16px rgba(0,0,0,0.1);background:var(--bg-panel);display:none;}
+#sem-panel{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:100;border-radius:4px;box-shadow:0 6px 16px rgba(0,0,0,0.1);background:var(--bg-panel);opacity:0;transform:translateY(-8px);pointer-events:none;transition:all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);visibility:hidden;}
+#sem-panel.show{opacity:1;transform:translateY(0);pointer-events:auto;visibility:visible;}
 .sem-card{border:1px solid var(--border);border-radius:4px;overflow:hidden;background:var(--bg-panel)}
 .sem-card-h{display:flex;align-items:center;gap:6px;padding:7px 14px;background:var(--accent-bg);border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--accent)}
 .sem-card-h button{margin-left:auto;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;line-height:1;padding:0;opacity:0.6}
@@ -299,7 +300,14 @@ function initSearch() {
   // 点击外部隐藏智能联想面板
   document.addEventListener('click', (e) => {
     if (!searchWrap.contains(e.target)) {
-      semPanel.style.display = 'none';
+      semPanel.classList.remove('show');
+    }
+  });
+
+  // 恢复焦点时，如果没有改变且有数据，重新展示
+  q.addEventListener('focus', () => {
+    if (q.value.trim() && semPanel.innerHTML.trim() !== '') {
+      semPanel.classList.add('show');
     }
   });
 
@@ -343,7 +351,7 @@ function initSearch() {
   // 渲染语义搜索结果面板
   function renderSemPanel(results) {
     if (!results || results.length === 0) {
-      semPanel.style.display = 'none';
+      semPanel.classList.remove('show');
       return;
     }
     const items = results.slice(0, 5).map(r => {
@@ -362,12 +370,12 @@ function initSearch() {
       <div class="sem-card-h">✨ 智能联想 <span style="font-weight:normal;opacity:0.7">（基于输入匹配）</span>
         <button id="sem-close" title="关闭">×</button>
       </div>${items}</div>`;
-    semPanel.style.display = 'block';
+    semPanel.classList.add('show');
 
     // 关闭按钮
     document.getElementById('sem-close').onclick = (e) => { 
       e.stopPropagation();
-      semPanel.style.display = 'none'; 
+      semPanel.classList.remove('show'); 
     };
 
     // 点击条目高亮滚动
@@ -380,7 +388,7 @@ function initSearch() {
   function scheduleSemanticSearch(val) {
     clearTimeout(semTimer);
     if (!val) {
-      semPanel.style.display = 'none';
+      semPanel.classList.remove('show');
       searchWrap.classList.remove('sem-loading');
       return;
     }
