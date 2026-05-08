@@ -85,8 +85,8 @@ export async function onRequestGet({ request, env }) {
         );
     }
 
-    // 嵌入查询词
-    const aiResult = await env.AI.run('@cf/baai/bge-m3', { text: [q] });
+    // 嵌入查询词（使用与 build.js 相同的模型，确保向量空间一致）
+    const aiResult = await env.AI.run(embData.model, { text: [q] });
     const queryEmb = new Float32Array(aiResult.data[0]);
 
     // 计算余弦相似度并排序
