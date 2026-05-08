@@ -3,39 +3,58 @@
     "id": "hangar-save",
     "section": "hangar",
     "title": "保存飞船",
-    "commands": ["!网格 保存", "!hangar save", "!h save"],
-    "description": "将飞船保存到船坞，不填名字默认存眼前的船；加 true 可模糊匹配船名（有重名时用）",
-    "note": "**示例**\n\n`!网格 保存` 保存眼前看到的船（推荐）\n\n`!网格 保存 矿机` 保存名字叫「矿机」的船\n\n`!网格 保存 矿机 true` 保存名字含「矿机」的船（有重名时用）\n\n提示：养成给网格命名的习惯。使用正确的名称可以无视距离收船"
+    "commands": [
+      "!网格 保存",
+      "!hangar save",
+      "!h save"
+    ],
+    "description": "将飞船保存到船坞",
+    "note": "**规则**\n\n- 不填名字默认存眼前的船\n- 加 true 可模糊匹配船名（有重名时用）\n\n---\n\n**示例**\n\n`!网格 保存` 保存眼前看到的船（推荐）\n\n`!网格 保存 矿机` 保存名字叫「矿机」的船\n\n`!网格 保存 矿机 true` 保存名字含「矿机」的船（有重名时用）\n\n提示：养成给网格命名的习惯。使用正确的名称可以无视距离收船"
   },
   {
     "id": "hangar-load",
     "section": "hangar",
     "title": "取出飞船",
-    "commands": ["!网格 加载", "!hangar load", "!h load"],
-    "description": "将飞船从船坞取出，在你附近生成，按与保存位置的距离收费；距离 <1km 免费",
-    "note": "**示例**\n\n`!网格 加载 矿机` 在你面前生成「矿机」\n\n`!网格 加载 矿机 true` 模糊匹配（有重名时用）\n\n`!网格 加载 矿机 false true` 在保存时的坐标原地生成\n\n`!网格 加载 矿机 false true true` 原地生成且无碰撞检测（⚠️ 可能K爆）\n\n**费用** ≈ (估价费+规模费) × (距离倍率+重力倍率)；船厂/市场首次加载免费"
+    "commands": [
+      "!网格 加载",
+      "!hangar load",
+      "!h load"
+    ],
+    "description": "将飞船从船坞取出并在附近生成",
+    "note": "**规则与费用**\n\n按与保存位置的距离收费；距离 <1km 免费\n\n---\n\n**示例**\n\n`!网格 加载 矿机` 在你面前生成「矿机」\n\n`!网格 加载 矿机 true` 模糊匹配（有重名时用）\n\n`!网格 加载 矿机 false true` 在保存时的坐标原地生成\n\n`!网格 加载 矿机 false true true` 原地生成且无碰撞检测（⚠️ 可能K爆）\n\n**费用** ≈ (估价费+规模费) × (距离倍率+重力倍率)；船厂/市场首次加载免费"
   },
   {
     "id": "hangar-loadlocal",
     "section": "hangar",
     "title": "原地取出",
-    "commands": ["!网格 原地加载", "!hangar loadlocal"],
-    "description": "将飞船从船坞取出，从保存时坐标原地加载；完全原地参数 true = 无碰撞检测，⚠️ 原位有网格会K爆",
-    "note": "**示例**\n\n`!网格 原地加载 矿机` 在保存坐标原地加载「矿机」\n\n`!网格 原地加载 矿机 false true` 精确匹配 + 完全原地（无碰撞检测，⚠️ 危险）"
+    "commands": [
+      "!网格 原地加载",
+      "!hangar loadlocal"
+    ],
+    "description": "将飞船从保存时的坐标原地加载",
+    "note": "**参数规则**\n\n完全原地参数 true = 无碰撞检测，⚠️ 原位有网格会K爆\n\n---\n\n**示例**\n\n`!网格 原地加载 矿机` 在保存坐标原地加载「矿机」\n\n`!网格 原地加载 矿机 false true` 精确匹配 + 完全原地（无碰撞检测，⚠️ 危险）"
   },
   {
     "id": "hangar-list",
     "section": "hangar",
     "title": "查看船坞列表",
-    "commands": ["!网格 列表", "!hangar list", "!h list"],
-    "description": "列出所有保存的船；可加关键词过滤",
-    "note": "**示例**\n\n`!网格 列表` 列出全部保存的船\n\n`!网格 列表 矿机` 只显示名字含「矿机」的船"
+    "commands": [
+      "!网格 列表",
+      "!hangar list",
+      "!h list"
+    ],
+    "description": "列出所有保存的飞船",
+    "note": "**规则**\n\n可加关键词过滤\n\n---\n\n**示例**\n\n`!网格 列表` 列出全部保存的船\n\n`!网格 列表 矿机` 只显示名字含「矿机」的船"
   },
   {
     "id": "hangar-pos",
     "section": "hangar",
     "title": "查询保存位置",
-    "commands": ["!网格 船坞位置", "!hangar pos", "!h pos"],
+    "commands": [
+      "!网格 船坞位置",
+      "!hangar pos",
+      "!h pos"
+    ],
     "description": "查看该船保存时所在的坐标",
     "note": "**示例**\n\n`!网格 船坞位置 矿机` 查询「矿机」保存时的坐标\n\n`!网格 船坞位置` 查询眼前对准的船"
   },
@@ -43,15 +62,22 @@
     "id": "shipmarket-sell",
     "section": "shipmarket",
     "title": "挂出飞船出售",
-    "commands": ["!网格 出售", "!hangar sell", "!ship sell"],
-    "description": "把眼前的船挂到市场，服务器返回编号；交易收上架费",
-    "note": "**示例**\n\n`!网格 出售 50000` 以 50000 SC 挂出眼前的船\n\n`!网格 出售 50000 \"高速矿船\"` 挂出并附上介绍文字"
+    "commands": [
+      "!网格 出售",
+      "!hangar sell",
+      "!ship sell"
+    ],
+    "description": "将眼前的飞船挂到市场出售",
+    "note": "**规则**\n\n- 服务器返回编号\n- 交易收上架费\n\n---\n\n**示例**\n\n`!网格 出售 50000` 以 50000 SC 挂出眼前的船\n\n`!网格 出售 50000 \"高速矿船\"` 挂出并附上介绍文字"
   },
   {
     "id": "shipmarket-market",
     "section": "shipmarket",
     "title": "浏览在售船只",
-    "commands": ["!网格 市场", "!hangar market"],
+    "commands": [
+      "!网格 市场",
+      "!hangar market"
+    ],
     "description": "查看所有出售中的船只",
     "note": null
   },
@@ -59,7 +85,11 @@
     "id": "shipmarket-buy",
     "section": "shipmarket",
     "title": "购买一艘船",
-    "commands": ["!网格 购买", "!hangar buy", "!ship buy"],
+    "commands": [
+      "!网格 购买",
+      "!hangar buy",
+      "!ship buy"
+    ],
     "description": "买下后存入你的船坞；折扣券自动使用",
     "note": "**示例**\n\n`!网格 购买 025412` 购买市场中编号为 025412 的船（先用 `!网格 市场` 查编号）\n\n`!网格 购买 高速矿船` 按船名购买"
   },
@@ -67,23 +97,33 @@
     "id": "shipmarket-preview",
     "section": "shipmarket",
     "title": "预览船只外观",
-    "commands": ["!网格 预览", "!hangar preview"],
-    "description": "对准投影仪使用；船须 ≤10万方块，会重置投影仪",
-    "note": "**示例**\n\n对准投影仪，输入 `!网格 预览 025412` 预览编号为 025412 的船（先用 `!网格 市场` 查编号）"
+    "commands": [
+      "!网格 预览",
+      "!hangar preview"
+    ],
+    "description": "预览市场中的指定船只外观",
+    "note": "**规则限制**\n\n- 对准投影仪使用\n- 船须 ≤10万方块，会重置投影仪\n\n---\n\n**示例**\n\n对准投影仪，输入 `!网格 预览 025412` 预览编号为 025412 的船（先用 `!网格 市场` 查编号）"
   },
   {
     "id": "storage-store",
     "section": "storage",
     "title": "存入指定物资",
-    "commands": ["!仓库 存入", "!storage store", "!storage save"],
-    "description": "自动从整个网格收集材料，前提是网格大多数方块属于你；**重力 >0.5G 时按物品价值收费，需输入两次指令确认**",
-    "note": "**示例**\n\n`!仓库 存入 钢板 100` 将船里的 100 块钢板存入仓库\n\nTips:手持工具对准箱子可以提高指令成功率"
+    "commands": [
+      "!仓库 存入",
+      "!storage store",
+      "!storage save"
+    ],
+    "description": "自动将网格内的材料集中存入仓库",
+    "note": "**条件与收费**\n\n- 前提是网格大多数方块属于你\n- **重力 >0.5G 时按物品价值收费，需输入两次指令确认**\n\n---\n\n**示例**\n\n`!仓库 存入 钢板 100` 将船里的 100 块钢板存入仓库\n\nTips:手持工具对准箱子可以提高指令成功率"
   },
   {
     "id": "storage-storeall",
     "section": "storage",
     "title": "存入所有物资",
-    "commands": ["!仓库 存入全部", "!storage storeall"],
+    "commands": [
+      "!仓库 存入全部",
+      "!storage storeall"
+    ],
     "description": "把船里所有东西存进仓库",
     "note": null
   },
@@ -91,7 +131,10 @@
     "id": "storage-storeores",
     "section": "storage",
     "title": "只存矿石",
-    "commands": ["!仓库 存入全部矿物", "!storage storeores"],
+    "commands": [
+      "!仓库 存入全部矿物",
+      "!storage storeores"
+    ],
     "description": "仅存矿石类，其他物品不动",
     "note": null
   },
@@ -99,7 +142,10 @@
     "id": "storage-draw",
     "section": "storage",
     "title": "取出指定物资",
-    "commands": ["!仓库 取出", "!storage draw"],
+    "commands": [
+      "!仓库 取出",
+      "!storage draw"
+    ],
     "description": "从仓库取出放进当前船箱子",
     "note": "**[箱标记] 参数说明**\n\n- 不填：物品放入你眼前**指向的箱子**\n- 填写标记字符串：在眼前网格的所有箱子里，找**自定义数据中包含该字符串**的箱子放入\n\n示例：`!仓库 取出 钢板 100 \"零件箱\"`\n\n箱子装不下时会尽量装满，剩余返还仓库"
   },
@@ -107,15 +153,22 @@
     "id": "storage-drawall",
     "section": "storage",
     "title": "取出所有物资",
-    "commands": ["!仓库 取出全部", "!storage drawall"],
-    "description": "取出全部（不填箱标记时需对准一个箱子；箱标记用法同上）",
-    "note": "**[箱标记] 参数说明**\n\n- 不填：物品放入你眼前**指向的箱子**\n- 填写标记字符串：在眼前网格所有箱子里，找**自定义数据中包含该字符串**的箱子放入\n\n**示例**：`!仓库 取出全部 \"零件箱\"` 取出全部并放入含「零件箱」字样的箱子\n\n箱子装不下时会尽量装满，剩余返还仓库"
+    "commands": [
+      "!仓库 取出全部",
+      "!storage drawall"
+    ],
+    "description": "将所有物资从仓库取出并放入飞船",
+    "note": "**参数提示**\n\n不填箱标记时需对准一个箱子；箱标记用法请参考「取出指定物资」指令说明\n\n---\n\n**[箱标记] 参数说明**\n\n- 不填：物品放入你眼前**指向的箱子**\n- 填写标记字符串：在眼前网格所有箱子里，找**自定义数据中包含该字符串**的箱子放入\n\n**示例**：`!仓库 取出全部 \"零件箱\"` 取出全部并放入含「零件箱」字样的箱子\n\n箱子装不下时会尽量装满，剩余返还仓库"
   },
   {
     "id": "storage-drawtoself",
     "section": "storage",
     "title": "取物资到背包",
-    "commands": ["!仓库 取出到玩家", "!storage drawtoself", "!storage drawp"],
+    "commands": [
+      "!仓库 取出到玩家",
+      "!storage drawtoself",
+      "!storage drawp"
+    ],
     "description": "直接放到玩家背包身上",
     "note": "**示例**\n\n`!仓库 取出到玩家 钢板 100` 从仓库取 100 块钢板，直接放进背包"
   },
@@ -123,7 +176,10 @@
     "id": "storage-list",
     "section": "storage",
     "title": "查看仓库内容",
-    "commands": ["!仓库 列表", "!storage list"],
+    "commands": [
+      "!仓库 列表",
+      "!storage list"
+    ],
     "description": "列出仓库所有物品和数量",
     "note": null
   },
@@ -131,7 +187,10 @@
     "id": "storage-storelist",
     "section": "storage",
     "title": "按清单存入",
-    "commands": ["!仓库 存入清单", "!storage storelist"],
+    "commands": [
+      "!仓库 存入清单",
+      "!storage storelist"
+    ],
     "description": "按预定义清单批量存入物品",
     "note": "**示例**\n\n`!仓库 存入清单 料单` 按「料单」清单批量存入（用 `!清单 列表` 查清单名）"
   },
@@ -139,23 +198,32 @@
     "id": "storage-drawlist",
     "section": "storage",
     "title": "按清单取出",
-    "commands": ["!仓库 取出清单", "!storage drawlist"],
-    "description": "按清单批量取出物品到飞船；可选 `[箱标记]` 参数，用法与「取出指定物资」相同",
-    "note": "**示例**\n\n`!仓库 取出清单 料单` 按「料单」清单取出，放入眼前对准的箱子\n\n`!仓库 取出清单 料单 \"零件箱\"` 取出后放入自定义数据含「零件箱」的箱子"
+    "commands": [
+      "!仓库 取出清单",
+      "!storage drawlist"
+    ],
+    "description": "按预定义清单批量取出物品",
+    "note": "**参数可选**\n\n可选 [箱标记] 参数，用法与「取出指定物资」相同\n\n---\n\n**示例**\n\n`!仓库 取出清单 料单` 按「料单」清单取出，放入眼前对准的箱子\n\n`!仓库 取出清单 料单 \"零件箱\"` 取出后放入自定义数据含「零件箱」的箱子"
   },
   {
     "id": "storage-bind",
     "section": "storage",
     "title": "绑定飞船",
-    "commands": ["!仓库 绑定", "!storage bind"],
-    "description": "绑定后仓库材料不足时自动从此船物流补充",
-    "note": null
+    "commands": [
+      "!仓库 绑定",
+      "!storage bind"
+    ],
+    "description": "绑定当前飞船进行物流补充",
+    "note": "**规则**\n\n绑定后仓库材料不足时自动从此船物流补充"
   },
   {
     "id": "storage-unbind",
     "section": "storage",
     "title": "解绑飞船",
-    "commands": ["!仓库 解除绑定", "!storage unbind"],
+    "commands": [
+      "!仓库 解除绑定",
+      "!storage unbind"
+    ],
     "description": "解除当前绑定关系",
     "note": null
   },
@@ -163,7 +231,10 @@
     "id": "build-shipyard-list",
     "section": "build",
     "title": "查看建造队列",
-    "commands": ["!船厂 列表", "!shipyard list"],
+    "commands": [
+      "!船厂 列表",
+      "!shipyard list"
+    ],
     "description": "查看建造/回收任务队列和流水线状态",
     "note": null
   },
@@ -171,15 +242,21 @@
     "id": "build-shipyard-build",
     "section": "build",
     "title": "下单建造",
-    "commands": ["!船厂 建造", "!shipyard build"],
-    "description": "用模板+仓库材料建造；材料不足时生成缺料清单，任务排队",
-    "note": "**示例**\n\n`!船厂 建造 高速矿船` 使用名为「高速矿船」的模板进行建造（先用 `!模板 列表` 确认模板名）"
+    "commands": [
+      "!船厂 建造",
+      "!shipyard build"
+    ],
+    "description": "使用模板与仓库材料在船厂下单建造",
+    "note": "**处理规则**\n\n材料不足时生成缺料清单，任务进入排队阶段\n\n---\n\n**示例**\n\n`!船厂 建造 高速矿船` 使用名为「高速矿船」的模板进行建造（先用 `!模板 列表` 确认模板名）"
   },
   {
     "id": "build-shipyard-buildprojection",
     "section": "build",
     "title": "从投影仪建造",
-    "commands": ["!船厂 建造投影", "!shipyard buildprojection"],
+    "commands": [
+      "!船厂 建造投影",
+      "!shipyard buildprojection"
+    ],
     "description": "读取眼前投影仪蓝图进行建造",
     "note": null
   },
@@ -187,15 +264,22 @@
     "id": "build-shipyard-cancel",
     "section": "build",
     "title": "取消建造任务",
-    "commands": ["!船厂 取消", "!shipyard cancel"],
-    "description": "取消排队中的任务；进行中的无法取消",
-    "note": "**示例**\n\n先用 `!船厂 列表` 查看队列序号，再 `!船厂 取消 1` 取消第 1 个任务"
+    "commands": [
+      "!船厂 取消",
+      "!shipyard cancel"
+    ],
+    "description": "取消排队中的船厂任务",
+    "note": "**操作限制**\n\n排队中的任务可取消；进行中的任务无法取消\n\n---\n\n**示例**\n\n先用 `!船厂 列表` 查看队列序号，再 `!船厂 取消 1` 取消第 1 个任务"
   },
   {
     "id": "build-shipyard-recycle",
     "section": "build",
     "title": "回收/拆解飞船",
-    "commands": ["!船厂 回收", "!shipyard recycle", "!shipyard dismantle"],
+    "commands": [
+      "!船厂 回收",
+      "!shipyard recycle",
+      "!shipyard dismantle"
+    ],
     "description": "拆解眼前的船，材料返还仓库",
     "note": null
   },
@@ -203,7 +287,10 @@
     "id": "build-template-save",
     "section": "build",
     "title": "保存为模板",
-    "commands": ["!模板 保存", "!template save"],
+    "commands": [
+      "!模板 保存",
+      "!template save"
+    ],
     "description": "把眼前网格蓝图保存为模板",
     "note": "**示例**\n\n`!模板 保存 高速矿船` 将眼前的网格保存为名为「高速矿船」的模板"
   },
@@ -211,7 +298,10 @@
     "id": "build-template-list",
     "section": "build",
     "title": "查看模板列表",
-    "commands": ["!模板 列表", "!template list"],
+    "commands": [
+      "!模板 列表",
+      "!template list"
+    ],
     "description": "列出你所有的模板",
     "note": null
   },
@@ -219,7 +309,10 @@
     "id": "build-template-delete",
     "section": "build",
     "title": "删除模板",
-    "commands": ["!模板 删除", "!template delete"],
+    "commands": [
+      "!模板 删除",
+      "!template delete"
+    ],
     "description": "删除指定模板",
     "note": "**示例**\n\n先用 `!模板 列表` 确认名称，再 `!模板 删除 高速矿船` 删除该模板"
   },
@@ -227,7 +320,11 @@
     "id": "build-template-readprojector",
     "section": "build",
     "title": "从投影仪存模板",
-    "commands": ["!模板 从投影创建", "!template readprojector","!模板 从蓝图创建"],
+    "commands": [
+      "!模板 从投影创建",
+      "!template readprojector",
+      "!模板 从蓝图创建"
+    ],
     "description": "读取投影仪蓝图创建模板",
     "note": "**示例**\n\n对准投影仪，输入 `!模板 从投影创建 高速矿船` 将蓝图保存为名为「高速矿船」的模板"
   },
@@ -235,23 +332,32 @@
     "id": "build-autobuild",
     "section": "build",
     "title": "自动建造/修复",
-    "commands": ["!网格 自动建造", "!grids autobuild"],
-    "description": "所有玩家可用，存在每日限额，精英工程师无限使用；每秒扣 25000 SC（银行）；会主动建造蓝图和维修损坏方块；检测到敌人自动停止",
-    "note": "**注意事项**\n\n若某方块被焊接器主动焊接过，自动建造可能失败 → 拆掉该方块后重试\n\n只摆放框架后即可直接使用此功能"
+    "commands": [
+      "!网格 自动建造",
+      "!grids autobuild"
+    ],
+    "description": "为网格开启全自动建造或修复功能",
+    "note": "**规则限制与收费**\n\n- 所有玩家可用，存在每日限额，精英工程师无限使用\n- 每秒扣 25000 SC（银行）\n- 自动建造蓝图并维修损坏方块；检测到敌人自动停止\n\n---\n\n**注意事项**\n\n若某方块被焊接器主动焊接过，自动建造可能失败 → 拆掉该方块后重试\n\n只摆放框架后即可直接使用此功能"
   },
   {
     "id": "build-workorder",
     "section": "build",
     "title": "网格工单",
-    "commands": ["!网格 工单"],
-    "description": "把网格强制保存用于工单流程；可选 `[船名]` `[true/false模糊匹配]` 参数；仅检测建造者、无视敌人检测；**你无法自行取出**，PVP 中使用视为主动删除",
-    "note": "**示例**\n\n`!网格 工单` 保存眼前的船\n\n`!网格 工单 矿机` 保存名叫「矿机」的船\n\n`!网格 工单 矿机 true` 模糊匹配（有重名时用）"
+    "commands": [
+      "!网格 工单"
+    ],
+    "description": "将当前网格强制打包为管理员工单",
+    "note": "**规则说明**\n\n- 仅检测建造者、无视敌人检测\n- 可选 [船名] [true/false模糊匹配] 参数\n- **保存后你无法自行取出**，如果在 PVP 中使用此指令会被判定为主动认输/删除网格逃跑\n\n---\n\n**示例**\n\n`!网格 工单` 保存眼前的船\n\n`!网格 工单 矿机` 保存名叫「矿机」的船\n\n`!网格 工单 矿机 true` 模糊匹配（有重名时用）"
   },
   {
     "id": "trade-sell-list",
     "section": "trade",
     "title": "查看可出售物品",
-    "commands": ["!出售 列表", "!sell list", "!收购 列表"],
+    "commands": [
+      "!出售 列表",
+      "!sell list",
+      "!收购 列表"
+    ],
     "description": "查看今日可出售的物品和剩余额度",
     "note": null
   },
@@ -259,15 +365,23 @@
     "id": "trade-sell",
     "section": "trade",
     "title": "出售给服务器",
-    "commands": ["!出售", "!sell", "!收购 提交"],
-    "description": "玩家等级越高，每日可售额度越高",
-    "note": "**示例**\n\n`!出售 钢板 100` 向服务器出售 100 块钢板"
+    "commands": [
+      "!出售",
+      "!sell",
+      "!收购 提交"
+    ],
+    "description": "将物品出售给服务器",
+    "note": "**权限限制**\n\n玩家等级越高，每日可售额度越高\n\n---\n\n**示例**\n\n`!出售 钢板 100` 向服务器出售 100 块钢板"
   },
   {
     "id": "trade-buy-list",
     "section": "trade",
     "title": "查看可购买物品",
-    "commands": ["!购买 列表", "!buy list", "!采购 列表"],
+    "commands": [
+      "!购买 列表",
+      "!buy list",
+      "!采购 列表"
+    ],
     "description": "查看可从服务器购买的物品列表",
     "note": null
   },
@@ -275,7 +389,11 @@
     "id": "trade-buy",
     "section": "trade",
     "title": "向服务器购买",
-    "commands": ["!购买", "!buy", "!采购 提交"],
+    "commands": [
+      "!购买",
+      "!buy",
+      "!采购 提交"
+    ],
     "description": "从服务器购买物品",
     "note": "**示例**\n\n`!购买 钢板 100` 从服务器购买 100 块钢板"
   },
@@ -283,7 +401,9 @@
     "id": "pmarket-sell-order",
     "section": "pmarket",
     "title": "发布卖单",
-    "commands": ["!市场 发布卖单"],
+    "commands": [
+      "!市场 发布卖单"
+    ],
     "description": "挂到玩家云市场出售",
     "note": "**示例**\n\n`!市场 发布卖单 钢板 1000 150` 以 150 SC/件挂出 1000 块钢板"
   },
@@ -291,7 +411,9 @@
     "id": "pmarket-buy-order",
     "section": "pmarket",
     "title": "发布收购单",
-    "commands": ["!市场 发布收单"],
+    "commands": [
+      "!市场 发布收单"
+    ],
     "description": "发布求购订单",
     "note": "**示例**\n\n`!市场 发布收单 钢板 1000 130` 以最高 130 SC/件收购 1000 块钢板"
   },
@@ -299,7 +421,9 @@
     "id": "pmarket-list",
     "section": "pmarket",
     "title": "查看所有商品",
-    "commands": ["!市场 列表"],
+    "commands": [
+      "!市场 列表"
+    ],
     "description": "查看市场所有在售物品",
     "note": null
   },
@@ -307,7 +431,9 @@
     "id": "pmarket-search",
     "section": "pmarket",
     "title": "搜索某物品",
-    "commands": ["!市场 查找"],
+    "commands": [
+      "!市场 查找"
+    ],
     "description": "查看指定物品的所有买卖订单",
     "note": "**示例**\n\n`!市场 查找 钢板` 查看所有钢板的买卖订单"
   },
@@ -315,7 +441,9 @@
     "id": "pmarket-myorders",
     "section": "pmarket",
     "title": "查看我的订单",
-    "commands": ["!市场 我的订单"],
+    "commands": [
+      "!市场 我的订单"
+    ],
     "description": "查看我发布的所有买卖单",
     "note": null
   },
@@ -323,7 +451,9 @@
     "id": "pmarket-cancel",
     "section": "pmarket",
     "title": "撤销订单",
-    "commands": ["!市场 撤销订单"],
+    "commands": [
+      "!市场 撤销订单"
+    ],
     "description": "先用「我的订单」查编号，再撤销",
     "note": "**示例**\n\n先用 `!市场 我的订单` 找到编号，再 `!市场 撤销订单 5` 撤销编号 5 的订单"
   },
@@ -331,31 +461,43 @@
     "id": "pmarket-autobuy",
     "section": "pmarket",
     "title": "自动按最低价买",
-    "commands": ["!市场 自动购买"],
-    "description": "自动匹配最低价成交，不超过上限",
-    "note": "**示例**\n\n`!市场 自动购买 钢板 1000 150` 以不超过 150 SC/件自动买入 1000 块钢板"
+    "commands": [
+      "!市场 自动购买"
+    ],
+    "description": "在玩家市场中发布自动扫货求购单",
+    "note": "**撮合规则**\n\n自动匹配当前市场最低价成交，但不超过设定的单价上限\n\n---\n\n**示例**\n\n`!市场 自动购买 钢板 1000 150` 以不超过 150 SC/件自动买入 1000 块钢板"
   },
   {
     "id": "pmarket-autosell",
     "section": "pmarket",
     "title": "自动按最高价卖",
-    "commands": ["!市场 自动出售"],
-    "description": "自动匹配最高价成交，不低于下限",
-    "note": "**示例**\n\n`!市场 自动出售 钢板 1000 130` 以不低于 130 SC/件自动卖出 1000 块钢板"
+    "commands": [
+      "!市场 自动出售"
+    ],
+    "description": "在玩家市场中发布自动出货卖单",
+    "note": "**撮合规则**\n\n自动匹配当前市场最高价成交，但不低于设定的单价下限\n\n---\n\n**示例**\n\n`!市场 自动出售 钢板 1000 130` 以不低于 130 SC/件自动卖出 1000 块钢板"
   },
   {
     "id": "combat-challenge",
     "section": "combat",
     "title": "开启PVE挑战",
-    "commands": ["!挑战", "!challenge", "!pirate"],
-    "description": "召唤海盗挑战，需附近不存在敌对势力。当前有3级ch，ch1矿渣帮推荐1级新人，ch2雇佣兵推荐15+，ch3巡洋舰&战列舰推荐40+，海盗护盾说明请查看官方详细文档",
-    "note": "**示例**\n\n`!挑战 ch1` 开启矿渣帮挑战\n\n`!挑战 ch3` 开启巡洋舰&战列舰挑战"
+    "commands": [
+      "!挑战",
+      "!challenge",
+      "!pirate"
+    ],
+    "description": "原地召唤海盗集团进行PVE试炼",
+    "note": "**挑战设定**\n\n- 需附近不存在敌对势力\n- 当前有3级：ch1矿渣帮(新人)、ch2雇佣兵(推荐15+)、ch3巡洋舰&战列舰(推荐40+)\n- 海盗护盾机制请查看官方说明\n\n---\n\n**示例**\n\n`!挑战 ch1` 开启矿渣帮挑战\n\n`!挑战 ch3` 开启巡洋舰&战列舰挑战"
   },
   {
     "id": "combat-challenge-rewards",
     "section": "combat",
     "title": "查看挑战奖励",
-    "commands": ["!挑战 奖励列表", "!challenge rewardlist", "!pirate rewardlist"],
+    "commands": [
+      "!挑战 奖励列表",
+      "!challenge rewardlist",
+      "!pirate rewardlist"
+    ],
     "description": "查看各挑战的奖励内容列表",
     "note": null
   },
@@ -363,15 +505,19 @@
     "id": "combat-pvp",
     "section": "combat",
     "title": "PVP匹配",
-    "commands": ["!决斗 匹配"],
-    "description": "坐在飞船驾驶舱输入；第一人发起后2分钟内可登记；剩余PCU越少失分越多",
-    "note": "**小船模式（加 true 参数）**\n\n只有发起人可选择模式；参与者无法选择\n\n限制：最多 500方块 / 8个固定武器 / 不能装自动炮塔"
+    "commands": [
+      "!决斗 匹配"
+    ],
+    "description": "启动/加入全服实时PVP匹配",
+    "note": "**参与限制**\n\n- 需坐在飞船驾驶舱输入\n- 第一人发起后2分钟内允许其他人登记\n- 剩余PCU越少失分越多\n\n---\n\n**小船模式（加 true 参数）**\n\n只有发起人可选择模式；参与者无法选择\n\n限制：最多 500方块 / 8个固定武器 / 不能装自动炮塔"
   },
   {
     "id": "mission-info",
     "section": "mission",
     "title": "查看当前任务",
-    "commands": ["!任务 信息"],
+    "commands": [
+      "!任务 信息"
+    ],
     "description": "显示任务目标、介绍与当前进度",
     "note": null
   },
@@ -379,23 +525,29 @@
     "id": "mission-submit",
     "section": "mission",
     "title": "提交任务材料",
-    "commands": ["!任务 交付"],
-    "description": "为全服任务贡献材料；战斗类任务结算后自动推进",
-    "note": "**示例**\n\n`!任务 交付 钢板 500` 为当前任务贡献 500 块钢板"
+    "commands": [
+      "!任务 交付"
+    ],
+    "description": "为当前进行的阶段任务贡献个人材料",
+    "note": "**执行与结算**\n\n部分材料类即时统计；战斗类任务需要在结算后才会统一自动推进进度\n\n---\n\n**示例**\n\n`!任务 交付 钢板 500` 为当前任务贡献 500 块钢板"
   },
   {
     "id": "mission-rank",
     "section": "mission",
     "title": "查看贡献排名",
-    "commands": ["!任务 排名"],
-    "description": "显示当前任务参与者贡献度排名；贡献靠前可获额外奖励",
-    "note": null
+    "commands": [
+      "!任务 排名"
+    ],
+    "description": "调出当前全服协作任务的贡献排名榜",
+    "note": "**奖励提示**\n\n最终结算时，贡献度靠前的玩家可获得额外稀有奖励"
   },
   {
     "id": "finance-balance",
     "section": "finance",
     "title": "查询银行余额",
-    "commands": ["!银行 余额"],
+    "commands": [
+      "!银行 余额"
+    ],
     "description": "查询银行账户SC余额",
     "note": null
   },
@@ -403,7 +555,9 @@
     "id": "finance-deposit",
     "section": "finance",
     "title": "存入银行",
-    "commands": ["!银行 存入"],
+    "commands": [
+      "!银行 存入"
+    ],
     "description": "把背包里的SC（数字形式）存进银行",
     "note": null
   },
@@ -411,7 +565,9 @@
     "id": "finance-withdraw",
     "section": "finance",
     "title": "从银行取出（数字）",
-    "commands": ["!银行 取出"],
+    "commands": [
+      "!银行 取出"
+    ],
     "description": "取出到背包，以数字余额形式存在",
     "note": null
   },
@@ -419,7 +575,9 @@
     "id": "finance-cash",
     "section": "finance",
     "title": "取现（实体货币）",
-    "commands": ["!银行 取现"],
+    "commands": [
+      "!银行 取现"
+    ],
     "description": "变成实体太空货币放入背包",
     "note": null
   },
@@ -427,15 +585,19 @@
     "id": "finance-transfer",
     "section": "finance",
     "title": "转账给玩家",
-    "commands": ["!银行 转账"],
-    "description": "向指定玩家的银行账户转账；可用 `!info myinfo` 互相查询 SteamID",
-    "note": "**示例**\n\n`!银行 转账 76561198248299872 50000` 向该 SteamID 的玩家转账 50000 SC\n\n对方的 SteamID 可让其输入 `!info myinfo` 查询后告知你"
+    "commands": [
+      "!银行 转账"
+    ],
+    "description": "将银行里的星币转账至其他玩家账户",
+    "note": "**操作指引**\n\n需填写对方的SteamID，双方可使用 !info myinfo 命令查看并互换 ID\n\n---\n\n**示例**\n\n`!银行 转账 76561198248299872 50000` 向该 SteamID 的玩家转账 50000 SC\n\n对方的 SteamID 可让其输入 `!info myinfo` 查询后告知你"
   },
   {
     "id": "finance-activity-claim",
     "section": "finance",
     "title": "领取活跃奖励",
-    "commands": ["!活跃点 领取"],
+    "commands": [
+      "!活跃点 领取"
+    ],
     "description": "自动领取所有可领取的活跃奖励",
     "note": null
   },
@@ -443,7 +605,9 @@
     "id": "finance-activity-query",
     "section": "finance",
     "title": "查询活跃点",
-    "commands": ["!活跃点 查询"],
+    "commands": [
+      "!活跃点 查询"
+    ],
     "description": "查看今日活跃点数、可领奖励等信息",
     "note": null
   },
@@ -451,7 +615,9 @@
     "id": "finance-redeem",
     "section": "finance",
     "title": "兑换礼品码",
-    "commands": ["!兑换"],
+    "commands": [
+      "!兑换"
+    ],
     "description": "输入兑换码领取奖励",
     "note": null
   },
@@ -459,7 +625,9 @@
     "id": "info-myinfo",
     "section": "info",
     "title": "查自己的账号",
-    "commands": ["!info myinfo"],
+    "commands": [
+      "!info myinfo"
+    ],
     "description": "获取自己的SteamId、等级等基础信息",
     "note": null
   },
@@ -467,7 +635,9 @@
     "id": "info-worth",
     "section": "info",
     "title": "估算飞船价值",
-    "commands": ["!info worth"],
+    "commands": [
+      "!info worth"
+    ],
     "description": "对准网格，估算当前船的材料价值",
     "note": null
   },
@@ -475,7 +645,9 @@
     "id": "info-iteminfo",
     "section": "info",
     "title": "查物品名称",
-    "commands": ["!info 物品信息"],
+    "commands": [
+      "!info 物品信息"
+    ],
     "description": "查询市场/仓库系统支持的物品名称",
     "note": null
   },
@@ -483,7 +655,9 @@
     "id": "info-planet-gps",
     "section": "info",
     "title": "查星球坐标",
-    "commands": ["!info 星球坐标"],
+    "commands": [
+      "!info 星球坐标"
+    ],
     "description": "把世界所有星球坐标批量添加到你的GPS",
     "note": null
   },
@@ -491,7 +665,9 @@
     "id": "info-planet-ore",
     "section": "info",
     "title": "查星球矿物",
-    "commands": ["!info 星球矿物"],
+    "commands": [
+      "!info 星球矿物"
+    ],
     "description": "获取各星球矿物表和矿物厚度信息",
     "note": null
   },
@@ -499,7 +675,9 @@
     "id": "info-ore-scan",
     "section": "info",
     "title": "扫描周围矿物",
-    "commands": ["!info 矿物探测"],
+    "commands": [
+      "!info 矿物探测"
+    ],
     "description": "扫描周围小行星矿物分布，结果推送到GPS",
     "note": null
   },
@@ -507,7 +685,9 @@
     "id": "grid-toship",
     "section": "grid",
     "title": "转换为飞船",
-    "commands": ["!toship"],
+    "commands": [
+      "!toship"
+    ],
     "description": "强制转换为动态飞船模式",
     "note": null
   },
@@ -515,7 +695,9 @@
     "id": "grid-tostatic",
     "section": "grid",
     "title": "转换为空间站",
-    "commands": ["!tostatic"],
+    "commands": [
+      "!tostatic"
+    ],
     "description": "强制转换为静态空间站模式",
     "note": null
   },
@@ -523,39 +705,49 @@
     "id": "grid-liftoff",
     "section": "grid",
     "title": "让飞船升空",
-    "commands": ["!网格 升空"],
-    "description": "让网格离开地面。一般为网格嵌入体素时使用；**升空后保持空间站状态，不会坠毁**",
-    "note": null
+    "commands": [
+      "!网格 升空"
+    ],
+    "description": "使嵌入地形的网格离开地表",
+    "note": "**执行结果**\n\n主要用于挖出嵌进体素的网格；**升空后会保持空间站状态，不会坠毁**"
   },
   {
     "id": "grid-land",
     "section": "grid",
     "title": "让飞船入地",
-    "commands": ["!网格 降落"],
-    "description": "将网格嵌入星球表面安置基地；高度范围 (0, 100]，越高露出地面越多；可多次调整",
-    "note": "**使用技巧**\n\n先试较大高度（如 80），确认效果后重复发送用更小的值来微调"
+    "commands": [
+      "!网格 降落"
+    ],
+    "description": "将浮空网格嵌入地表并转换为空间站",
+    "note": "**参数效果**\n\n高度参数范围为 (0, 100]，数值越高露出地面的部分越多；如果觉得深度不合适，可以多次重复执行调整\n\n---\n\n**使用技巧**\n\n先试较大高度（如 80），确认效果后重复发送用更小的值来微调"
   },
   {
     "id": "grid-positions",
     "section": "grid",
     "title": "查看所有网格位置",
-    "commands": ["!网格位置"],
-    "description": "列出你拥有的所有网格坐标",
+    "commands": [
+      "!网格位置"
+    ],
+    "description": "列出你拥有的所有网格坐标，通常用于找船",
     "note": null
   },
   {
     "id": "list-create",
     "section": "list",
     "title": "创建物品清单",
-    "commands": ["!清单 创建"],
-    "description": "规则格式：铁矿=1000 钢板=200 money=50000；规则字符串需用英文引号包裹",
-    "note": "**完整示例**\n\n`!清单 创建 料单 \"铁矿=1000 钢板=200 money=50000\"`\n\n太空货币用 money 表示，多个条目空格分隔"
+    "commands": [
+      "!清单 创建"
+    ],
+    "description": "创建一份包含各种材料与资产的组合清单",
+    "note": "**语法格式**\n\n必须使用 物品=数量 结构，使用英语双引号包裹全部内容。例：\"铁矿=1000 钢板=200 money=50000\"\n\n---\n\n**完整示例**\n\n`!清单 创建 料单 \"铁矿=1000 钢板=200 money=50000\"`\n\n太空货币用 money 表示，多个条目空格分隔"
   },
   {
     "id": "list-from-template",
     "section": "list",
     "title": "从模板创建清单",
-    "commands": ["!清单 从模板创建"],
+    "commands": [
+      "!清单 从模板创建"
+    ],
     "description": "自动索引模板所需全部材料，生成对应清单",
     "note": "**示例**\n\n`!清单 从模板创建 高速矿船 矿船料单` 根据「高速矿船」模板自动生成名为「矿船料单」的材料清单"
   },
@@ -563,7 +755,9 @@
     "id": "list-list",
     "section": "list",
     "title": "查看所有清单",
-    "commands": ["!清单 列表"],
+    "commands": [
+      "!清单 列表"
+    ],
     "description": "列出你的所有清单",
     "note": null
   },
@@ -571,7 +765,9 @@
     "id": "list-delete",
     "section": "list",
     "title": "删除清单",
-    "commands": ["!清单 删除"],
+    "commands": [
+      "!清单 删除"
+    ],
     "description": "删除指定清单",
     "note": "**示例**\n\n先用 `!清单 列表` 确认名称，再 `!清单 删除 料单` 删除名为「料单」的清单"
   },
@@ -579,23 +775,29 @@
     "id": "contract-create",
     "section": "list",
     "title": "创建合同",
-    "commands": ["!合同 创建"],
-    "description": "清单 A 是你**付出**的，B 是你**收取**的；加 true 参数则公开。物品需在仓库，sc 需在银行",
-    "note": "**使用流程**\n\n① `!清单 创建 我给 \"铁矿=5000\"`\n\n② `!清单 创建 我要 \"money=500000\"`\n\n③ `!合同 创建 我给 我要`（私密合同）\n\n④ 把合同 ID 发给对方 → 对方输入 `!合同 接受 [合同ID]`"
+    "commands": [
+      "!合同 创建"
+    ],
+    "description": "发起一份多对多物品与资金的综合交易合同",
+    "note": "**设计逻辑与限制**\n\n- 机制：你需要付出的为清单A，你索要的为清单B\n- 参数：加 true 参数可将合同全局公开展示\n- 约束：你准备付出的物理物品必须在「仓库」中，SC资金必须在「银行」余额中\n\n---\n\n**使用流程**\n\n① `!清单 创建 我给 \"铁矿=5000\"`\n\n② `!清单 创建 我要 \"money=500000\"`\n\n③ `!合同 创建 我给 我要`（私密合同）\n\n④ 把合同 ID 发给对方 → 对方输入 `!合同 接受 [合同ID]`"
   },
   {
     "id": "contract-visibility",
     "section": "list",
     "title": "公开/私密合同",
-    "commands": ["!合同 公开"],
-    "description": "true = 公开，可被所有人搜索；false = 私密，仅凭 ID 交易",
-    "note": "**示例**\n\n先用 `!合同 我的列表` 找到合同 ID，再\n\n`!合同 公开 abc123 true` 设为公开\n\n`!合同 公开 abc123 false` 改回私密"
+    "commands": [
+      "!合同 公开"
+    ],
+    "description": "调整现有合同是否接受全服检索",
+    "note": "**参数说明**\n\ntrue = 设为公开，将出现在公开的合同列表；false = 设为私密，只能通过复制 ID 发给指定玩家进行私下交易\n\n---\n\n**示例**\n\n先用 `!合同 我的列表` 找到合同 ID，再\n\n`!合同 公开 abc123 true` 设为公开\n\n`!合同 公开 abc123 false` 改回私密"
   },
   {
     "id": "contract-list",
     "section": "list",
     "title": "查看合同列表",
-    "commands": ["!合同 列表"],
+    "commands": [
+      "!合同 列表"
+    ],
     "description": "查看你的合同和其他玩家的公开合同",
     "note": null
   },
@@ -603,7 +805,9 @@
     "id": "contract-mylist",
     "section": "list",
     "title": "查看我的合同",
-    "commands": ["!合同 我的列表"],
+    "commands": [
+      "!合同 我的列表"
+    ],
     "description": "仅显示你自己创建的全部合同",
     "note": null
   },
@@ -611,39 +815,57 @@
     "id": "contract-accept",
     "section": "list",
     "title": "接受合同",
-    "commands": ["!合同 接受"],
-    "description": "接受他人合同完成交换；需确保仓库和银行余额满足合同要求",
-    "note": "**示例**\n\n`!合同 接受 abc123` 接受 ID 为「abc123」的合同（ID 由对方告知，或从 `!合同 列表` 中查询）"
+    "commands": [
+      "!合同 接受"
+    ],
+    "description": "同意并成交他人发布的一份交易合同",
+    "note": "**交付前提**\n\n接受者自身必须确保自己「仓库」中的物资和「银行」中的余额能够全额满足该合同中的需求（即原发起人的索要项）\n\n---\n\n**示例**\n\n`!合同 接受 abc123` 接受 ID 为「abc123」的合同（ID 由对方告知，或从 `!合同 列表` 中查询）"
   },
   {
     "id": "contract-delete",
     "section": "list",
     "title": "删除合同",
-    "commands": ["!合同 删除"],
-    "description": "删除你创建的合同；用 `!合同 我的列表` 查询合同 ID",
+    "commands": [
+      "!合同 删除"
+    ],
+    "description": "删除你创建的合同",
     "note": "**示例**\n\n先用 `!合同 我的列表` 找到合同 ID，再 `!合同 删除 abc123` 删除"
   },
   {
     "id": "lcd-type",
     "section": "lcd",
     "title": "设置显示类型",
-    "commands": ["@@矿石", "@@零件", "@@矿锭", "@@弹药", "@@气体", "@@精炼"],
-    "description": "将任意关键字写入 LCD 方块的**自定义数据**（非聊天框）；服务器自动按类型生成物品数量列表",
-    "note": null
+    "commands": [
+      "@@矿石",
+      "@@零件",
+      "@@矿锭",
+      "@@弹药",
+      "@@气体",
+      "@@精炼"
+    ],
+    "description": "通过方块扩展数据面板为 LCD 赋予监控类型",
+    "note": "**书写位置**\n\n注意：不要在聊天框输入此指令！请打开控制面板 -> 找到目标 LCD -> 填入 **自定义数据(Custom Data)** 文本框中。服务器系统会自动捕捉该特殊指令并使这块屏幕刷新对应的实时物品列表。每块 LCD 只能设置一个监控类型。"
   },
   {
     "id": "lcd-params",
     "section": "lcd",
     "title": "设置可选参数",
-    "commands": ["每页条目=N", "当前页=N", "分隔符=X", "自动换页=true"],
-    "description": "追加在关键字后，以空格分隔；默认每页 10 条、第 0 页、不自动换页",
-    "note": "**完整示例**\n\n在 LCD 自定义数据中写入：\n\n`@@零件 每页条目=5 当前页=1 分隔符=-`\n\n（当前页从 0 开始，第 0 页为第一页）"
+    "commands": [
+      "每页条目=N",
+      "当前页=N",
+      "分隔符=X",
+      "自动换页=true"
+    ],
+    "description": "向处于显示工作中的 LCD 面板附加翻页、排版等特殊规则",
+    "note": "**书写方式**\n\n使用空格排布并附加在主要监控类型关键字之后。系统默认机制为：每页展示 10 条结果、从 第 0 页 起始、不会自动翻页显示\n\n---\n\n**完整示例**\n\n在 LCD 自定义数据中写入：\n\n`@@零件 每页条目=5 当前页=1 分隔符=-`\n\n（当前页从 0 开始，第 0 页为第一页）"
   },
   {
     "id": "lcd-refresh",
     "section": "lcd",
     "title": "手动刷新显示",
-    "commands": ["!lcd"],
+    "commands": [
+      "!lcd"
+    ],
     "description": "在**聊天框**中对准目标网格输入，立即刷新该网格所有 LCD 面板的数据",
     "note": null
   },
@@ -651,15 +873,19 @@
     "id": "safe-summon",
     "section": "safe",
     "title": "召唤安全区",
-    "commands": ["!安全区 召唤"],
-    "description": "以玩家为中心创建200m安全区；需精英工程师凭证，凭证到期自动删除",
-    "note": "**前置条件与限制**\n\n- 周围已有安全区时无法创建（请先删除旧的再重建）\n- 周围有敌人时无法创建\n- 如需白名单功能：创建前须先加入一个阵营（可自建）\n- 已有此指令创建的安全区时，旧的会被自动替换"
+    "commands": [
+      "!安全区 召唤"
+    ],
+    "description": "在当前人物坐标固定展开个人安全立场保护罩",
+    "note": "**生效规则与条件限制**\n\n- 范围以玩家所在坐标为中心200m包裹（非网格为中心），保护立场到期后会自动降级并删除\n- 需要绑定精英工程师凭证\n- 若目标部署处原本已经存在保护罩，或者附近被侦测到存在敌对势力玩家网格则无法展开部署\n- 如果后期需要管理白名单成员进出：必须在建立前自行组建一个派系阵营（Faction）后再来执行此指令\n\n---\n\n**前置条件与限制**\n\n- 周围已有安全区时无法创建（请先删除旧的再重建）\n- 周围有敌人时无法创建\n- 如需白名单功能：创建前须先加入一个阵营（可自建）\n- 已有此指令创建的安全区时，旧的会被自动替换"
   },
   {
     "id": "safe-delete",
     "section": "safe",
     "title": "删除安全区",
-    "commands": ["!安全区 删除"],
+    "commands": [
+      "!安全区 删除"
+    ],
     "description": "手动删除此指令创建的安全区",
     "note": null
   }
