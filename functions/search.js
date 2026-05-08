@@ -86,9 +86,9 @@ export async function onRequestGet({ request, env }) {
     }
 
     // 嵌入查询词（使用与 build.js 相同的模型，确保向量空间一致）
-    // qwen3-embedding 支持非对称检索：queries 字段专门用于搜索词，精度更高
-    const aiInput = embData.model.includes('qwen3-embedding') ? { queries: [q] } : { text: [q] };
-    const aiResult = await env.AI.run(embData.model, aiInput);
+    // qwen3-embedding 的 queries/documents 非对称接口对短文本技术命令效果存疑，当前统一用 text
+    // 如需启用非对称模式可改为：embData.model.includes('qwen3-embedding') ? { queries: [q] } : { text: [q] }
+    const aiResult = await env.AI.run(embData.model, { text: [q] });
     const queryEmb = new Float32Array(aiResult.data[0]);
 
     // 计算余弦相似度并排序

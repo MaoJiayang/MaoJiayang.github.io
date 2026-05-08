@@ -20,8 +20,8 @@ const { readFileSync, writeFileSync } = require('fs');
 
 const ACCOUNT_ID = process.env.CF_ACCOUNT_ID;
 const API_TOKEN = process.env.CF_API_TOKEN;
-const MODEL = '@cf/baai/bge-m3';
-const BATCH_SIZE = 10;      // CF AI API 单次最多支持的文本数
+const MODEL = '@cf/qwen/qwen3-embedding-0.6b';
+const BATCH_SIZE = 20;      // CF AI API 单次最多支持的文本数
 const BATCH_DELAY_MS = 250; // 批次之间的延迟，避免触发速率限制
 
 if (!ACCOUNT_ID || !API_TOKEN) {
@@ -72,7 +72,9 @@ async function embedBatch(texts) {
             'Authorization': `Bearer ${API_TOKEN}`,
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(MODEL.includes('qwen3-embedding') ? { documents: texts } : { text: texts }),
+        // qwen3-embedding 支持 documents/queries 非对称接口，但对短文本技术命令效果存疑；
+        // 当前统一用 text 字段，如需启用非对称模式可改为 { documents: texts }
+        body: JSON.stringify({ text: texts }),
     });
 
     if (!resp.ok) {
