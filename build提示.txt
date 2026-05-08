@@ -1,0 +1,1 @@
+日后改 commands.json 后，重新运行 node build.js 更新 embeddings.json 并提交即可

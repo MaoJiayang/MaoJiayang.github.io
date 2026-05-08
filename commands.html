@@ -89,12 +89,30 @@ details.note .note-body code{font-family:var(--font-mono);font-size:11px;backgro
   .sec-h { flex-wrap: wrap; }
   .sec-s { margin-left: 0; margin-top: 4px; width: 100%; text-align: center; }
 }
+/* 语义搜索面板 */
+#sem-panel{margin-bottom:1rem}
+.sem-card{border:1px solid var(--border);border-radius:4px;overflow:hidden;background:var(--bg-panel)}
+.sem-card-h{display:flex;align-items:center;gap:6px;padding:7px 14px;background:var(--accent-bg);border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--accent)}
+.sem-card-h button{margin-left:auto;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;line-height:1;padding:0;opacity:0.6}
+.sem-card-h button:hover{opacity:1}
+.sem-item{display:flex;flex-direction:column;gap:3px;padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;font-size:13px}
+.sem-item:last-child{border-bottom:none}
+.sem-item:hover{background:var(--bg-main)}
+.sem-item-title{font-weight:600;color:var(--text-main);display:flex;align-items:center;gap:6px}
+.sem-item-sec{font-size:11px;color:var(--text-muted);background:var(--bg-main);padding:1px 5px;border-radius:3px;border:1px solid var(--border)}
+.sem-item-cmd{font-family:var(--font-mono);font-size:11px;color:var(--accent)}
+.sem-item-desc{font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.search-wrap.sem-loading .search-ic{animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:translateY(-50%) rotate(360deg)}}
+tr.sem-highlight{animation:row-flash 2s ease}
+@keyframes row-flash{0%,100%{background:transparent}15%{background:var(--accent-bg)}}
 </style>
 <div class="wrap">
 <div class="search-wrap">
 <svg class="search-ic" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z" fill="currentColor"/></svg>
 <input id="q" type="text" placeholder="搜索想做的事或指令关键词…" autocomplete="off">
 </div>
+<div id="sem-panel" style="display:none"></div>
 <div class="ftabs" id="tabs"></div>
 <div style="font-size:12.5px;color:var(--text-muted);margin-top:-0.5rem;margin-bottom:1.5rem;padding:10px 14px;background:var(--bg-main);border-left:3px solid var(--accent);border-radius:0 4px 4px 0;line-height:1.6;">
   <div style="margin-bottom:6px;color:var(--text-main);">ℹ️ <strong>终端输入防踩坑指南：</strong></div>
@@ -199,7 +217,7 @@ function buildRow(item) {
     c3Html += `<details class="note"><summary>${esc(extractSummary(item.note))}</summary><div class="note-body">${renderMd(noteBody(item.note))}</div></details>`;
   }
 
-  return `<tr class="row"><td class="c1">${esc(item.title)}</td><td class="c2">${c2Html}</td><td class="c3">${c3Html}</td></tr>`;
+  return `<tr class="row" data-id="${esc(item.id)}"><td class="c1">${esc(item.title)}</td><td class="c2">${c2Html}</td><td class="c3">${c3Html}</td></tr>`;
 }
 
 // 构建整个 section div
@@ -262,7 +280,10 @@ function initSearch() {
   const tabs = document.getElementById('tabs');
   const nores = document.getElementById('nores');
   const q = document.getElementById('q');
+  const semPanel = document.getElementById('sem-panel');
+  const searchWrap = document.querySelector('.search-wrap');
   let cur = 'all';
+  let semTimer = null;
 
   // 构建筛选 tab
   const cats = [{id:'all',label:'全部'}, ...SECTION_ORDER.map(s => ({id:s,label:SECTION_META[s].label}))];
@@ -300,8 +321,78 @@ function initSearch() {
     nores.style.display = any ? 'none' : 'block';
   }
 
-  q.addEventListener('input', filter);
+  // 渲染语义搜索结果面板
+  function renderSemPanel(results) {
+    if (!results || results.length === 0) {
+      semPanel.style.display = 'none';
+      return;
+    }
+    const items = results.slice(0, 5).map(r => {
+      const secLabel = SECTION_META[r.section] ? SECTION_META[r.section].label : r.section;
+      const cmdStr = r.commands.slice(0, 2).map(c => `<code class="cmd">${esc(c)}</code>`).join(' ');
+      const rawDesc = r.description ? r.description.replace(/\*\*(.*?)\*\*/g, '$1').replace(/`([^`]+)`/g, '$1') : '';
+      const descStr = rawDesc.length > 65 ? esc(rawDesc.substring(0, 65)) + '…' : esc(rawDesc);
+      return `<div class="sem-item" data-id="${esc(r.id)}">
+        <div class="sem-item-title">${esc(r.title)}<span class="sem-item-sec">${secLabel}</span></div>
+        <div class="sem-item-cmd">${cmdStr}</div>
+        ${descStr ? `<div class="sem-item-desc">${descStr}</div>` : ''}
+      </div>`;
+    }).join('');
+
+    semPanel.innerHTML = `<div class="sem-card">
+      <div class="sem-card-h">✨ 语义相关 <span style="font-weight:normal;opacity:0.7">（可能有帮助）</span>
+        <button id="sem-close" title="关闭">×</button>
+      </div>${items}</div>`;
+    semPanel.style.display = 'block';
+
+    // 关闭按钮
+    document.getElementById('sem-close').onclick = () => { semPanel.style.display = 'none'; };
+
+    // 点击条目高亮滚动
+    semPanel.querySelectorAll('.sem-item').forEach(el => {
+      el.addEventListener('click', () => scrollToItem(el.dataset.id));
+    });
+  }
+
+  // 语义搜索（600ms 防抖）
+  function scheduleSemanticSearch(val) {
+    clearTimeout(semTimer);
+    if (!val) {
+      semPanel.style.display = 'none';
+      searchWrap.classList.remove('sem-loading');
+      return;
+    }
+    semTimer = setTimeout(async () => {
+      searchWrap.classList.add('sem-loading');
+      try {
+        const resp = await fetch(`/search?q=${encodeURIComponent(val)}&n=5`);
+        if (resp.ok) renderSemPanel(await resp.json());
+      } catch (_) {
+        // 静默忽略，不影响关键词搜索
+      } finally {
+        searchWrap.classList.remove('sem-loading');
+      }
+    }, 600);
+  }
+
+  q.addEventListener('input', () => {
+    filter();
+    scheduleSemanticSearch(q.value.trim());
+  });
   filter();
+}
+
+// 滚动到指定指令行并短暂高亮
+function scrollToItem(id) {
+  const row = document.querySelector(`tr.row[data-id="${id}"]`);
+  if (!row) return;
+  // 确保所在 section 可见
+  const sec = row.closest('.sec');
+  if (sec) sec.classList.remove('hide');
+  row.classList.remove('hide');
+  row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  row.classList.add('sem-highlight');
+  setTimeout(() => row.classList.remove('sem-highlight'), 2000);
 }
 
 // ---- 入口：fetch JSON → 渲染 → 初始化搜索 ----
