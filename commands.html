@@ -42,7 +42,7 @@ body{font-family:var(--font-sans);background:var(--bg-main);color:var(--text-mai
 .search-wrap{position:relative;margin-bottom:1rem}
 .search-ic{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--text-muted);pointer-events:none;transition:color 0.2s;flex-shrink:0}
 .search-wrap:focus-within .search-ic{color:var(--accent)}
-#q{width:100%;padding:10px 14px 10px 38px;font-size:14px;border:1px solid var(--border);border-radius:4px;background:var(--bg-main);color:var(--text-main);margin-bottom:0;font-family:inherit;transition:border-color 0.2s,box-shadow 0.2s,background 0.2s;animation:search-pulse 1.8s ease 0.5s 1}
+#q{width:100%;padding:10px 14px 10px 38px;font-size:14px;border:1px solid var(--border);border-radius:4px;background:var(--bg-main);color:var(--text-main);margin-bottom:0;font-family:inherit;transition:border-color 0.2s,box-shadow 0.2s,background 0.2s;animation:search-pulse 2s ease 0.5s 3}
 #q:focus{outline:none;border-color:var(--border-focus);background:var(--bg-panel);box-shadow:0 0 0 3px rgba(88,166,255,0.1)}
 @media (prefers-reduced-motion:reduce){#q{animation:none}}
 .ftabs{display:grid;grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:8px;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px dashed var(--border)}
@@ -298,8 +298,64 @@ cats.forEach(c=>{
   b.onclick=()=>{cur=c.id;document.querySelectorAll('.ftab').forEach(x=>x.classList.toggle('on',x.dataset.id===c.id));filter();};
   tabs.appendChild(b);
 });
+// 同义词扩展表：把用户常用说法映射到内容里实际存在的词
+const syn={
+  // 飞船存取
+  '买船':['购买'],'购船':['购买'],'卖船':['出售'],
+  '存船':['保存','船坞'],'取船':['加载'],'放船':['加载'],
+  '造船':['建造','船厂'],'建船':['建造','船厂'],
+  '拆船':['回收','拆解'],'修船':['修复','自动建造'],
+  // 蓝图/模板
+  '蓝图':['模板'],'设计图':['模板'],'图纸':['模板'],'设计':['模板'],
+  // 维修/焊接
+  '维修':['修复','自动建造'],'焊接':['自动建造'],'修理':['修复'],
+  '自动修':['自动建造'],'自修':['自动建造'],
+  // 财务
+  '存钱':['存入','银行'],'充值':['存入','银行'],
+  '取钱':['取出','银行'],'提现':['取现'],
+  '转钱':['转账'],'汇款':['转账'],'查余额':['余额'],
+  '赚钱':['活跃','任务'],'领奖':['活跃点','领取'],
+  '兑换码':['兑换'],'礼品码':['兑换'],
+  '查账号':['myinfo'],'我的信息':['myinfo'],'查id':['myinfo','steamid'],
+  // 物资
+  '材料':['物资','仓库'],'物品':['仓库','物资'],
+  '补给':['仓库','取出'],'搬运':['仓库'],
+  '清仓':['存入全部'],'一键存':['存入全部'],
+  '卖矿':['出售'],'卖材料':['出售'],'卖东西':['出售','市场'],
+  // 战斗
+  '打架':['战斗','决斗'],'对战':['决斗'],'打人':['决斗'],
+  '打怪':['挑战'],'刷怪':['挑战'],'刷本':['挑战'],'海盗':['挑战'],
+  'pvp':['决斗'],'pve':['挑战'],'打副本':['挑战'],'竞技':['决斗'],
+  // 信息
+  '坐标':['星球坐标'],'找矿':['矿物探测'],
+  '探矿':['矿物探测'],'扫矿':['矿物探测'],
+  '挖矿':['矿物探测'],'采矿':['矿物探测'],
+  '地图':['星球坐标'],'导航':['星球坐标'],
+  '矿':['矿物','矿石'],'矿产':['矿物','矿石'],
+  '估价':['估算','价值'],'价格':['价值','估算'],
+  // 基地/网格
+  '基地':['空间站','降落'],'埋地':['降落'],'地下':['降落'],
+  '入地':['降落'],'起飞':['升空'],'着陆':['降落'],
+  '冻结':['空间站'],'静态':['空间站'],'动态':['飞船','toship'],
+  '卡地':['升空'],'嵌地':['升空'],'陷地':['升空'],'嵌体素':['升空'],
+  '体素':['升空','降落'],'钻地':['降落','升空'],
+  '网格位置':['网格','坐标'],'找船':['网格位置','列表'],
+  // LCD
+  '屏幕':['lcd'],'显示器':['lcd'],'面板':['lcd'],
+  '自定义数据':['lcd'],'注入':['lcd'],
+  // 清单合同
+  '交易':['合同','市场'],'换货':['合同'],'协议':['合同'],
+  '清单':['列表','清单'],'料单':['清单','模板'],
+  // 安全/精英
+  '保护':['安全区'],'安全':['安全区'],
+  '精英':['安全区','自动建造'],'vip':['安全区','精英'],
+};
+// 把单个词扩展为它自身 + 所有同义词
+function expand(t){return syn[t]?[t,...syn[t]]:[t];}
 function filter(){
   const v=q.value.toLowerCase().trim();
+  // 空格分词，支持多词 AND 匹配（如"银行 转账"）
+  const terms=v?v.split(/\s+/).filter(Boolean):[];
   let any=false;
   secs.forEach(sec=>{
     const id=sec.dataset.sec;
@@ -309,7 +365,8 @@ function filter(){
     let vis=false;
     rows.forEach(tr=>{
       const txt=tr.textContent.toLowerCase();
-      const m=!v||txt.includes(v);
+      // 每个词的同义词组内 OR，词与词之间 AND
+      const m=!terms.length||terms.every(t=>expand(t).some(k=>txt.includes(k)));
       tr.classList.toggle('hide',!m);
       if(m)vis=true;
     });
