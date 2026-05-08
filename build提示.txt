@@ -1,1 +1,28 @@
-日后改 commands.json 后，重新运行 node build.js 更新 embeddings.json 并提交即可
+## 本地预览
+
+python -m http.server 5500
+# 打开 http://localhost:5500/commands.html
+# 关键词搜索/渲染正常；语义搜索面板本地静默忽略（需部署才生效）
+
+## 重新生成 Embedding（更新 commands.json 后运行）
+
+# PowerShell:
+$env:CF_ACCOUNT_ID="你的账号ID"   # CF Dashboard 右下角
+$env:CF_API_TOKEN="你的Token"     # My Profile → API Tokens → Workers AI 权限
+node build.js
+# 生成 embeddings.json，提交后自动部署
+
+## 文件说明
+
+commands.json       指令数据，日常维护的入口
+embeddings.json     由 build.js 生成，勿手动编辑
+build.js            生成脚本，需要上方两个环境变量
+functions/search.js CF Pages Function，随仓库自动部署
+commands.html       前端页面，fetch commands.json 动态渲染
+
+## CF Dashboard 配置（首次部署前）
+
+Pages → 你的项目 → Settings → Functions → AI bindings
+  Type: Workers AI
+  Name: AI
+  Value: Workers AI Catalog

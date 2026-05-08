@@ -89,8 +89,8 @@ details.note .note-body code{font-family:var(--font-mono);font-size:11px;backgro
   .sec-h { flex-wrap: wrap; }
   .sec-s { margin-left: 0; margin-top: 4px; width: 100%; text-align: center; }
 }
-/* 语义搜索面板 */
-#sem-panel{margin-bottom:1rem}
+/* 智能联想面板（悬浮） */
+#sem-panel{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:100;border-radius:4px;box-shadow:0 6px 16px rgba(0,0,0,0.1);background:var(--bg-panel);display:none;}
 .sem-card{border:1px solid var(--border);border-radius:4px;overflow:hidden;background:var(--bg-panel)}
 .sem-card-h{display:flex;align-items:center;gap:6px;padding:7px 14px;background:var(--accent-bg);border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--accent)}
 .sem-card-h button{margin-left:auto;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;line-height:1;padding:0;opacity:0.6}
@@ -102,17 +102,18 @@ details.note .note-body code{font-family:var(--font-mono);font-size:11px;backgro
 .sem-item-sec{font-size:11px;color:var(--text-muted);background:var(--bg-main);padding:1px 5px;border-radius:3px;border:1px solid var(--border)}
 .sem-item-cmd{font-family:var(--font-mono);font-size:11px;color:var(--accent)}
 .sem-item-desc{font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.search-wrap.sem-loading .search-ic{animation:spin 0.8s linear infinite}
-@keyframes spin{to{transform:translateY(-50%) rotate(360deg)}}
+.search-wrap::after{content:'';position:absolute;bottom:0;left:0;height:2px;background:var(--accent);width:0%;opacity:0;transition:opacity 0.2s;border-radius:0 0 4px 4px}
+.search-wrap.sem-loading::after{opacity:1;animation:loading-bar 1.5s infinite ease-in-out}
+@keyframes loading-bar{0%{left:0;width:0%}50%{left:25%;width:50%}100%{left:100%;width:0%}}
 tr.sem-highlight{animation:row-flash 2s ease}
 @keyframes row-flash{0%,100%{background:transparent}15%{background:var(--accent-bg)}}
 </style>
 <div class="wrap">
-<div class="search-wrap">
+<div class="search-wrap" id="search-wrap-container">
 <svg class="search-ic" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z" fill="currentColor"/></svg>
 <input id="q" type="text" placeholder="搜索想做的事或指令关键词…" autocomplete="off">
+<div id="sem-panel"></div>
 </div>
-<div id="sem-panel" style="display:none"></div>
 <div class="ftabs" id="tabs"></div>
 <div style="font-size:12.5px;color:var(--text-muted);margin-top:-0.5rem;margin-bottom:1.5rem;padding:10px 14px;background:var(--bg-main);border-left:3px solid var(--accent);border-radius:0 4px 4px 0;line-height:1.6;">
   <div style="margin-bottom:6px;color:var(--text-main);">ℹ️ <strong>终端输入防踩坑指南：</strong></div>
@@ -281,9 +282,26 @@ function initSearch() {
   const nores = document.getElementById('nores');
   const q = document.getElementById('q');
   const semPanel = document.getElementById('sem-panel');
-  const searchWrap = document.querySelector('.search-wrap');
+  const searchWrap = document.getElementById('search-wrap-container');
   let cur = 'all';
   let semTimer = null;
+
+  // 缓存 DOM 节点以优化搜索性能
+  const cachedSecs = Array.from(document.querySelectorAll('.sec')).map(sec => ({
+    el: sec,
+    id: sec.dataset.sec,
+    rows: Array.from(sec.querySelectorAll('tr.row')).map(tr => ({
+      el: tr,
+      text: tr.textContent.toLowerCase()
+    }))
+  }));
+
+  // 点击外部隐藏智能联想面板
+  document.addEventListener('click', (e) => {
+    if (!searchWrap.contains(e.target)) {
+      semPanel.style.display = 'none';
+    }
+  });
 
   // 构建筛选 tab
   const cats = [{id:'all',label:'全部'}, ...SECTION_ORDER.map(s => ({id:s,label:SECTION_META[s].label}))];
@@ -304,18 +322,19 @@ function initSearch() {
     const v = q.value.toLowerCase().trim();
     const terms = v ? v.split(/\s+/).filter(Boolean) : [];
     let any = false;
-    document.querySelectorAll('.sec').forEach(sec => {
-      const id = sec.dataset.sec;
-      if (cur !== 'all' && cur !== id) { sec.classList.add('hide'); return; }
-      const rows = sec.querySelectorAll('tr.row');
+    
+    cachedSecs.forEach(secObj => {
+      if (cur !== 'all' && cur !== secObj.id) { 
+        secObj.el.classList.add('hide'); 
+        return; 
+      }
       let vis = false;
-      rows.forEach(tr => {
-        const txt = tr.textContent.toLowerCase();
-        const m = !terms.length || terms.every(t => expand(t).some(k => txt.includes(k)));
-        tr.classList.toggle('hide', !m);
+      secObj.rows.forEach(rowObj => {
+        const m = !terms.length || terms.every(t => expand(t).some(k => rowObj.text.includes(k)));
+        rowObj.el.classList.toggle('hide', !m);
         if (m) vis = true;
       });
-      sec.classList.toggle('hide', !vis);
+      secObj.el.classList.toggle('hide', !vis);
       if (vis) any = true;
     });
     nores.style.display = any ? 'none' : 'block';
@@ -340,13 +359,16 @@ function initSearch() {
     }).join('');
 
     semPanel.innerHTML = `<div class="sem-card">
-      <div class="sem-card-h">✨ 语义相关 <span style="font-weight:normal;opacity:0.7">（可能有帮助）</span>
+      <div class="sem-card-h">✨ 智能联想 <span style="font-weight:normal;opacity:0.7">（基于输入匹配）</span>
         <button id="sem-close" title="关闭">×</button>
       </div>${items}</div>`;
     semPanel.style.display = 'block';
 
     // 关闭按钮
-    document.getElementById('sem-close').onclick = () => { semPanel.style.display = 'none'; };
+    document.getElementById('sem-close').onclick = (e) => { 
+      e.stopPropagation();
+      semPanel.style.display = 'none'; 
+    };
 
     // 点击条目高亮滚动
     semPanel.querySelectorAll('.sem-item').forEach(el => {
