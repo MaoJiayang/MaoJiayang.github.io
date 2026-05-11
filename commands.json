@@ -370,7 +370,7 @@
       "!sell",
       "!收购 提交"
     ],
-    "description": "将物品出售给服务器",
+    "description": "将物品出售给服务器，是获得太空货币的主要手段之一",
     "note": "**权限限制**\n\n玩家等级越高，每日可售额度越高\n\n---\n\n**示例**\n\n`!出售 钢板 100` 向服务器出售 100 块钢板"
   },
   {
@@ -678,7 +678,17 @@
     "commands": [
       "!info 矿物探测"
     ],
-    "description": "扫描周围小行星矿物分布，结果推送到GPS",
+    "description": "扫描周围小行星矿物分布，结果推送到GPS。",
+    "note": null
+  },
+  {
+    "id": "info-vote-restart",
+    "section": "info",
+    "title": "投票重启",
+    "commands": [
+      "!投票重启"
+    ],
+    "description": "当服务器出现卡顿或异常时，玩家可以发起或加入投票重启。当投票重启人数达到当前在线人数的一半以上时，服务器将自动重启",
     "note": null
   },
   {
@@ -699,7 +709,7 @@
       "!tostatic"
     ],
     "description": "强制转换为静态空间站模式",
-    "note": null
+    "note": "**小贴士**\n\n当飞船失控时，可以使用该指令来停住飞船"
   },
   {
     "id": "grid-liftoff",
@@ -728,7 +738,7 @@
     "commands": [
       "!网格位置"
     ],
-    "description": "列出你拥有的所有网格坐标，通常用于找船",
+    "description": "列出你拥有的所有网格坐标，结果推送到GPS列表，通常用于找船",
     "note": null
   },
   {
@@ -886,7 +896,7 @@
     "commands": [
       "!安全区 删除"
     ],
-    "description": "手动删除此指令创建的安全区",
+    "description": "手动删除指令创建的安全区",
     "note": null
   }
 ]
