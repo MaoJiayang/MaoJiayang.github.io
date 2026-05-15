@@ -1,0 +1,224 @@
+<style>
+:root {
+  --theme-bg: #f9f9fb;
+  --card-bg: #ffffff;
+  --text-main: #333333;
+  --text-muted: #666666;
+  --text-light: #999999;
+  --accent-color: #1a73e8;
+  --border-light: #eaeaea;
+  --tag-bg: #f1f3f4;
+}
+body { background: var(--theme-bg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+.wrap { padding: 1.5rem; max-width: 600px; margin: 0 auto; font-size: 14px; background: var(--card-bg); box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-radius: 12px; }
+.day-hd { font-size: 18px; font-weight: 600; color: var(--text-main); margin: 0 0 20px; padding-bottom: 8px; border-bottom: 2px solid var(--border-light); letter-spacing: 0.5px; }
+.day-block { margin-bottom: 32px; }
+.slot { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 0; }
+.time-col { min-width: 58px; text-align: right; color: var(--text-muted); font-size: 13px; font-weight: 600; padding-top: 14px; line-height: 1.4; flex-shrink: 0; }
+.time-end { font-size: 11px; color: var(--text-light); font-weight: 400; display: block; margin-top: 2px; }
+.spine { display: flex; flex-direction: column; align-items: center; padding-top: 10px; }
+.dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; border: 2px solid #fff; box-shadow: 0 0 0 1.5px var(--accent-color); background: var(--accent-color); }
+.line { width: 2px; flex: 1; min-height: 14px; background: var(--border-light); margin-top: 2px; }
+.transit-line { width: 2px; min-height: 26px; border-left: 2px dashed #cccccc; margin-top: 2px; }
+.card { border-radius: 8px; padding: 12px 16px; flex: 1; margin: 4px 0 0; background: var(--theme-bg); border: 1px solid var(--border-light); transition: transform 0.2s ease; }
+.card:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+.transit-pill { font-size: 12px; color: var(--text-light); padding: 4px 0; flex: 1; margin-top: 3px; line-height: 1.5; font-weight: 500; }
+.card-title { font-weight: 600; color: var(--text-main); margin-bottom: 6px; font-size: 15px; }
+.card-sub { color: var(--text-muted); font-size: 13px; line-height: 1.6; }
+.tag-container { margin-top: 8px; }
+.tag { display: inline-block; font-size: 11px; border-radius: 4px; padding: 3px 8px; margin: 0 6px 6px 0; font-weight: 500; }
+.tf { background: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; }
+.ts { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
+.tn { background: var(--tag-bg); color: var(--text-muted); border: 1px solid #dadce0; }
+.tip { background: #e8f5e9; border-left: 4px solid #4caf50; border-radius: 0 8px 8px 0; padding: 12px 16px; margin-top: 10px; font-size: 13px; color: #2e7d32; line-height: 1.7; }
+.tip-strong { font-weight: 600; color: #1b5e20; }
+</style>
+<div class="wrap">
+
+<div class="day-block">
+<div class="day-hd">周六 · 抵达与夜游濠河</div>
+
+<div class="slot">
+  <div class="time-col">15:30<span class="time-end">- 15:45</span></div>
+  <div class="spine"><div class="dot" style="background:#5f6368; box-shadow: 0 0 0 1.5px #5f6368"></div><div class="line"></div></div>
+  <div class="card">
+    <div class="card-title">到达南通站 · 无缝接驳</div>
+    <div class="card-sub">出站后乘坐免费公交接驳线直达【长岸地铁站】。</div>
+  </div>
+</div>
+<div class="slot">
+  <div class="time-col"></div>
+  <div class="spine"><div class="transit-line"></div></div>
+  <div class="transit-pill">🚌 免费接驳 · 约15分钟</div>
+</div>
+
+<div class="slot">
+  <div class="time-col">16:00<span class="time-end">- 16:30</span></div>
+  <div class="spine"><div class="dot" style="background:#5f6368; box-shadow: 0 0 0 1.5px #5f6368"></div><div class="line"></div></div>
+  <div class="card">
+    <div class="card-title">长岸站附近酒店 · 放行李</div>
+    <div class="card-sub">收拾休整，轻装上阵。将步行接驳时间考虑在内，向南进发。</div>
+  </div>
+</div>
+<div class="slot">
+  <div class="time-col"></div>
+  <div class="spine"><div class="transit-line"></div></div>
+  <div class="transit-pill">🚇 地铁2号线南下 (15分钟) + 🚶 出站步行入景区 (15分钟)</div>
+</div>
+
+<div class="slot">
+  <div class="time-col">17:00<span class="time-end">- 18:30</span></div>
+  <div class="spine"><div class="dot"></div><div class="line"></div></div>
+  <div class="card">
+    <div class="card-title">医校巷 & 濠河起步</div>
+    <div class="card-sub">漫步大生众创街区(医校巷)拍照打卡，随后沿护城河看落日。这片区域全靠走，已预留充足步行时间。</div>
+    <div class="tag-container"><span class="tag ts">文艺出片</span><span class="tag ts">晚霞漫步</span></div>
+  </div>
+</div>
+<div class="slot">
+  <div class="time-col"></div>
+  <div class="spine"><div class="line"></div></div>
+  <div class="transit-pill">🚶 步行</div>
+</div>
+
+<div class="slot">
+  <div class="time-col">18:45<span class="time-end">- 20:00</span></div>
+  <div class="spine"><div class="dot" style="background:#f29900; box-shadow: 0 0 0 1.5px #f29900"></div><div class="line"></div></div>
+  <div class="card">
+    <div class="card-title">晚饭 · 南大街/丁古角地道风味</div>
+    <div class="card-sub">散步抵达百年老店【四宜糕团店】吃手工点心，或者点几道如【红烧狼山鸡】和【香芋烧竹鸡】等地道家常炒菜。</div>
+    <div class="tag-container"><span class="tag tf">红烧狼山鸡</span><span class="tag tf">糕团</span></div>
+  </div>
+</div>
+<div class="slot">
+  <div class="time-col"></div>
+  <div class="spine"><div class="line"></div></div>
+  <div class="transit-pill">🚶 步行消食</div>
+</div>
+
+<div class="slot">
+  <div class="time-col">20:15<span class="time-end">- 21:30</span></div>
+  <div class="spine"><div class="dot" style="background:#9c27b0; box-shadow: 0 0 0 1.5px #9c27b0"></div><div class="line"></div></div>
+  <div class="card">
+    <div class="card-title">濠河夜游</div>
+    <div class="card-sub">散步沉浸古城墙倒影，也可买票上游船。</div>
+  </div>
+</div>
+<div class="slot">
+  <div class="time-col"></div>
+  <div class="spine"><div class="transit-line"></div></div>
+  <div class="transit-pill">🚶 走到地铁站 + 🚇 2号线北上拔营</div>
+</div>
+
+<div class="slot">
+  <div class="time-col">22:00</div>
+  <div class="spine"><div class="dot" style="background:#5f6368; box-shadow: 0 0 0 1.5px #5f6368"></div></div>
+  <div class="card">
+    <div class="card-title">回酒店休息</div>
+    <div class="card-sub">返回北边的长岸站，早点休息恢复体力。</div>
+  </div>
+</div>
+</div>
+
+<div class="day-block">
+<div class="day-hd">周日 · 知性打卡与从容折返</div>
+
+<div class="slot">
+  <div class="time-col">11:15<span class="time-end">- 11:30</span></div>
+  <div class="spine"><div class="dot" style="background:#5f6368; box-shadow: 0 0 0 1.5px #5f6368"></div><div class="line"></div></div>
+  <div class="card">
+    <div class="card-title">睡饱出发 · 寄存行李</div>
+    <div class="card-sub">退房后将行李留在前台，轻装出发。</div>
+  </div>
+</div>
+<div class="slot">
+  <div class="time-col"></div>
+  <div class="spine"><div class="transit-line"></div></div>
+  <div class="transit-pill">🚇 2号线南下 (15分钟) + 🚶 步行进区 (15分钟)</div>
+</div>
+
+<div class="slot">
+  <div class="time-col">12:00<span class="time-end">- 13:30</span></div>
+  <div class="spine"><div class="dot" style="background:#f29900; box-shadow: 0 0 0 1.5px #f29900"></div><div class="line"></div></div>
+  <div class="card">
+    <div class="card-title">午饭 · 博物苑附近周边</div>
+    <div class="card-sub">就近吃大肉或特色土菜，预留充足的休息用餐时间。</div>
+  </div>
+</div>
+<div class="slot">
+  <div class="time-col"></div>
+  <div class="spine"><div class="transit-line"></div></div>
+  <div class="transit-pill">🚶 闲庭信步 (15分钟)</div>
+</div>
+
+<div class="slot">
+  <div class="time-col">13:45<span class="time-end">- 16:15</span></div>
+  <div class="spine"><div class="dot"></div><div class="line"></div></div>
+  <div class="card">
+    <div class="card-title">南通博物苑 & 蓝印花布</div>
+    <div class="card-sub">2个半小时深度浸润：游览中国第一所公共博物馆(须预约)及周边的蓝印花布非遗。</div>
+    <div class="tag-container"><span class="tag ts">慢游打卡</span><span class="tag ts">非遗风情</span></div>
+  </div>
+</div>
+<div class="slot">
+  <div class="time-col"></div>
+  <div class="spine"><div class="transit-line"></div></div>
+  <div class="transit-pill">🚶 穿街过巷 (15分钟)</div>
+</div>
+
+<div class="slot">
+  <div class="time-col">16:30<span class="time-end">- 17:45</span></div>
+  <div class="spine"><div class="dot" style="background:#f29900; box-shadow: 0 0 0 1.5px #f29900"></div><div class="line"></div></div>
+  <div class="card">
+    <div class="card-title">老街下午茶 & 备伴手礼</div>
+    <div class="card-sub">在市中心找家独立咖啡店歇歇脚，顺便备上【白蒲茶干】、【芦稷糖】带回家。</div>
+  </div>
+</div>
+<div class="slot">
+  <div class="time-col"></div>
+  <div class="spine"><div class="transit-line"></div></div>
+  <div class="transit-pill">🚶 步行至小吃店 (15分钟)</div>
+</div>
+
+<div class="slot">
+  <div class="time-col">18:00<span class="time-end">- 18:50</span></div>
+  <div class="spine"><div class="dot" style="background:#9c27b0; box-shadow: 0 0 0 1.5px #9c27b0"></div><div class="line"></div></div>
+  <div class="card">
+    <div class="card-title">轻晚饭 · 暖胃充能</div>
+    <div class="card-sub">多出来的半小时，可以安心吃一碗小馄饨或苏式红汤面，慢条斯理不用抢时间。</div>
+  </div>
+</div>
+<div class="slot">
+  <div class="time-col"></div>
+  <div class="spine"><div class="transit-line"></div></div>
+  <div class="transit-pill">🚶 走向地铁 + 🚇 2号线北上 (约25分钟)</div>
+</div>
+
+<div class="slot">
+  <div class="time-col">19:15<span class="time-end">- 19:25</span></div>
+  <div class="spine"><div class="dot" style="background:#5f6368; box-shadow: 0 0 0 1.5px #5f6368"></div><div class="line"></div></div>
+  <div class="card">
+    <div class="card-title">长岸站酒店 · 提取行李</div>
+    <div class="card-sub">回酒店拿上行李，十分钟搞定。</div>
+  </div>
+</div>
+<div class="slot">
+  <div class="time-col"></div>
+  <div class="spine"><div class="transit-line"></div></div>
+  <div class="transit-pill">🚌 接驳车返回南通站 · 约15分钟</div>
+</div>
+
+<div class="slot">
+  <div class="time-col">19:40</div>
+  <div class="spine"><div class="dot" style="background:#5f6368; box-shadow: 0 0 0 1.5px #5f6368"></div></div>
+  <div class="card">
+    <div class="card-title">南通站 · 从容候车</div>
+    <div class="card-sub">抵达南通站，距离20:10发车还有半个小时，圆满结束周末旅行。</div>
+  </div>
+</div>
+</div>
+
+
+
+</div>
+
