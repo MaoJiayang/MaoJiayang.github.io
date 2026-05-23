@@ -17,6 +17,7 @@
 'use strict';
 
 const { readFileSync, writeFileSync } = require('fs');
+const { createHash } = require('crypto');
 
 const ACCOUNT_ID = process.env.CF_ACCOUNT_ID;
 const API_TOKEN = process.env.CF_API_TOKEN;
@@ -102,34 +103,81 @@ function vecToBase64(vec) {
     return Buffer.from(f32.buffer, f32.byteOffset, f32.byteLength).toString('base64');
 }
 
+// ---- 哈希工具 ----
+
+/**
+ * 计算文本的 SHA256 哈希，用于增量构建时比对内容是否变化
+ * @param {string} text
+ * @returns {string}
+ */
+function hashText(text) {
+    return createHash('sha256').update(text).digest('hex');
+}
+
 // ---- 主流程 ----
 
 async function main() {
     const commands = JSON.parse(readFileSync('commands.json', 'utf8'));
-    console.log(`共 ${commands.length} 条指令，开始生成 embeddings...`);
 
-    const entries = [];
+    // 尝试加载已有 embeddings，构建 id → { hash, emb } 查找表
+    const existingMap = new Map();
+    try {
+        const existing = JSON.parse(readFileSync('embeddings.json', 'utf8'));
+        if (existing.model === MODEL) {
+            for (const e of existing.entries) {
+                if (e.hash && e.emb) {
+                    existingMap.set(e.id, { hash: e.hash, emb: e.emb });
+                }
+            }
+        } else if (existing.entries && existing.entries.length > 0) {
+            console.log(`模型已变更（${existing.model} → ${MODEL}），将全量重建`);
+        }
+    } catch (_) { /* 首次构建，无缓存 */ }
 
-    for (let i = 0; i < commands.length; i += BATCH_SIZE) {
-        const batch = commands.slice(i, i + BATCH_SIZE);
-        const texts = batch.map(buildSearchText);
-        const end = Math.min(i + BATCH_SIZE, commands.length);
+    // 逐条计算搜索文本哈希，与缓存比对
+    const resultMap = new Map();  // id → { hash, emb }
+    const toEmbed = [];           // { id, text, hash }
 
-        console.log(`  嵌入第 ${i + 1}–${end} 条...`);
-        const vectors = await embedBatch(texts);
+    for (const cmd of commands) {
+        const text = buildSearchText(cmd);
+        const hash = hashText(text);
+        const cached = existingMap.get(cmd.id);
+
+        if (cached && cached.hash === hash) {
+            resultMap.set(cmd.id, cached);
+        } else {
+            toEmbed.push({ id: cmd.id, text, hash });
+        }
+    }
+
+    const reused = commands.length - toEmbed.length;
+    console.log(`共 ${commands.length} 条指令，${reused} 条复用缓存，${toEmbed.length} 条需重新嵌入`);
+
+    // 批量嵌入仅处理需要更新的
+    for (let i = 0; i < toEmbed.length; i += BATCH_SIZE) {
+        const batch = toEmbed.slice(i, i + BATCH_SIZE);
+        const end = Math.min(i + BATCH_SIZE, toEmbed.length);
+
+        console.log(`  嵌入第 ${i + 1}–${end} 条（共 ${toEmbed.length} 条）...`);
+        const vectors = await embedBatch(batch.map(b => b.text));
 
         for (let j = 0; j < batch.length; j++) {
-            entries.push({
-                id: batch[j].id,
+            resultMap.set(batch[j].id, {
+                hash: batch[j].hash,
                 emb: vecToBase64(vectors[j]),
             });
         }
 
-        // 最后一批不需要等待
-        if (end < commands.length) {
+        if (end < toEmbed.length) {
             await new Promise(r => setTimeout(r, BATCH_DELAY_MS));
         }
     }
+
+    // 按 commands.json 的顺序输出
+    const entries = commands.map(cmd => {
+        const r = resultMap.get(cmd.id);
+        return { id: cmd.id, hash: r.hash, emb: r.emb };
+    });
 
     const output = { model: MODEL, dims: 1024, entries };
     writeFileSync('embeddings.json', JSON.stringify(output));
