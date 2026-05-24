@@ -187,7 +187,8 @@ function renderMd(md) {
   if (!md) return '';
   let s = esc(md)
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>');
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\[色块 (#[0-9a-fA-F]{6})\]/g, '<span style="display:inline-block;width:13px;height:13px;background:$1;border:1px solid rgba(128,128,128,0.35);border-radius:2px;vertical-align:middle;margin:0 1px;"></span>');
   return s.split(/\n\n+/).map(p => {
     p = p.trim();
     if (!p) return '';
