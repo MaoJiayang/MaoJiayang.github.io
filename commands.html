@@ -57,35 +57,61 @@ table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
 th{text-align:left;padding:8px 14px;font-size:12px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border)}
 tr.row{border-bottom:1px solid var(--border);transition:background 0.15s}
 tr.row:last-child{border-bottom:none}
-tr.row:hover td{background:var(--bg-main)}
-td{padding:12px 14px;vertical-align:top;overflow:hidden}
-.c1{width:22%;font-weight:600;color:var(--text-main)}
-.c2{width:38%}
-.c3{width:40%;color:var(--text-muted)}
-.cmd{display:inline-block;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(88,166,255,0.2);border-radius:3px;padding:3px 6px;font-family:var(--font-mono);font-size:12px;font-weight:600;word-break:break-all}
+tr.row.clickable{cursor:pointer}
+tr.row.clickable:hover .r-c1,
+tr.row.clickable:hover .r-c2,
+tr.row.clickable:hover .r-c3{background:var(--accent-bg)}
+td{padding:0;vertical-align:top}
+.r-c1{width:22%;padding:12px 14px;font-weight:600;color:var(--text-main)}
+.r-c2{width:38%;padding:12px 14px}
+.r-c3{width:40%;padding:12px 14px;color:var(--text-muted)}
+.cmd{display:inline-block;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(88,166,255,0.2);border-radius:3px;padding:3px 6px;font-family:var(--font-mono);font-size:12px;font-weight:600;word-break:break-all;cursor:pointer;user-select:none}
 .al{display:block;font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-top:6px;padding-top:6px;border-top:1px dashed var(--border)}
 .opt{opacity:0.7;font-weight:normal}
 .hide{display:none!important}
 .nores{padding:3rem;text-align:center;color:var(--text-muted);background:var(--bg-main);border:1px dashed var(--border);border-radius:4px;font-size:14px;font-weight:500}
-details.note{display:block;margin-top:5px}
-details.note summary{display:inline-block;font-size:11px;color:var(--accent);border:1px dashed var(--border);border-radius:3px;padding:1px 7px;cursor:pointer;list-style:none;user-select:none}
-details.note summary::-webkit-details-marker{display:none}
-details.note .note-body{margin-top:4px;font-size:11.5px;background:var(--bg-main);border:1px solid var(--border);border-radius:4px;padding:6px 10px;line-height:1.7;color:var(--text-muted)}
-details.note .note-body code{font-family:var(--font-mono);font-size:11px;background:var(--bg-panel);padding:1px 4px;border-radius:2px;border:1px solid var(--border);color:var(--accent);word-break:break-all}
+.c1-cell{display:flex;align-items:flex-start;gap:4px;padding-top:1px}
+.arrow,.arrow-placeholder{display:inline-block;width:14px;flex-shrink:0;text-align:center;font-size:13px;line-height:1.5;margin-top:0;transition:transform 0.18s,color 0.15s}
+.arrow{color:var(--text-muted)}
+.arrow-summary{display:none}
+tr.row.clickable:hover .arrow{color:var(--accent)}
+.arrow.open{transform:rotate(90deg);color:var(--accent)}
+.arrow-placeholder{visibility:hidden}
+tr.note-row td{padding:0;border-bottom:none}
+tr.note-row .note-body{margin:0 14px 20px 14px;font-size:11.5px;background:var(--bg-main);border:1px solid var(--border);border-top:none;border-radius:0 0 4px 4px;padding:6px 10px;line-height:1.7;color:var(--text-muted)}
+tr.note-row .note-body code{font-family:var(--font-mono);font-size:11px;background:var(--bg-panel);padding:1px 4px;border-radius:2px;border:1px solid var(--border);color:var(--accent);word-break:break-all;cursor:pointer;user-select:none}
+tr.note-row .note-body table{border-collapse:collapse;margin:6px 0;font-size:12px}
+tr.note-row .note-body th,tr.note-row .note-body td{padding:4px 10px;border:1px solid var(--border);text-align:left}
+tr.note-row .note-body th{background:var(--bg-panel);font-weight:600}
 
 @media (max-width: 768px) {
   .wrap { padding: 1rem; border-left: none; border-right: none; }
   .ftabs { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
-  
-  /* 将表格转换为块级显示，适应手机屏幕 */
-  table, thead, tbody, th, td, tr.row { display: block; width: 100% !important; }
-  thead { display: none; } /* 隐藏表头 */
-  tr.row { margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem; background: var(--bg-panel); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-  tr.row:hover td { background: transparent; }
-  td { padding: 6px 8px; border: none; }
-  .c1 { font-size: 15px; color: var(--accent); border-bottom: 1px dashed var(--border); margin-bottom: 6px; padding-bottom: 8px; }
-  .c2 { margin-bottom: 6px; }
-  .c3 { font-size: 12.5px; }
+  table, thead, tbody, th, tr.row { display: block; width: 100% !important; }
+  thead { display: none; }
+  tr.row { margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: var(--bg-panel); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  tr.row.clickable:hover .r-c1,
+  tr.row.clickable:hover .r-c2,
+  tr.row.clickable:hover .r-c3 { background: transparent; }
+  td { display: block; width: 100% !important; padding: 0; border: none; }
+  .r-c1 { width: auto !important; padding: 8px 10px; font-size: 15px; color: var(--accent); border-bottom: 1px dashed var(--border); }
+  .r-c2 { width: auto !important; padding: 8px 10px; }
+  .r-c3 { width: auto !important; padding: 4px 10px 10px; font-size: 12.5px; }
+  .cmd { padding: 5px 8px; }
+  /* 移动端：箭头移到标题右侧，占位符隐藏不占宽 */
+  .c1-cell { justify-content: space-between; }
+  .c1-cell .arrow-group { order: 2; display: flex; align-items: center; gap: 2px; }
+  .c1-cell .arrow { margin-top: 2px; }
+  .c1-cell .arrow-summary { display: inline; font-size: 11px; color: var(--text-muted); opacity: 0.55; }
+  .c1-cell .arrow-placeholder { display: none; }
+  tr.note-row { display: block; margin-top: -1rem; margin-bottom: 1rem; }
+  tr.note-row td { display: block; }
+  tr.note-row .note-body { margin: 0 0 16px 0; border-radius: 0 0 6px 6px; border: 1px solid var(--border); border-top: none; padding: 8px 12px; }
+  .note-body table { display: table; width: auto !important; }
+  .note-body thead { display: table-header-group; }
+  .note-body tbody { display: table-row-group; }
+  .note-body tr { display: table-row; }
+  .note-body th, .note-body td { display: table-cell; width: auto !important; padding: 4px 8px; }
   .sec-h { flex-wrap: wrap; }
   .sec-s { margin-left: 0; margin-top: 4px; width: 100%; text-align: center; }
 }
@@ -120,8 +146,9 @@ tr.sem-highlight{animation:row-flash 2s ease}
 </div>
 <div class="ftabs" id="tabs"></div>
 <div style="font-size:12.5px;color:var(--text-muted);margin-top:-0.5rem;margin-bottom:1.5rem;padding:10px 14px;background:var(--bg-main);border-left:3px solid var(--accent);border-radius:0 4px 4px 0;line-height:1.6;">
-  <div style="margin-bottom:6px;color:var(--text-main);">ℹ️ <strong>终端输入防踩坑指南：</strong></div>
+  <div style="margin-bottom:6px;color:var(--text-main);">ℹ️ <strong>使用指南：</strong></div>
   <ul style="margin-left:22px;padding-left:0;">
+    <li style="margin-bottom:4px;">所有带框的指令可<strong>点击直接复制</strong>，在游戏聊天框中粘贴使用。</li>
     <li style="margin-bottom:4px;">指令格式演示中的方括号 <code style="font-family:var(--font-mono);background:var(--bg-panel);padding:1px 4px;border-radius:3px;border:1px solid var(--border);">[]</code> 仅作为参数占位符，实际在游戏中输入时，请<strong>直接写内容，不要输入方括号本身</strong>。</li>
     <li>当要输入的字符串（如网格名称、清单名等）中<strong>带有空格</strong>时，请使用半角英文双引号将其包裹，例如：<code style="font-family:var(--font-mono);background:var(--bg-panel);padding:1px 4px;border-radius:3px;border:1px solid var(--border);">"My Ship"</code>。</li>
   </ul>
@@ -193,6 +220,17 @@ function renderMd(md) {
     p = p.trim();
     if (!p) return '';
     const lines = p.split('\n').map(l => l.trim()).filter(Boolean);
+    // 表格：所有行都以 | 开头和结尾（至少2行：表头+分隔+数据）
+    if (lines.length >= 2 && lines.every(l => /^\|.+\|$/.test(l))) {
+      let html = '<div style="overflow-x:auto"><table>';
+      for (let i = 0; i < lines.length; i++) {
+        if (/^\|[-:| ]+\|$/.test(lines[i])) continue; // 跳过分隔行
+        const cells = lines[i].replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+        const tag = i === 0 ? 'th' : 'td';
+        html += '<tr>' + cells.map(c => `<${tag}>${c}</${tag}>`).join('') + '</tr>';
+      }
+      return html + '</table></div>';
+    }
     if (lines.every(l => /^[-•]/.test(l))) {
       return '<ul>' + lines.map(l => `<li>${l.replace(/^[-•]\s*/, '')}</li>`).join('') + '</ul>';
     }
@@ -224,13 +262,27 @@ function buildRow(item) {
     }
   }
 
-  // c3：描述 + 可选折叠 note
-  let c3Html = renderInline(item.description);
+  // c1：有 note 显示箭头（可点），无 note 显示占位保持对齐
+  let rowClass = 'row';
+  let arrowHtml;
+  let noteRow = '';
   if (item.note) {
-    c3Html += `<details class="note"><summary>${esc(extractSummary(item.note))}</summary><div class="note-body">${renderMd(noteBody(item.note))}</div></details>`;
+    rowClass += ' clickable';
+    const summary = extractSummary(item.note);
+    arrowHtml = `<span class="arrow-group"><span class="arrow-summary">${esc(summary)}</span><span class="arrow" id="arrow-${esc(item.id)}" title="${esc(summary)}">▸</span></span>`;
+    noteRow = `<tr class="note-row" id="note-${esc(item.id)}" style="display:none"><td colspan="3"><div class="note-body">${renderMd(noteBody(item.note))}</div></td></tr>`;
+  } else {
+    arrowHtml = '<span class="arrow-placeholder"></span>';
   }
 
-  return `<tr class="row" data-id="${esc(item.id)}"><td class="c1">${esc(item.title)}</td><td class="c2">${c2Html}</td><td class="c3">${c3Html}</td></tr>`;
+  const c1Html = `<div class="c1-cell">${arrowHtml}<span>${esc(item.title)}</span></div>`;
+  const c3Html = renderInline(item.description);
+
+  return `<tr class="${rowClass}" data-id="${esc(item.id)}">
+    <td class="r-c1">${c1Html}</td>
+    <td class="r-c2">${c2Html}</td>
+    <td class="r-c3">${c3Html}</td>
+  </tr>${noteRow}`;
 }
 
 // 构建整个 section div
@@ -316,6 +368,42 @@ function initSearch() {
     }
   });
 
+  // note 展开/收起切换（事件委托，点击整行）
+  function toggleNote(id) {
+    const note = document.getElementById('note-' + id);
+    const arrow = document.getElementById('arrow-' + id);
+    if (!note) return;
+    const open = note.style.display !== 'none';
+    note.style.display = open ? 'none' : '';
+    if (arrow) arrow.classList.toggle('open', !open);
+  }
+
+  // cmd 标签点击复制（在 row handler 前注册，stopImmediatePropagation 阻断冒泡）
+  document.addEventListener('click', (e) => {
+    const cmd = e.target.closest('.cmd, .note-body code');
+    if (!cmd) return;
+    e.stopImmediatePropagation();
+    navigator.clipboard.writeText(cmd.textContent.trim()).then(() => {
+      const toast = document.createElement('span');
+      toast.textContent = '已复制';
+      toast.style.cssText = 'position:fixed;z-index:9999;pointer-events:none;font-size:12px;color:var(--accent);background:var(--bg-panel);border:1px solid var(--border);border-radius:3px;padding:2px 6px;box-shadow:0 2px 6px rgba(0,0,0,0.1);transition:all 0.6s ease-out;opacity:1;transform:translateY(0);';
+      toast.style.left = e.clientX + 'px';
+      toast.style.top = (e.clientY - 8) + 'px';
+      document.body.appendChild(toast);
+      requestAnimationFrame(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-28px)';
+      });
+      setTimeout(() => toast.remove(), 650);
+    }).catch(() => {});
+  });
+
+  document.addEventListener('click', (e) => {
+    const row = e.target.closest('tr.row.clickable');
+    if (!row) return;
+    toggleNote(row.dataset.id);
+  });
+
   // 恢复焦点时，如果没有改变且有数据，重新展示
   q.addEventListener('focus', () => {
     if (q.value.trim() && semPanel.innerHTML.trim() !== '') {
@@ -352,6 +440,12 @@ function initSearch() {
       secObj.rows.forEach(rowObj => {
         const m = !terms.length || terms.every(t => expand(t).some(k => rowObj.text.includes(k)));
         rowObj.el.classList.toggle('hide', !m);
+        if (!m) {
+          const noteRow = document.getElementById('note-' + rowObj.el.dataset.id);
+          if (noteRow) noteRow.style.display = 'none';
+          const arrow = document.getElementById('arrow-' + rowObj.el.dataset.id);
+          if (arrow) arrow.classList.remove('open');
+        }
         if (m) vis = true;
       });
       secObj.el.classList.toggle('hide', !vis);
