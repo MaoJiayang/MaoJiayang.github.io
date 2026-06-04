@@ -19,9 +19,10 @@
 const { readFileSync, writeFileSync } = require('fs');
 const { createHash } = require('crypto');
 
+const CONFIG = JSON.parse(readFileSync('config.json', 'utf8'));
 const ACCOUNT_ID = process.env.CF_ACCOUNT_ID;
 const API_TOKEN = process.env.CF_API_TOKEN;
-const MODEL = '@cf/baai/bge-m3';
+const MODEL = CONFIG.embeddingModel;
 const BATCH_SIZE = 20;      // CF AI API 单次最多支持的文本数
 const BATCH_DELAY_MS = 250; // 批次之间的延迟，避免触发速率限制
 

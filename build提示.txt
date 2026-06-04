@@ -9,8 +9,9 @@ python -m http.server 5500
 # PowerShell:
 $env:CF_ACCOUNT_ID="你的账号ID"   # CF Dashboard 右下角
 $env:CF_API_TOKEN="你的Token"     # My Profile → API Tokens → Workers AI 权限
-node build.js
-# 生成 embeddings.json，提交后自动部署
+node build.js                     # 生成 embeddings.json，提交后自动部署
+
+node test-search.js "保存飞船"    # 本地测试脚本，可以测试嵌入模型效果
 
 ## 文件说明
 
@@ -19,6 +20,7 @@ embeddings.json     由 build.js 生成，勿手动编辑
 build.js            生成脚本，需要上方两个环境变量
 functions/search.js CF Pages Function，随仓库自动部署
 commands.html       前端页面，fetch commands.json 动态渲染
+config.json         嵌入用配置文件，主要配置模型名称如@cf/qwen/qwen3-embedding-0.6b或@cf/baai/bge-m3
 
 ## CF Dashboard 配置（首次部署前）
 
