@@ -46,7 +46,7 @@ body{font-family:var(--font-sans);background:var(--bg-main);color:var(--text-mai
 #q:focus{outline:none;border-color:var(--border-focus);background:var(--bg-panel);box-shadow:0 0 0 3px rgba(88,166,255,0.1)}
 @media (prefers-reduced-motion:reduce){#q{animation:none}}
 .ftabs{display:grid;grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:8px;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px dashed var(--border);min-height:130px;align-content:start}
-.ftab{display:flex;align-items:center;justify-content:center;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:var(--bg-panel);color:var(--text-muted);transition:all 0.2s;font-weight:500;box-shadow:0 1px 2px rgba(0,0,0,0.02);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ftab{display:flex;align-items:center;justify-content:center;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:var(--bg-panel);color:var(--text-muted);transition:all 0.2s;font-weight:500;box-shadow:0 1px 2px rgba(0,0,0,0.02);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;-webkit-tap-highlight-color:transparent}
 .ftab:hover{background:var(--bg-main);color:var(--text-main);border-color:var(--border-focus)}
 .ftab.on{background:var(--accent);color:#fff;border-color:var(--accent-active);box-shadow:0 2px 4px rgba(3,102,214,0.2)}
 .sec{margin-bottom:2rem;background:var(--bg-panel);border:1px solid var(--border);border-radius:4px;overflow:hidden}
@@ -57,7 +57,7 @@ table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
 th{text-align:left;padding:8px 14px;font-size:12px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border)}
 tr.row{border-bottom:1px solid var(--border);transition:background 0.15s}
 tr.row:last-child{border-bottom:none}
-tr.row.clickable{cursor:pointer}
+tr.row.clickable{cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
 tr.row.clickable:hover .r-c1,
 tr.row.clickable:hover .r-c2,
 tr.row.clickable:hover .r-c3{background:var(--accent-bg)}
@@ -65,7 +65,7 @@ td{padding:0;vertical-align:top}
 .r-c1{width:22%;padding:12px 14px;font-weight:600;color:var(--text-main)}
 .r-c2{width:38%;padding:12px 14px}
 .r-c3{width:40%;padding:12px 14px;color:var(--text-muted)}
-.cmd{display:inline-block;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(88,166,255,0.2);border-radius:3px;padding:3px 6px;font-family:var(--font-mono);font-size:12px;font-weight:600;word-break:break-all;cursor:pointer;user-select:none}
+.cmd{display:inline-block;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(88,166,255,0.2);border-radius:3px;padding:3px 6px;font-family:var(--font-mono);font-size:12px;font-weight:600;word-break:break-all;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
 .al{display:block;font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-top:6px;padding-top:6px;border-top:1px dashed var(--border)}
 .opt{opacity:0.7;font-weight:normal}
 .hide{display:none!important}
@@ -79,7 +79,7 @@ tr.row.clickable:hover .arrow{color:var(--accent)}
 .arrow-placeholder{visibility:hidden}
 tr.note-row td{padding:0;border-bottom:none}
 tr.note-row .note-body{margin:0 14px 20px 14px;font-size:11.5px;background:var(--bg-main);border:1px solid var(--border);border-top:none;border-radius:0 0 4px 4px;padding:6px 10px;line-height:1.7;color:var(--text-muted)}
-tr.note-row .note-body code{font-family:var(--font-mono);font-size:11px;background:var(--bg-panel);padding:1px 4px;border-radius:2px;border:1px solid var(--border);color:var(--accent);word-break:break-all;cursor:pointer;user-select:none}
+tr.note-row .note-body code{font-family:var(--font-mono);font-size:11px;background:var(--bg-panel);padding:1px 4px;border-radius:2px;border:1px solid var(--border);color:var(--accent);word-break:break-all;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
 tr.note-row .note-body table{border-collapse:collapse;margin:6px 0;font-size:12px}
 tr.note-row .note-body th,tr.note-row .note-body td{padding:4px 10px;border:1px solid var(--border);text-align:left}
 tr.note-row .note-body th{background:var(--bg-panel);font-weight:600}
