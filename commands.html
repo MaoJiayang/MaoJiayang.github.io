@@ -524,7 +524,11 @@ function initSearch() {
   }
 
   let isComposing = false;
-  q.addEventListener('compositionstart', () => { isComposing = true; });
+  q.addEventListener('compositionstart', () => {
+    isComposing = true;
+    clearTimeout(semTimer);
+    searchWrap.classList.remove('sem-loading');
+  });
   q.addEventListener('compositionend', () => {
     isComposing = false;
     filter();
