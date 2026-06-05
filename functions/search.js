@@ -85,9 +85,16 @@ export async function onRequestGet({ request, env }) {
         );
     }
 
-    // 嵌入查询词（使用与 build.js 相同的模型，确保向量空间一致）
-    // qwen3-embedding 的 queries/documents 非对称接口对短文本技术命令效果存疑，当前统一用 text
-    // 如需启用非对称模式可改为：embData.model.includes('qwen3-embedding') ? { queries: [q] } : { text: [q] }
+    const t0 = Date.now();
+
+    console.log(JSON.stringify({
+        event: 'search_request',
+        q,
+        n,
+        model: embData.model,
+        timestamp: new Date().toISOString(),
+    }));
+
     const aiResult = await env.AI.run(embData.model, { text: [q] });
     const queryEmb = new Float32Array(aiResult.data[0]);
 
@@ -96,6 +103,16 @@ export async function onRequestGet({ request, env }) {
         .map(({ id, emb }) => ({ id, score: cosineSim(queryEmb, emb) }))
         .sort((a, b) => b.score - a.score)
         .slice(0, n);
+
+    console.log(JSON.stringify({
+        event: 'search_done',
+        q,
+        n,
+        top_score: scored[0]?.score,
+        result_count: scored.length,
+        elapsed_ms: Date.now() - t0,
+        top3: scored.slice(0, 3).map(r => cmdMap[r.id]?.title),
+    }));
 
     // 附带原始指令数据（score 保留 4 位小数）
     const results = scored.map(r => ({
