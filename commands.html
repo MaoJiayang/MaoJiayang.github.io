@@ -649,61 +649,6 @@ function initSearch() {
     }
   });
 
-  // 仅更新高亮位置（不改 DOM 结构，避免鼠标反馈循环）
-  function updateAcHighlight(newIndex) {
-      var prefix = getAutocompletePrefix(q.value);
-      var items = acPanel.querySelectorAll('.ac-item');
-      items.forEach(function (el, i) {
-          el.classList.toggle('hl', i === newIndex);
-      });
-      var hlEl = items[newIndex];
-      if (hlEl) hlEl.scrollIntoView({ block: 'nearest' });
-      updateGhost(prefix);
-  }
-
-  // 键盘导航（桌面端）
-  q.addEventListener('keydown', function (e) {
-    if (!acPanel.classList.contains('show')) return;
-    switch (e.key) {
-      case 'Tab':
-        e.preventDefault();
-        if (currentAcHlIndex >= 0 && currentAcHlIndex < currentAcResults.length) {
-          fillAcCommand(currentAcResults[currentAcHlIndex]);
-        }
-        break;
-      case 'Enter':
-        if (currentAcHlIndex >= 0 && currentAcHlIndex < currentAcResults.length) {
-          e.preventDefault();
-          fillAcCommand(currentAcResults[currentAcHlIndex]);
-        }
-        break;
-      case 'Escape':
-        e.preventDefault();
-        hideAcPanel();
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        if (currentAcResults.length > 0) {
-          currentAcHlIndex = (currentAcHlIndex - 1 + currentAcResults.length) % currentAcResults.length;
-          updateAcHighlight(currentAcHlIndex);
-        }
-        break;
-      case 'ArrowDown':
-        e.preventDefault();
-        if (currentAcResults.length > 0) {
-          currentAcHlIndex = (currentAcHlIndex + 1) % currentAcResults.length;
-          updateAcHighlight(currentAcHlIndex);
-        }
-        break;
-    }
-  });
-
-  // 模式标签点击退出
-  acModeTag.addEventListener('click', function (e) {
-    e.stopPropagation();
-    exitAcMode();
-  });
-
   filter();
 }
 
