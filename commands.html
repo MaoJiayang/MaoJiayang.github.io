@@ -221,6 +221,7 @@ tr.note-row.closing{animation:noteFadeOut 0.15s ease forwards}
 
 </div>
 <span id="toast">已复制</span>
+<script src="command-autocomplete.js"></script>
 <script>
 const SECTION_META = {
   hangar:     { label: '🚁 存取飞船',    sub: '船坞系统',                  col2: '指令' },
@@ -736,7 +737,6 @@ fetch('commands.json')
     initSearch();
   });
 </script>
-<script src="command-autocomplete.js"></script>
 <script src="version-check.js"></script>
 </body>
 </html>
