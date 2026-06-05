@@ -16,7 +16,7 @@ import cmdsData from '../commands.json';
 let dbReady = false;
 async function ensureTable(db) {
     if (dbReady) return;
-    await db.exec(`
+    await db.prepare(`
         CREATE TABLE IF NOT EXISTS search_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             q TEXT NOT NULL,
@@ -28,7 +28,7 @@ async function ensureTable(db) {
             top3 TEXT,
             created_at TEXT DEFAULT (datetime('now'))
         )
-    `);
+    `).run();
     dbReady = true;
 }
 
