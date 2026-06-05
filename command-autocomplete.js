@@ -276,14 +276,31 @@ var AcModule = (function () {
                 currentAcHlIndex = 0;
                 renderAcPanel(currentAcResults, currentAcHlIndex, prefix);
             } else {
-                hideAcMode();
-                hideGhost();
-                acPanel.innerHTML = '<div class="ac-card">'
-                    + '<div class="ac-card-h">⌨️ 指令补全'
-                    + '<button id="ac-close">×</button>'
-                    + '</div><div class="ac-card-body"><div class="ac-nores ac-searching">正在搜索…</div></div></div>';
-                acPanel.classList.add('show');
-                scheduleAcSemanticSearch(prefix);
+                // 前缀无匹配时，检查是否"已输入完整指令 + 参数"
+                var lastSpace = prefix.lastIndexOf(' ');
+                var paramMatch = false;
+                if (lastSpace > 0) {
+                    var basePrefix = prefix.slice(0, lastSpace);
+                    var baseResults = getMatches(basePrefix);
+                    if (baseResults.some(function (r) { return r.alias.toLowerCase() === basePrefix.toLowerCase(); })) {
+                        // 用户输入了完整指令 + 参数，视为已匹配，不纠错
+                        currentAcResults = baseResults.filter(function (r) { return r.alias.toLowerCase() === basePrefix.toLowerCase(); });
+                        currentAcHlIndex = 0;
+                        showAcMode();
+                        renderAcPanel(currentAcResults, currentAcHlIndex, prefix);
+                        paramMatch = true;
+                    }
+                }
+                if (!paramMatch) {
+                    hideAcMode();
+                    hideGhost();
+                    acPanel.innerHTML = '<div class="ac-card">'
+                        + '<div class="ac-card-h">⌨️ 指令补全'
+                        + '<button id="ac-close">×</button>'
+                        + '</div><div class="ac-card-body"><div class="ac-nores ac-searching">正在搜索…</div></div></div>';
+                    acPanel.classList.add('show');
+                    scheduleAcSemanticSearch(prefix);
+                }
             }
         }
 
