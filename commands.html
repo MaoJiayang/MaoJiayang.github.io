@@ -42,7 +42,7 @@ body{font-family:var(--font-sans);background:var(--bg-main);color:var(--text-mai
 .search-wrap{position:relative;margin-bottom:1rem}
 .search-ic{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--text-muted);pointer-events:none;transition:color 0.2s;flex-shrink:0}
 .search-wrap:focus-within .search-ic{color:var(--accent)}
-#q{width:100%;padding:10px 14px 10px 38px;font-size:14px;border:1px solid var(--border);border-radius:4px;background:var(--bg-main);color:var(--text-main);margin-bottom:0;font-family:inherit;transition:border-color 0.2s,box-shadow 0.2s,background 0.2s;animation:search-pulse 2s ease 0.5s 3}
+#q{width:100%;padding:10px 14px 10px 38px;font-size:14px;line-height:1.5;border:1px solid var(--border);border-radius:4px;background:var(--bg-main);color:var(--text-main);margin-bottom:0;font-family:inherit;transition:border-color 0.2s,box-shadow 0.2s,background 0.2s;animation:search-pulse 2s ease 0.5s 3}
 #q:focus{outline:none;border-color:var(--border-focus);background:var(--bg-panel);box-shadow:0 0 0 3px rgba(88,166,255,0.1)}
 @media (prefers-reduced-motion:reduce){#q{animation:none}}
 .ftabs{display:grid;grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:8px;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px dashed var(--border);min-height:130px;align-content:start}
@@ -145,12 +145,51 @@ tr.note-row.closing{animation:noteFadeOut 0.15s ease forwards}
 #toast{position:fixed;z-index:9999;pointer-events:none;font-size:12px;color:var(--accent);background:var(--bg-panel);border:1px solid var(--border);border-radius:3px;padding:2px 6px;box-shadow:0 2px 6px rgba(0,0,0,0.1);opacity:0;transform:translateY(0);visibility:hidden}
 #toast.show{opacity:1;transform:translateY(0);visibility:visible;transition:none}
 #toast.fade{opacity:0;transform:translateY(-28px);visibility:visible;transition:opacity 0.3s ease-out,transform 0.7s ease-out}
+/* 指令补全面板 */
+#ac-panel{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:101;border-radius:4px;border:1px solid var(--border);box-shadow:0 8px 24px rgba(0,0,0,0.14),0 2px 8px rgba(0,0,0,0.07);background:var(--bg-panel);opacity:0;transform:translateY(-8px);pointer-events:none;transition:all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);visibility:hidden}
+#ac-panel.show{opacity:1;transform:translateY(0);pointer-events:auto;visibility:visible}
+.ac-card{border:1px solid var(--border);border-radius:4px;overflow:hidden;background:var(--bg-panel)}
+.ac-card-body{max-height:200px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.ac-card-body::-webkit-scrollbar{width:6px}
+.ac-card-body::-webkit-scrollbar-thumb{background:var(--text-muted);border-radius:3px;opacity:0.3}
+.ac-card-h{display:flex;align-items:center;gap:6px;padding:7px 14px;background:var(--accent-bg);border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--accent)}
+.ac-card-h button{margin-left:auto;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;line-height:1;padding:0;opacity:0.6}
+.ac-card-h button:hover{opacity:1}
+.ac-item{display:flex;flex-direction:column;gap:3px;padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;font-size:13px}
+.ac-item:last-child{border-bottom:none}
+.ac-item.hl{background:var(--accent-bg)}
+.ac-item:hover{background:var(--bg-main)}
+.ac-item-title{font-weight:600;color:var(--text-main);display:flex;align-items:center;gap:6px}
+.ac-item-sec{font-size:11px;color:var(--text-muted);background:var(--bg-main);padding:1px 5px;border-radius:3px;border:1px solid var(--border)}
+.ac-item-cmd{font-family:var(--font-mono);font-size:11px;color:var(--accent)}
+.ac-item-desc{font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ac-nores{padding:1rem;text-align:center;color:var(--text-muted);font-size:13px}
+.ac-searching{color:var(--accent)}
+/* 模式标签 */
+.ac-mode-tag{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12px;padding:2px 8px;border-radius:999px;background:var(--accent-bg);color:var(--accent);cursor:pointer;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity 0.15s;z-index:2;user-select:none}
+.ac-mode-tag.show{opacity:1;pointer-events:auto}
+/* 行内虚影 */
+#ac-ghost{position:absolute;top:1px;left:1px;right:1px;bottom:1px;padding:10px 14px 10px 38px;font-size:14px;font-family:inherit;line-height:1.5;pointer-events:none;white-space:pre;overflow:hidden;z-index:1;border-radius:4px}
+#ac-ghost .ghost-typed{color:var(--text-main)}
+#ac-ghost .ghost-hint{color:var(--text-muted);opacity:0.45}
+#ac-ghost .ghost-err-box{background:rgba(248,81,73,0.15);box-shadow:0 0 0 1px rgba(248,81,73,0.35);border-radius:3px}
+#ac-ghost .ghost-arrow{color:var(--text-muted);margin:0 3px}
+#ac-ghost .ghost-fix-box{background:rgba(63,185,80,0.15);box-shadow:0 0 0 1px rgba(63,185,80,0.35);border-radius:3px}
+/* 补全模式输入框 */
+#q.ac-mode{color:transparent;caret-color:var(--text-main)}
+@media(max-width:768px){
+.ac-item{padding:12px 14px;min-height:44px}
+.ac-card-body{max-height:160px}
+}
 </style>
 <div class="wrap">
 <div class="search-wrap" id="search-wrap-container">
 <svg class="search-ic" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z" fill="currentColor"/></svg>
+<div id="ac-ghost"></div>
 <input id="q" type="text" placeholder="搜索想做的事或指令关键词…" autocomplete="off">
+<span id="ac-mode-tag" class="ac-mode-tag">&#x2328;&#xFE0F; 补全 &#x2715;</span>
 <div id="sem-panel"></div>
+<div id="ac-panel"></div>
 </div>
 <div class="ftabs" id="tabs"></div>
 <div style="font-size:12.5px;color:var(--text-muted);margin-top:-0.5rem;margin-bottom:1.5rem;padding:10px 14px;background:var(--bg-main);border-left:3px solid var(--accent);border-radius:0 4px 4px 0;line-height:1.6;">
@@ -351,6 +390,10 @@ const syn = {
 
 function expand(t) { return syn[t] ? [t, ...syn[t]] : [t]; }
 
+// ---- 命令补全数据层（委托给 AcModule）----
+function buildAcTrie() { AcModule.buildTrie(); }
+function getAcMatches(prefix) { return AcModule.getMatches(prefix); }
+
 function initSearch() {
   const tabs = document.getElementById('tabs');
   const nores = document.getElementById('nores');
@@ -359,6 +402,41 @@ function initSearch() {
   const searchWrap = document.getElementById('search-wrap-container');
   let cur = 'all';
   let semTimer = null;
+  let _lastSemQ = '';  // 缓存上次语义搜索词，避免重复
+
+  // 本地开发时使用独立的语义搜索服务（search-server.js），端口从 config.json 读取
+  var _searchPort = 5501;
+  var SEARCH_URL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+      ? 'http://localhost:' + _searchPort + '/search'
+      : '/search';
+  if (SEARCH_URL !== '/search') {
+      fetch('config.json')
+          .then(function (r) { return r.json(); })
+          .then(function (cfg) {
+              if (cfg.searchPort) { _searchPort = cfg.searchPort; }
+              SEARCH_URL = 'http://localhost:' + _searchPort + '/search';
+          })
+          .catch(function () {});  // config.json 不存在时用默认端口
+  }
+
+  // ---- 命令补全模块（委托给 AcModule）----
+  var ac = AcModule.init({
+      q: q,
+      semPanel: semPanel,
+      searchWrap: searchWrap,
+      SECTION_META: SECTION_META,
+      esc: esc,
+      filter: filter,
+      scheduleSemanticSearch: scheduleSemanticSearch,
+      SEARCH_URL: SEARCH_URL,
+      semTimerRef: {
+          get current() { return semTimer; },
+          set current(v) { semTimer = v; }
+      }
+  });
+  var hideAcPanel = ac.hide;
+  var updateAutocomplete = ac.updateAutocomplete;
+  var getAutocompletePrefix = ac.getPrefix;
 
   // 缓存 DOM 节点以优化搜索性能
   const cachedSecs = Array.from(document.querySelectorAll('.sec')).map(sec => ({
@@ -394,6 +472,7 @@ function initSearch() {
   document.addEventListener('click', (e) => {
     if (!searchWrap.contains(e.target)) {
       semPanel.classList.remove('show');
+      hideAcPanel();
     }
     const cmd = e.target.closest('.cmd, .note-body code');
     if (cmd) {
@@ -418,7 +497,11 @@ function initSearch() {
 
   // 恢复焦点时，如果没有改变且有数据，重新展示
   q.addEventListener('focus', () => {
-    if (q.value.trim() && semPanel.innerHTML.trim() !== '') {
+    var v = q.value.trim();
+    if (!v) return;
+    if (getAutocompletePrefix(v)) {
+      updateAutocomplete(v);
+    } else if (semPanel.innerHTML.trim() !== '') {
       semPanel.classList.add('show');
     }
   });
@@ -508,12 +591,15 @@ function initSearch() {
     if (!val) {
       semPanel.classList.remove('show');
       searchWrap.classList.remove('sem-loading');
+      _lastSemQ = '';
       return;
     }
+    if (val === _lastSemQ) return;  // 内容未变，跳过
+    _lastSemQ = val;
     semTimer = setTimeout(async () => {
       searchWrap.classList.add('sem-loading');
       try {
-        const resp = await fetch(`/search?q=${encodeURIComponent(val)}&n=5`);
+        const resp = await fetch(`${SEARCH_URL}?q=${encodeURIComponent(val)}&n=5`);
         if (resp.ok) renderSemPanel(await resp.json());
       } catch (_) {
         // 静默忽略，不影响关键词搜索
@@ -528,17 +614,95 @@ function initSearch() {
     isComposing = true;
     clearTimeout(semTimer);
     searchWrap.classList.remove('sem-loading');
+    hideAcPanel();
   });
   q.addEventListener('compositionend', () => {
     isComposing = false;
+    // 全角叹号归一化
+    if (q.value.includes('！')) { q.value = q.value.replace(/！/g, '!'); }
     filter();
-    scheduleSemanticSearch(q.value.trim());
+    var v = q.value;
+    if (getAutocompletePrefix(v)) {
+      updateAutocomplete(v);
+    } else {
+      scheduleSemanticSearch(v.trim());
+    }
   });
   q.addEventListener('input', () => {
     if (isComposing) return;
+    // 全角叹号归一化
+    if (q.value.includes('！')) { q.value = q.value.replace(/！/g, '!'); }
+    // 多个空格合并为一个
+    if (/\s{2,}/.test(q.value)) {
+        var pos = q.selectionStart;
+        q.value = q.value.replace(/\s{2,}/g, ' ');
+        q.selectionStart = q.selectionEnd = Math.min(pos, q.value.length);
+    }
     filter();
-    scheduleSemanticSearch(q.value.trim());
+    var v = q.value;
+    if (getAutocompletePrefix(v)) {
+      updateAutocomplete(v);
+    } else {
+      hideAcPanel();
+      scheduleSemanticSearch(v.trim());
+    }
   });
+
+  // 仅更新高亮位置（不改 DOM 结构，避免鼠标反馈循环）
+  function updateAcHighlight(newIndex) {
+      var prefix = getAutocompletePrefix(q.value);
+      var items = acPanel.querySelectorAll('.ac-item');
+      items.forEach(function (el, i) {
+          el.classList.toggle('hl', i === newIndex);
+      });
+      var hlEl = items[newIndex];
+      if (hlEl) hlEl.scrollIntoView({ block: 'nearest' });
+      updateGhost(prefix);
+  }
+
+  // 键盘导航（桌面端）
+  q.addEventListener('keydown', function (e) {
+    if (!acPanel.classList.contains('show')) return;
+    switch (e.key) {
+      case 'Tab':
+        e.preventDefault();
+        if (currentAcHlIndex >= 0 && currentAcHlIndex < currentAcResults.length) {
+          fillAcCommand(currentAcResults[currentAcHlIndex]);
+        }
+        break;
+      case 'Enter':
+        if (currentAcHlIndex >= 0 && currentAcHlIndex < currentAcResults.length) {
+          e.preventDefault();
+          fillAcCommand(currentAcResults[currentAcHlIndex]);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        hideAcPanel();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        if (currentAcResults.length > 0) {
+          currentAcHlIndex = (currentAcHlIndex - 1 + currentAcResults.length) % currentAcResults.length;
+          updateAcHighlight(currentAcHlIndex);
+        }
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        if (currentAcResults.length > 0) {
+          currentAcHlIndex = (currentAcHlIndex + 1) % currentAcResults.length;
+          updateAcHighlight(currentAcHlIndex);
+        }
+        break;
+    }
+  });
+
+  // 模式标签点击退出
+  acModeTag.addEventListener('click', function (e) {
+    e.stopPropagation();
+    exitAcMode();
+  });
+
   filter();
 }
 
@@ -559,6 +723,9 @@ function scrollToItem(id) {
 fetch('commands.json')
   .then(r => r.json())
   .then(data => {
+    AcModule.setData(data);
+    buildAcTrie();
+
     const grouped = {};
     SECTION_ORDER.forEach(s => grouped[s] = []);
     data.forEach(item => { if (grouped[item.section]) grouped[item.section].push(item); });
@@ -569,6 +736,7 @@ fetch('commands.json')
     initSearch();
   });
 </script>
+<script src="command-autocomplete.js"></script>
 <script src="version-check.js"></script>
 </body>
 </html>

@@ -1,3 +1,4 @@
 {
-  "embeddingModel": "@cf/baai/bge-m3"
+  "embeddingModel": "@cf/baai/bge-m3",
+  "searchPort": 5501
 }
