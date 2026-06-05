@@ -12,6 +12,26 @@
 import embData from '../embeddings.json';
 import cmdsData from '../commands.json';
 
+// D1 日志表初始化（每次冷启动执行一次）
+let dbReady = false;
+async function ensureTable(db) {
+    if (dbReady) return;
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS search_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            q TEXT NOT NULL,
+            n INTEGER,
+            model TEXT,
+            top_score REAL,
+            result_count INTEGER,
+            elapsed_ms INTEGER,
+            top3 TEXT,
+            created_at TEXT DEFAULT (datetime('now'))
+        )
+    `);
+    dbReady = true;
+}
+
 // ---- 启动时解码所有向量（每次冷启动执行一次）----
 
 /**
@@ -62,7 +82,7 @@ export async function onRequestOptions() {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
 }
 
-export async function onRequestGet({ request, env }) {
+export async function onRequestGet({ request, env, waitUntil }) {
     const url = new URL(request.url);
     const q = (url.searchParams.get('q') || '').trim();
     const n = Math.min(parseInt(url.searchParams.get('n') || '10', 10) || 10, 30);
@@ -87,14 +107,6 @@ export async function onRequestGet({ request, env }) {
 
     const t0 = Date.now();
 
-    console.log(JSON.stringify({
-        event: 'search_request',
-        q,
-        n,
-        model: embData.model,
-        timestamp: new Date().toISOString(),
-    }));
-
     const aiResult = await env.AI.run(embData.model, { text: [q] });
     const queryEmb = new Float32Array(aiResult.data[0]);
 
@@ -104,15 +116,21 @@ export async function onRequestGet({ request, env }) {
         .sort((a, b) => b.score - a.score)
         .slice(0, n);
 
-    console.log(JSON.stringify({
-        event: 'search_done',
-        q,
-        n,
-        top_score: scored[0]?.score,
-        result_count: scored.length,
-        elapsed_ms: Date.now() - t0,
-        top3: scored.slice(0, 3).map(r => cmdMap[r.id]?.title),
-    }));
+    const elapsedMs = Date.now() - t0;
+    const top3 = scored.slice(0, 3).map(r => cmdMap[r.id]?.title);
+
+    // 异步写 D1 日志，不阻塞响应
+    waitUntil((async () => {
+        try {
+            await ensureTable(env.LOG_DB);
+            await env.LOG_DB.prepare(
+                `INSERT INTO search_log (q, n, model, top_score, result_count, elapsed_ms, top3)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`
+            ).bind(q, n, embData.model, scored[0]?.score ?? null, scored.length, elapsedMs, JSON.stringify(top3)).run();
+        } catch (e) {
+            console.error('search_log write failed:', e?.message);
+        }
+    })());
 
     // 附带原始指令数据（score 保留 4 位小数）
     const results = scored.map(r => ({
