@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.92em' font-size='70'>🚀</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 </head>
 <body>
 <h1 style="text-align:center;font-size:22px;margin-bottom:2px;color:var(--text-main);">伊卡洛斯星服务器指令速查表</h1>
@@ -13,42 +14,43 @@
   --bg-main: #ebf0f4;
   --bg-panel: #ffffff;
   --border: #cfd7de;
-  --border-focus: #536f86;
+  --border-focus: #4a7fa8;
   --text-main: #24292e;
   --text-muted: #586069;
-  --accent: #0366d6;
-  --accent-active: #005cc5;
-  --accent-bg: #e6f1fb;
-  --font-sans: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  --font-mono: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  --accent: #1b6eb3;
+  --accent-active: #155a94;
+  --accent-bg: #eaf3fa;
+  --font-sans: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", Consolas, "Liberation Mono", Menlo, Courier, monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg-main: #121416;
     --bg-panel: #1b1e22;
     --border: #2d333b;
-    --border-focus: #58a6ff;
+    --border-focus: #6db5e0;
     --text-main: #c9d1d9;
     --text-muted: #8b949e;
-    --accent: #58a6ff;
-    --accent-active: #79c0ff;
-    --accent-bg: #1f2a36;
+    --accent: #6db5e0;
+    --accent-active: #8ec8ee;
+    --accent-bg: #1b2a38;
   }
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font-sans);background:var(--bg-main);color:var(--text-main);line-height:1.5;-webkit-font-smoothing:antialiased}
+h1{font-family:"Syne",var(--font-sans)}
 .wrap{max-width:960px;margin:0 auto;padding:1.5rem 2rem;background:var(--bg-panel);min-height:100vh;box-shadow:0 0 15px rgba(0,0,0,0.03);border-left:1px solid var(--border);border-right:1px solid var(--border)}
-@keyframes search-pulse{0%,100%{box-shadow:0 0 0 0 rgba(88,166,255,0)}50%{box-shadow:0 0 0 6px rgba(88,166,255,0.18);border-color:var(--border-focus)}}
+@keyframes search-pulse{0%,100%{box-shadow:0 0 0 0 rgba(27,110,179,0)}50%{box-shadow:0 0 0 6px rgba(27,110,179,0.13);border-color:var(--border-focus)}}
 .search-wrap{position:relative;margin-bottom:1rem}
 .search-ic{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--text-muted);pointer-events:none;transition:color 0.2s;flex-shrink:0}
 .search-wrap:focus-within .search-ic{color:var(--accent)}
 #q{width:100%;padding:10px 14px 10px 38px;font-size:14px;line-height:1.5;border:1px solid var(--border);border-radius:4px;background:var(--bg-main);color:var(--text-main);margin-bottom:0;font-family:inherit;transition:border-color 0.2s,box-shadow 0.2s,background 0.2s;animation:search-pulse 2s ease 0.5s 3}
-#q:focus{outline:none;border-color:var(--border-focus);background:var(--bg-panel);box-shadow:0 0 0 3px rgba(88,166,255,0.1)}
+#q:focus{outline:none;border-color:var(--border-focus);background:var(--bg-panel);box-shadow:0 0 0 3px rgba(27,110,179,0.1)}
 @media (prefers-reduced-motion:reduce){#q{animation:none}}
 .ftabs{display:grid;grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:8px;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px dashed var(--border);min-height:130px;align-content:start}
 .ftab{display:flex;align-items:center;justify-content:center;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:var(--bg-panel);color:var(--text-muted);transition:all 0.2s;font-weight:500;box-shadow:0 1px 2px rgba(0,0,0,0.02);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;-webkit-tap-highlight-color:transparent}
-.ftab:hover{background:var(--bg-main);color:var(--text-main);border-color:var(--border-focus)}
-.ftab.on{background:var(--accent);color:#fff;border-color:var(--accent-active);box-shadow:0 2px 4px rgba(3,102,214,0.2)}
+.ftab:hover{background:var(--bg-main);color:var(--text-main);border-color:var(--border-focus);transform:translateY(-1px)}
+.ftab.on{background:var(--accent);color:#fff;border-color:var(--accent-active);box-shadow:0 2px 4px rgba(27,110,179,0.2)}
 .sec{margin-bottom:2rem;background:var(--bg-panel);border:1px solid var(--border);border-radius:4px;overflow:hidden}
 .sec-h{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg-main);border-bottom:1px solid var(--border)}
 .sec-t{font-size:15px;font-weight:600;color:var(--text-main);display:flex;align-items:center;gap:6px}
@@ -58,6 +60,7 @@ th{text-align:left;padding:8px 14px;font-size:12px;font-weight:600;color:var(--t
 tr.row{border-bottom:1px solid var(--border);transition:background 0.15s}
 tr.row:last-child{border-bottom:none}
 tr.row.clickable{cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
+tr.row.clickable:hover{box-shadow:inset 3px 0 0 0 var(--accent)}
 tr.row.clickable:hover .r-c1,
 tr.row.clickable:hover .r-c2,
 tr.row.clickable:hover .r-c3{background:var(--accent-bg)}
@@ -65,7 +68,8 @@ td{padding:0;vertical-align:top}
 .r-c1{width:22%;padding:12px 14px;font-weight:600;color:var(--text-main)}
 .r-c2{width:38%;padding:12px 14px}
 .r-c3{width:40%;padding:12px 14px;color:var(--text-muted)}
-.cmd{display:inline-block;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(88,166,255,0.2);border-radius:3px;padding:3px 6px;font-family:var(--font-mono);font-size:12px;font-weight:600;word-break:break-all;cursor:pointer;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.cmd{display:inline-block;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(27,110,179,0.18);border-radius:3px;padding:3px 6px;font-family:var(--font-mono);font-size:12px;font-weight:600;word-break:break-all;cursor:pointer;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:transform 0.15s ease,box-shadow 0.15s ease}
+.cmd:hover{transform:translateY(-1px);box-shadow:0 2px 6px rgba(0,0,0,0.1)}
 .al{display:block;font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-top:6px;padding-top:6px;border-top:1px dashed var(--border);user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 .opt{opacity:0.7;font-weight:normal}
 .hide{display:none!important}
@@ -186,7 +190,7 @@ tr.note-row.closing{animation:noteFadeOut 0.15s ease forwards}
 <div class="search-wrap" id="search-wrap-container">
 <svg class="search-ic" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z" fill="currentColor"/></svg>
 <div id="ac-ghost"></div>
-<input id="q" type="text" placeholder="搜索想做的事或指令关键词…" autocomplete="off">
+<input id="q" type="text" placeholder="搜点什么，比如 买船、赚钱、存物资…" autocomplete="off">
 <span id="ac-mode-tag" class="ac-mode-tag">&#x2328;&#xFE0F; 补全 &#x2715;</span>
 <div id="sem-panel"></div>
 <div id="ac-panel"></div>
@@ -214,7 +218,7 @@ tr.note-row.closing{animation:noteFadeOut 0.15s ease forwards}
 
 <div style="margin-top:3rem;padding-top:1.5rem;border-top:1px dashed var(--border);text-align:center;font-size:13px;color:var(--text-muted);line-height:1.8;">
   🚀 想要深入了解系统机制或遇到了瓶颈？<br>
-  <a href="https://docs.qq.com/doc/DWGZTS1dJWFRRaWNJ" target="_blank" style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;color:var(--accent);text-decoration:none;font-weight:600;background:rgba(3, 102, 214, 0.08);padding:8px 20px;border-radius:20px;">
+  <a href="https://docs.qq.com/doc/DWGZTS1dJWFRRaWNJ" target="_blank" style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;color:var(--accent);text-decoration:none;font-weight:600;background:rgba(27,110,179,0.08);padding:8px 20px;border-radius:20px;">
     📖 查看《伊卡洛斯星服务器详细说明文档》
   </a>
 </div>
