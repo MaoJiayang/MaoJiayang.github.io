@@ -523,7 +523,15 @@ function initSearch() {
     }, 600);
   }
 
+  let isComposing = false;
+  q.addEventListener('compositionstart', () => { isComposing = true; });
+  q.addEventListener('compositionend', () => {
+    isComposing = false;
+    filter();
+    scheduleSemanticSearch(q.value.trim());
+  });
   q.addEventListener('input', () => {
+    if (isComposing) return;
     filter();
     scheduleSemanticSearch(q.value.trim());
   });
