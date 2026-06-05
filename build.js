@@ -41,6 +41,7 @@ function stripMd(md) {
         .replace(/\*\*(.*?)\*\*/g, '$1')    // **bold** → bold
         .replace(/`([^`]+)`/g, '$1')        // `code` → code
         .replace(/^[-•]\s*/gm, '')          // 列表符号
+        .replace(/^---\s*$/gm, '')          // 水平分割线
         .replace(/[①②③④⑤⑥⑦⑧⑨]/g, '')  // 带圈数字
         .replace(/\n+/g, ' ')
         .trim();
@@ -48,14 +49,14 @@ function stripMd(md) {
 
 /**
  * 构建用于 embedding 的搜索文本
- * 拼接顺序：标题 > 指令别名 > 描述 > note 纯文本
+ * 字段加标签，帮助 embedding 模型区分语义主次
  */
 function buildSearchText(cmd) {
     return [
-        cmd.title,
-        cmd.commands.join(' '),
-        cmd.description,
-        stripMd(cmd.note),
+        '标题：' + cmd.title,
+        '指令：' + cmd.commands.join(' '),
+        '描述：' + cmd.description,
+        '用法：' + stripMd(cmd.note),
     ].filter(Boolean).join(' ');
 }
 

@@ -588,7 +588,7 @@
     "commands": [
       "!银行 转账"
     ],
-    "description": "将银行里的星币转账至其他玩家账户",
+    "description": "将银行里的太空货币转账至其他玩家账户",
     "note": "**操作指引**\n\n需填写对方的SteamID，双方可使用 !info myinfo 命令查看并互换 ID\n\n---\n\n**示例**\n\n`!银行 转账 76561198248299872 50000` 向该 SteamID 的玩家转账 50000 SC\n\n对方的 SteamID 可让其输入 `!info myinfo` 查询后告知你"
   },
   {
@@ -618,7 +618,7 @@
     "commands": [
       "!兑换"
     ],
-    "description": "输入兑换码领取奖励",
+    "description": "输入兑换码以兑换奖励",
     "note": null
   },
   {
