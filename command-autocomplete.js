@@ -343,6 +343,14 @@ var AcModule = (function () {
             }
         });
 
+        // 点击绿框纠正文字 → 上字
+        acGhost.addEventListener('click', function (e) {
+            var fixBox = e.target.closest('.ghost-fix-box');
+            if (!fixBox || currentAcResults.length === 0) return;
+            var idx = currentAcHlIndex >= 0 ? currentAcHlIndex : 0;
+            fillAcCommand(currentAcResults[idx]);
+        });
+
         // ====== 公开 API ======
 
         return {
