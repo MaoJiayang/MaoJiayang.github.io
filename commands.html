@@ -73,6 +73,7 @@ td{padding:0;vertical-align:top}
 .al{display:block;font-family:var(--font-mono);font-size:11px;color:var(--text-muted);margin-top:6px;padding-top:6px;border-top:1px dashed var(--border);user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 .opt{opacity:0.7;font-weight:normal}
 .hide{display:none!important}
+#cmd-sections{min-height:200px;contain:layout style}
 .nores{padding:3rem;text-align:center;color:var(--text-muted);background:var(--bg-main);border:1px dashed var(--border);border-radius:4px;font-size:14px;font-weight:500}
 .c1-cell{display:flex;align-items:flex-start;gap:4px;padding-top:1px}
 .arrow,.arrow-placeholder{display:inline-block;width:14px;flex-shrink:0;text-align:center;font-size:13px;line-height:1.5;margin-top:0;transition:transform 0.18s,color 0.15s}
@@ -214,7 +215,7 @@ tr.note-row.closing{animation:noteFadeOut 0.15s ease forwards}
 <tr class="row"><td class="c1"> </td><td class="c2"> </td><td class="c3"> </td></tr>
 </tbody></table></div></div>
 
-<div class="nores" id="nores">没有找到匹配的指令</div>
+<div class="nores hide" id="nores">没有找到匹配的指令</div>
 
 <div style="margin-top:3rem;padding-top:1.5rem;border-top:1px dashed var(--border);text-align:center;font-size:13px;color:var(--text-muted);line-height:1.8;">
   🚀 想要深入了解系统机制或遇到了瓶颈？<br>
@@ -393,7 +394,9 @@ const syn = {
   '精英':['安全区','自动建造'],'vip':['安全区','精英'],
 };
 
-function expand(t) { return syn[t] ? [t, ...syn[t]] : [t]; }
+var _expandCache = new Map();
+for (var _ek in syn) { if (Object.prototype.hasOwnProperty.call(syn, _ek)) _expandCache.set(_ek, [_ek].concat(syn[_ek])); }
+function expand(t) { return _expandCache.get(t) || [t]; }
 
 // ---- 命令补全数据层（委托给 AcModule）----
 function buildAcTrie() { AcModule.buildTrie(); }
@@ -407,7 +410,8 @@ function initSearch() {
   const searchWrap = document.getElementById('search-wrap-container');
   let cur = 'all';
   let semTimer = null;
-  let _lastSemQ = '';  // 缓存上次语义搜索词，避免重复
+  let _lastSemQ = '';
+  let _filterRafId = null;
 
   // 本地开发时使用独立的语义搜索服务（search-server.js），端口从 config.json 读取
   var _searchPort = 5501;
@@ -449,7 +453,9 @@ function initSearch() {
     id: sec.dataset.sec,
     rows: Array.from(sec.querySelectorAll('tr.row')).map(tr => ({
       el: tr,
-      text: tr.textContent.toLowerCase()
+      text: tr.textContent.toLowerCase(),
+      noteEl: document.getElementById('note-' + tr.dataset.id),
+      arrowEl: document.getElementById('arrow-' + tr.dataset.id)
     }))
   }));
 
@@ -521,30 +527,53 @@ function initSearch() {
     b.onclick = () => {
       cur = c.id;
       document.querySelectorAll('.ftab').forEach(x => x.classList.toggle('on', x.dataset.id === c.id));
-      filter();
+      scheduleFilter();
     };
     tabs.appendChild(b);
   });
 
+  function scheduleFilter() {
+    if (_filterRafId !== null) cancelAnimationFrame(_filterRafId);
+    _filterRafId = requestAnimationFrame(function() {
+      _filterRafId = null;
+      filterImpl();
+    });
+  }
+
   function filter() {
+    // filter() 由外部（AcModule）调用，统一走 rAF 批处理
+    scheduleFilter();
+  }
+
+  function filterImpl() {
     const v = q.value.toLowerCase().trim();
     const terms = v ? v.split(/\s+/).filter(Boolean) : [];
     let any = false;
-    
-    cachedSecs.forEach(secObj => {
-      if (cur !== 'all' && cur !== secObj.id) { 
-        secObj.el.classList.add('hide'); 
-        return; 
+
+    // 快速路径：空搜索 + 全部分类 → 批量恢复所有可见
+    if (!v && cur === 'all') {
+      cachedSecs.forEach(function(secObj) {
+        secObj.el.classList.remove('hide');
+        secObj.rows.forEach(function(rowObj) {
+          rowObj.el.classList.remove('hide');
+        });
+      });
+      nores.style.display = 'none';
+      return;
+    }
+
+    cachedSecs.forEach(function(secObj) {
+      if (cur !== 'all' && cur !== secObj.id) {
+        secObj.el.classList.add('hide');
+        return;
       }
-      let vis = false;
-      secObj.rows.forEach(rowObj => {
-        const m = !terms.length || terms.every(t => expand(t).some(k => rowObj.text.includes(k)));
+      var vis = false;
+      secObj.rows.forEach(function(rowObj) {
+        var m = !terms.length || terms.every(function(t) { return expand(t).some(function(k) { return rowObj.text.indexOf(k) !== -1; }); });
         rowObj.el.classList.toggle('hide', !m);
         if (!m) {
-          const noteRow = document.getElementById('note-' + rowObj.el.dataset.id);
-          if (noteRow) noteRow.style.display = 'none';
-          const arrow = document.getElementById('arrow-' + rowObj.el.dataset.id);
-          if (arrow) arrow.classList.remove('open');
+          if (rowObj.noteEl) rowObj.noteEl.style.display = 'none';
+          if (rowObj.arrowEl) rowObj.arrowEl.classList.remove('open');
         }
         if (m) vis = true;
       });
@@ -625,7 +654,7 @@ function initSearch() {
     isComposing = false;
     // 全角叹号归一化
     if (q.value.includes('！')) { q.value = q.value.replace(/！/g, '!'); }
-    filter();
+    scheduleFilter();
     var v = q.value;
     if (getAutocompletePrefix(v)) {
       updateAutocomplete(v);
@@ -643,7 +672,7 @@ function initSearch() {
         q.value = q.value.replace(/\s{2,}/g, ' ');
         q.selectionStart = q.selectionEnd = Math.min(pos, q.value.length);
     }
-    filter();
+    scheduleFilter();
     var v = q.value;
     if (getAutocompletePrefix(v)) {
       updateAutocomplete(v);
@@ -653,7 +682,7 @@ function initSearch() {
     }
   });
 
-  filter();
+  scheduleFilter();
 }
 
 // 滚动到指定指令行并短暂高亮

@@ -199,20 +199,24 @@ var AcModule = (function () {
                 + '<button id="ac-close">×</button>'
                 + '</div><div class="ac-card-body">' + items + '</div></div>';
             acPanel.classList.add('show');
-            var hlEl = acPanel.querySelector('.hl');
-            if (hlEl) hlEl.scrollIntoView({ block: 'nearest' });
             document.getElementById('ac-close').onclick = function (e) {
                 e.stopPropagation();
                 hideAcPanel();
             };
-            acPanel.querySelectorAll('.ac-item').forEach(function (el) {
-                el.addEventListener('click', function () {
-                    var id = el.dataset.id;
-                    var match = currentAcResults.find(function (r) { return r.cmd.id === id; });
-                    if (match) fillAcCommand(match);
+            // 将读取 DOM 和滚动延迟到下一帧，避免写-读布局抖动
+            var _prefix = prefix;
+            requestAnimationFrame(function () {
+                var hlEl = acPanel.querySelector('.hl');
+                if (hlEl) hlEl.scrollIntoView({ block: 'nearest' });
+                acPanel.querySelectorAll('.ac-item').forEach(function (el) {
+                    el.addEventListener('click', function () {
+                        var id = el.dataset.id;
+                        var match = currentAcResults.find(function (r) { return r.cmd.id === id; });
+                        if (match) fillAcCommand(match);
+                    });
                 });
+                if (_prefix !== undefined) updateGhost(_prefix);
             });
-            if (prefix !== undefined) updateGhost(prefix);
         }
 
         // ====== 语义纠错搜索 ======
