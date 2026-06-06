@@ -10,11 +10,12 @@ var CmdExec = (function () {
 
   var CRED_KEY = 'se_credentials';
   var CALL_KEY = 'se_call_times';
-  var RATE_LIMIT = 45;  // 每分钟最多 30 次
+  var RATE_LIMIT = 45;
   var _q = null;
   var _bridgeUrl = 'http://localhost:3001';
-  var _apiToken = null;  // 桥接服务器 Token，init 时获取
+  var _apiToken = null;
   var _gaugeTimer = null;
+  var _isLocal = false;
 
   // ========== 登录管理 ==========
 
@@ -478,16 +479,22 @@ var CmdExec = (function () {
       });
     }
 
-    // 获取桥接服务器 Token（失败则后续请求都会失败，用户能看到明确错误）
-    fetch(_bridgeUrl + '/api/token')
-      .then(function (r) { return r.json(); })
-      .then(function (d) { if (d.data && d.data.token) _apiToken = d.data.token; })
-      .catch(function () { /* 桥接未启动，后续操作会提示连接错误 */ });
+    // 同域部署（CF Pages Function）用相对路径，本地开发用 localhost 桥接
+    _isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    _bridgeUrl = _isLocal ? 'http://localhost:3001' : '';
 
     updateCredLabel();
     updateRateGauge();
 
-    // 延迟 3 秒启动后台任务，避免抢占页面加载
+    // 本地模式获取 Token（CF Pages 同域请求不需要）
+    if (_isLocal) {
+      fetch(_bridgeUrl + '/api/token')
+        .then(function (r) { return r.json(); })
+        .then(function (d) { if (d.data && d.data.token) _apiToken = d.data.token; })
+        .catch(function () { /* 桥接未启动，后续操作会提示连接错误 */ });
+    }
+
+    // 延迟 3 秒启动后台任务
     setTimeout(function () {
       startHealthPolling();
       _gaugeTimer = setInterval(updateRateGauge, 5000);
