@@ -445,6 +445,16 @@ var CmdExec = (function () {
         return;
       }
 
+      if (e.key === 'Enter') {
+        var acPanel = document.getElementById('ac-panel');
+        if (acPanel && acPanel.classList.contains('show')) return;
+        if (canExecute(_q.value)) {
+          e.preventDefault();
+          handleExecute();
+          return;
+        }
+      }
+
       if (e.key === 'ArrowUp') {
         e.preventDefault();
         var hist = getHistory();

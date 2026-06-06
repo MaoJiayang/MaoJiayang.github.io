@@ -214,8 +214,8 @@ var AcModule = (function () {
                 hideAcMode();
                 hideGhost();
                 acPanel.innerHTML = '<div class="ac-card">'
-                    + '<div class="ac-card-h">⌨️ 指令补全'
-                    + '<button id="ac-close">×</button>'
+                    + '<div class="ac-card-h">指令补全'
+                    + '<span class="ac-card-actions"><button id="ac-hist" title="最近执行">最近</button><button id="ac-close">×</button></span>'
                     + '</div><div class="ac-card-body"><div class="ac-nores">没有匹配的指令</div></div></div>';
                 acPanel.classList.add('show');
                 return;
@@ -243,7 +243,7 @@ var AcModule = (function () {
             }).join('');
             acPanel.innerHTML = '<div class="ac-card">'
                 + '<div class="ac-card-h">' + headerText
-                + '<button id="ac-close">×</button>'
+                + '<span class="ac-card-actions"><button id="ac-hist" title="最近执行">最近</button><button id="ac-close">×</button></span>'
                 + '</div><div class="ac-card-body">' + items + '</div></div>';
             acPanel.classList.add('show');
             document.getElementById('ac-close').onclick = function (e) {

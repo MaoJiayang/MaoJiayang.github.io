@@ -161,7 +161,7 @@ tr.note-row.closing{animation:noteFadeOut 0.15s ease forwards}
 .ac-card-body::-webkit-scrollbar{width:6px}
 .ac-card-body::-webkit-scrollbar-thumb{background:var(--text-muted);border-radius:3px;opacity:0.3}
 .ac-card-h{display:flex;align-items:center;gap:6px;padding:7px 14px;background:var(--accent-bg);border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--accent)}
-.ac-card-h button{margin-left:auto;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;line-height:1;padding:0;opacity:0.6}
+.ac-card-h button{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;line-height:1;padding:0;opacity:0.6}
 .ac-card-h button:hover{opacity:1}
 .ac-item{display:flex;flex-direction:column;gap:3px;padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;font-size:13px}
 .ac-item:last-child{border-bottom:none}
@@ -173,6 +173,13 @@ tr.note-row.closing{animation:noteFadeOut 0.15s ease forwards}
 .ac-item-desc{font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ac-nores{padding:1rem;text-align:center;color:var(--text-muted);font-size:13px}
 .ac-searching{color:var(--accent)}
+.ac-card-actions{display:flex;align-items:center;gap:4px;margin-left:auto}
+.ac-card-actions button{background:none;border:none;font-size:12px;cursor:pointer;padding:2px 6px;border-radius:3px}
+.ac-card-actions button:hover{background:var(--bg-main)}
+#ac-close{color:var(--text-muted);font-size:18px!important;line-height:1;padding:0!important}
+#ac-close:hover{color:var(--text-main);background:none!important}
+#ac-hist{color:var(--accent);font-size:11px!important;opacity:1}
+#ac-hist:hover{color:var(--accent-active);opacity:1}
 /* 历史面板 */
 #hist-panel{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:100;border-radius:4px;border:1px solid var(--border);box-shadow:0 8px 24px rgba(0,0,0,0.14),0 2px 8px rgba(0,0,0,0.07);background:var(--bg-panel);opacity:0;transform:translateY(-8px);pointer-events:none;transition:all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);visibility:hidden}
 #hist-panel.show{opacity:1;transform:translateY(0);pointer-events:auto;visibility:visible}
@@ -583,6 +590,12 @@ function initSearch() {
       semPanel.classList.remove('show');
       hideAcPanel();
       histPanel.classList.remove('show');
+    }
+    if (e.target.closest('#ac-hist')) {
+      e.stopPropagation();
+      hideAcPanel();
+      renderHistPanel();
+      return;
     }
     const cmd = e.target.closest('.cmd, .note-body code');
     if (cmd) {
