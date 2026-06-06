@@ -8,8 +8,6 @@ python -m http.server 5500
 #   $env:CF_ACCOUNT_ID="你的账号ID"
 #   $env:CF_API_TOKEN="你的Token"
 #   node search-server-local.js
-# 配置 env 后也可简写为（PowerShell）:
-#   $env:CF_ACCOUNT_ID="xxx"; $env:CF_API_TOKEN="xxx"; search-server-local.js
 
 ## 重新生成 Embedding（更新 commands.json 后运行）
 

@@ -10,16 +10,25 @@ var AcModule = (function () {
 
     var _commandsData = null;
     var _trieRoot = null;
+    var _items = null;
+    var _itemCmdIds = null;
 
     /** 加载指令数据并构建 Trie */
     function setData(data) {
         _commandsData = data;
     }
 
+    /** 加载物品名称和物品指令 ID 集合 */
+    function setItemConfig(items, itemCmdIds) {
+        _items = items;
+        _itemCmdIds = new Set(itemCmdIds);
+    }
+
     /** 构建 Trie 前缀树（仅 ! 开头的别名） */
     function buildTrie() {
         _trieRoot = { children: new Map(), results: [] };
         if (!_commandsData) return;
+        // 插入指令别名路径
         _commandsData.forEach(function (cmd) {
             cmd.commands.forEach(function (alias) {
                 if (!alias.startsWith('!')) return;
@@ -35,6 +44,28 @@ var AcModule = (function () {
                 }
             });
         });
+        // 物品指令额外插入「别名 + 物品名」路径
+        if (_items && _itemCmdIds) {
+            _commandsData.forEach(function (cmd) {
+                if (!_itemCmdIds.has(cmd.id)) return;
+                cmd.commands.forEach(function (alias) {
+                    if (!alias.startsWith('!')) return;
+                    var base = alias.toLowerCase() + ' ';
+                    _items.forEach(function (itemName) {
+                        var node = _trieRoot;
+                        var path = base + itemName.toLowerCase();
+                        for (var i = 0; i < path.length; i++) {
+                            var c = path[i];
+                            if (!node.children.has(c)) {
+                                node.children.set(c, { children: new Map(), results: [] });
+                            }
+                            node = node.children.get(c);
+                            node.results.push({ cmd: cmd, alias: alias, type: 'item', itemName: itemName });
+                        }
+                    });
+                });
+            });
+        }
     }
 
     /** Trie 前缀查找 */
@@ -48,6 +79,15 @@ var AcModule = (function () {
         }
         return node.results.slice().sort(function (a, b) {
             return a.alias.length - b.alias.length;
+        });
+    }
+
+    /** 物品名子串匹配（前缀无结果时的回退） */
+    function matchItemsBySubstring(query) {
+        if (!_items || !query) return [];
+        var lower = query.toLowerCase();
+        return _items.filter(function (name) {
+            return name.toLowerCase().indexOf(lower) !== -1;
         });
     }
 
@@ -136,7 +176,8 @@ var AcModule = (function () {
                 return;
             }
             var idx = currentAcHlIndex >= 0 ? currentAcHlIndex : 0;
-            var match = currentAcResults[idx].alias;
+            var r = currentAcResults[idx];
+            var match = r.type === 'item' ? r.alias + ' ' + r.itemName : r.alias;
             if (match.toLowerCase().startsWith(typedPrefix.toLowerCase())) {
                 var remaining = match.slice(typedPrefix.length);
                 acGhost.innerHTML =
@@ -159,8 +200,10 @@ var AcModule = (function () {
 
         // ====== 填入命令 ======
 
-        function fillAcCommand(cmd) {
-            q.value = cmd.alias + ' ';
+        function fillAcCommand(result) {
+            q.value = result.type === 'item'
+                ? result.alias + ' ' + result.itemName + ' '
+                : result.alias + ' ';
             _acJustFilled = true;
             hideAcPanel();
             q.focus();
@@ -181,14 +224,21 @@ var AcModule = (function () {
                 return;
             }
             if (!_acCorrection) showAcMode();
+            var isItem = results.length > 0 && results[0].type === 'item';
             var isMobile = window.matchMedia('(max-width: 768px)').matches;
             var maxItems = isMobile ? 6 : 10;
-            var headerText = _acCorrection ? '💡 你是不是想找' : '⌨️ 指令补全';
+            var headerText = _acCorrection ? '💡 你是不是想找' : (isItem ? '📦 物品补全' : '⌨️ 指令补全');
             var items = results.slice(0, maxItems).map(function (r, i) {
+                if (isItem) {
+                    return '<div class="ac-item' + (i === hlIndex ? ' hl' : '') + '" data-index="' + i + '">'
+                        + '<div class="ac-item-title">' + esc(r.itemName) + '</div>'
+                        + '<div class="ac-item-cmd"><code class="cmd">' + esc(r.alias + ' ' + r.itemName) + '</code></div>'
+                        + '</div>';
+                }
                 var secLabel = SECTION_META[r.cmd.section] ? SECTION_META[r.cmd.section].label : r.cmd.section;
                 var desc = r.cmd.description || '';
                 if (desc.length > 65) desc = desc.slice(0, 65) + '…';
-                return '<div class="ac-item' + (i === hlIndex ? ' hl' : '') + '" data-index="' + i + '" data-id="' + esc(r.cmd.id) + '">'
+                return '<div class="ac-item' + (i === hlIndex ? ' hl' : '') + '" data-index="' + i + '">'
                     + '<div class="ac-item-title">' + esc(r.cmd.title) + '<span class="ac-item-sec">' + secLabel + '</span></div>'
                     + '<div class="ac-item-cmd"><code class="cmd">' + esc(r.alias) + '</code></div>'
                     + (desc ? '<div class="ac-item-desc">' + esc(desc) + '</div>' : '')
@@ -210,8 +260,8 @@ var AcModule = (function () {
                 if (hlEl) hlEl.scrollIntoView({ block: 'nearest' });
                 acPanel.querySelectorAll('.ac-item').forEach(function (el) {
                     el.addEventListener('click', function () {
-                        var id = el.dataset.id;
-                        var match = currentAcResults.find(function (r) { return r.cmd.id === id; });
+                        var index = parseInt(el.dataset.index);
+                        var match = currentAcResults[index];
                         if (match) fillAcCommand(match);
                     });
                 });
@@ -280,22 +330,44 @@ var AcModule = (function () {
                 currentAcHlIndex = 0;
                 renderAcPanel(currentAcResults, currentAcHlIndex, prefix);
             } else {
-                // 前缀无匹配时，检查是否"已输入完整指令 + 参数"
+                // 前缀无匹配 → 尝试物品名子串匹配
                 var lastSpace = prefix.lastIndexOf(' ');
-                var paramMatch = false;
+                var subItemMatch = false;
                 if (lastSpace > 0) {
-                    var basePrefix = prefix.slice(0, lastSpace);
-                    var baseResults = getMatches(basePrefix);
-                    if (baseResults.some(function (r) { return r.alias.toLowerCase() === basePrefix.toLowerCase(); })) {
-                        // 用户输入了完整指令 + 参数，视为已匹配，不纠错
-                        currentAcResults = baseResults.filter(function (r) { return r.alias.toLowerCase() === basePrefix.toLowerCase(); });
+                    var itemQuery = prefix.slice(lastSpace + 1);
+                    if (itemQuery.length >= 1) {
+                        // 取空格前的有效路径，确定是物品指令
+                        var basePrefix = prefix.slice(0, lastSpace);
+                        var baseResults = getMatches(basePrefix);
+                        if (baseResults.length > 0 && _itemCmdIds && _itemCmdIds.has(baseResults[0].cmd.id)) {
+                            var subItems = matchItemsBySubstring(itemQuery);
+                            if (subItems.length > 0) {
+                                var cmdForItem = baseResults[0].cmd;
+                                currentAcResults = subItems.slice(0, 20).map(function (name) {
+                                    return { cmd: cmdForItem, alias: baseResults[0].alias, type: 'item', itemName: name };
+                                });
+                                currentAcHlIndex = 0;
+                                showAcMode();
+                                renderAcPanel(currentAcResults, currentAcHlIndex, prefix);
+                                subItemMatch = true;
+                            }
+                        }
+                    }
+                }
+                // 子串无匹配 → 检查是否"有效路径 + 参数"
+                var paramMatch = false;
+                if (!subItemMatch && lastSpace > 0) {
+                    var basePrefix2 = prefix.slice(0, lastSpace);
+                    var baseResults2 = getMatches(basePrefix2);
+                    if (baseResults2.length > 0) {
+                        currentAcResults = baseResults2;
                         currentAcHlIndex = 0;
                         showAcMode();
                         renderAcPanel(currentAcResults, currentAcHlIndex, prefix);
                         paramMatch = true;
                     }
                 }
-                if (!paramMatch) {
+                if (!subItemMatch && !paramMatch) {
                     hideAcMode();
                     hideGhost();
                     acPanel.innerHTML = '<div class="ac-card">'
@@ -383,6 +455,7 @@ var AcModule = (function () {
 
     return {
         setData: setData,
+        setItemConfig: setItemConfig,
         buildTrie: buildTrie,
         getMatches: getMatches,
         init: init
