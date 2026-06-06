@@ -632,6 +632,16 @@
     "note": null
   },
   {
+    "id": "info-set-password",
+    "section": "info",
+    "title": "设置游戏密码",
+    "commands": [
+      "!设置 密码"
+    ],
+    "description": "设置或修改游戏密码，用于在网页端登录后执行指令",
+    "note": "设定密码后，即可登录并在本页面上直接执行指令，免去切换游戏的麻烦。\n\n**示例**\n\n`!设置 密码 123456` 将密码设为 123456"
+  },
+  {
     "id": "info-worth",
     "section": "info",
     "title": "估算飞船价值",

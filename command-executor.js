@@ -10,7 +10,7 @@ var CmdExec = (function () {
 
   var CRED_KEY = 'se_credentials';
   var CALL_KEY = 'se_call_times';
-  var RATE_LIMIT = 45;
+  var RATE_LIMIT = 25;  // 每分钟调用限制
   var _q = null;
   var _bridgeUrl = 'http://localhost:3001';
   var _apiToken = null;
@@ -51,9 +51,34 @@ var CmdExec = (function () {
   }
 
   var _memCreds = null;
+
+  var HIST_KEY = 'se_cmd_history';
+  var MAX_HIST = 30;
+  var _histIdx = -1;
+  var _histSaved = '';
+  var _histNav = false;
+
   function getCredentials() {
     if (_memCreds) return _memCreds;
     return loadCredentials();
+  }
+
+  function pushHistory(cmd) {
+    var hist = getHistory();
+    if (hist.length > 0 && hist[0] === cmd) return;
+    hist.unshift(cmd);
+    if (hist.length > MAX_HIST) hist.length = MAX_HIST;
+    try { localStorage.setItem(HIST_KEY, JSON.stringify(hist)); } catch (_) {}
+  }
+
+  function getHistory() {
+    try { return JSON.parse(localStorage.getItem(HIST_KEY)) || []; } catch (_) { return []; }
+  }
+
+  function clearHistory() {
+    try { localStorage.removeItem(HIST_KEY); } catch (_) {}
+    _histIdx = -1;
+    _histSaved = '';
   }
 
   function hasCredentials() {
@@ -121,12 +146,10 @@ var CmdExec = (function () {
 
   function updateExecButton() {
     var btn = document.getElementById('exec-btn');
-    var tag = document.getElementById('ac-mode-tag');
     if (!btn) return;
     var val = _q ? _q.value : '';
     if (canExecute(val)) {
       btn.classList.add('show');
-      if (tag) tag.classList.remove('show');  // 执行按钮出现时隐藏补全标签
     } else {
       btn.classList.remove('show');
       btn.classList.remove('executing');
@@ -186,6 +209,7 @@ var CmdExec = (function () {
 
         if (result.code === 200) {
           trackCall();
+          pushHistory(val);
           showToast('success', '指令已发送，请在游戏内查看结果');
         } else if (result.code === 401) {
           showToast('error', '账号或密码错误，请重新登录');
@@ -418,6 +442,31 @@ var CmdExec = (function () {
           e.preventDefault();
           handleExecute();
         }
+        return;
+      }
+
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        var hist = getHistory();
+        if (hist.length === 0) return;
+        _histNav = true;
+        if (_histIdx === -1) { _histSaved = _q.value; _histIdx = 0; }
+        else if (_histIdx < hist.length - 1) { _histIdx++; }
+        _q.value = hist[_histIdx];
+        _q.dispatchEvent(new Event('input', { bubbles: true }));
+        _histNav = false;
+        return;
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        var hist = getHistory();
+        if (_histIdx === -1) return;
+        _histNav = true;
+        if (_histIdx > 0) { _histIdx--; _q.value = hist[_histIdx]; }
+        else { _histIdx = -1; _q.value = _histSaved; }
+        _q.dispatchEvent(new Event('input', { bubbles: true }));
+        _histNav = false;
+        return;
       }
     });
 
@@ -506,5 +555,9 @@ var CmdExec = (function () {
     init: init,
     getCredentials: getCredentials,
     canExecute: canExecute,
+    getHistory: getHistory,
+    pushHistory: pushHistory,
+    clearHistory: clearHistory,
+    get _histNav() { return _histNav; },
   };
 })();

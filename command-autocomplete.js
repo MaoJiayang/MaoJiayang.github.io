@@ -118,7 +118,6 @@ var AcModule = (function () {
 
         // DOM 引用
         var acPanel = document.getElementById('ac-panel');
-        var acModeTag = document.getElementById('ac-mode-tag');
         var acGhost = document.getElementById('ac-ghost');
 
         // 状态
@@ -131,12 +130,10 @@ var AcModule = (function () {
         // ====== 模式控制 ======
 
         function showAcMode() {
-            acModeTag.classList.add('show');
             q.classList.add('ac-mode');
         }
 
         function hideAcMode() {
-            acModeTag.classList.remove('show');
             q.classList.remove('ac-mode');
         }
 
@@ -394,11 +391,6 @@ var AcModule = (function () {
         }
 
         // ====== 绑定事件 ======
-
-        acModeTag.addEventListener('click', function (e) {
-            e.stopPropagation();
-            exitAcMode();
-        });
 
         q.addEventListener('keydown', function (e) {
             if (!acPanel.classList.contains('show')) return;
