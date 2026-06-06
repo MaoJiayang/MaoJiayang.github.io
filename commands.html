@@ -173,7 +173,7 @@ tr.note-row.closing{animation:noteFadeOut 0.15s ease forwards}
 .ac-item-desc{font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ac-nores{padding:1rem;text-align:center;color:var(--text-muted);font-size:13px}
 .ac-searching{color:var(--accent)}
-.ac-card-actions{display:flex;align-items:center;gap:4px;margin-left:auto}
+.ac-card-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
 .ac-card-actions button{background:none;border:none;font-size:12px;cursor:pointer;padding:2px 6px;border-radius:3px}
 .ac-card-actions button:hover{background:var(--bg-main)}
 #ac-close{color:var(--text-muted);font-size:18px!important;line-height:1;padding:0!important}
@@ -188,8 +188,10 @@ tr.note-row.closing{animation:noteFadeOut 0.15s ease forwards}
 .hist-card-body::-webkit-scrollbar{width:6px}
 .hist-card-body::-webkit-scrollbar-thumb{background:var(--text-muted);border-radius:3px;opacity:0.3}
 .hist-card-h{display:flex;align-items:center;gap:6px;padding:7px 14px;background:var(--bg-main);border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text-main)}
-.hist-card-h button{margin-left:auto;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0}
-.hist-card-h button:hover{color:#f85149}
+.hist-card-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
+.hist-card-actions button{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0}
+.hist-card-actions button:hover{color:var(--accent)}
+#hist-clear:hover{color:#f85149}
 .hist-item{display:flex;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;font-size:13px;font-family:var(--font-mono);color:var(--accent)}
 .hist-item:last-child{border-bottom:none}
 .hist-item:hover{background:var(--bg-main)}
@@ -634,10 +636,22 @@ function initSearch() {
     }).join('');
     histPanel.innerHTML = '<div class="hist-card">' +
       '<div class="hist-card-h">最近执行' +
-        '<button id="hist-clear">清除</button>' +
+        '<span class="hist-card-actions">' +
+          '<button id="hist-ac" title="返回补全">补全</button>' +
+          '<button id="hist-clear">清除</button>' +
+        '</span>' +
       '</div><div class="hist-card-body">' + items + '</div></div>';
     hideAllPanels();
     histPanel.classList.add('show');
+
+    document.getElementById('hist-ac').onclick = function (e) {
+      e.stopPropagation();
+      var v = q.value.trim();
+      if (getAutocompletePrefix(v)) {
+        histPanel.classList.remove('show');
+        updateAutocomplete(v);
+      }
+    };
 
     document.getElementById('hist-clear').onclick = function (e) {
       e.stopPropagation();
@@ -648,6 +662,7 @@ function initSearch() {
     histPanel.querySelectorAll('.hist-item').forEach(function (el, i) {
       el.addEventListener('click', function () {
         q.value = hist[i];
+        q.dispatchEvent(new Event('input', { bubbles: true }));
         histPanel.classList.remove('show');
         q.focus();
         scheduleFilter();
