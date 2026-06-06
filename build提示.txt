@@ -1,13 +1,12 @@
-## 本地预览
+## 本地预览（一键启动）
 
-python -m http.server 5500
+# 首次使用: 复制 .env.example 为 .env 并填入 Cloudflare 凭据（可选，仅语义搜索需要）
+copy .env.example .env
+
+.\start-local.bat                 # 同时启动前端 + 桥接 + 语义搜索（如有 .env）
 # 打开 http://localhost:5500/commands.html
-# 关键词搜索/渲染正常
 
-# 如需本地测试语义搜索（含指令补全纠错），另开一个终端运行:
-#   $env:CF_ACCOUNT_ID="你的账号ID"
-#   $env:CF_API_TOKEN="你的Token"
-#   node search-server-local.js
+# 或者手动分开启动桥接服务和搜索服务
 
 ## 重新生成 Embedding（更新 commands.json 后运行）
 
@@ -20,12 +19,20 @@ node test-search.js "保存飞船"    # 本地测试脚本，可以测试嵌入�
 
 ## 文件说明
 
-commands.json       指令数据，日常维护的入口
-embeddings.json     由 build.js 生成，勿手动编辑
-build.js            生成脚本，需要上方两个环境变量
-functions/search.js CF Pages Function，随仓库自动部署
-commands.html       前端页面，fetch commands.json 动态渲染
-config.json         嵌入用配置文件，主要配置模型名称如@cf/qwen/qwen3-embedding-0.6b或@cf/baai/bge-m3
+commands.json         指令数据，日常维护的入口
+embeddings.json       由 build.js 生成，勿手动编辑
+build.js              生成脚本，需要上方两个环境变量
+functions/search.js   CF Pages Function，随仓库自动部署
+commands.html         前端页面，fetch commands.json 动态渲染
+command-autocomplete.js 指令补全模块（Trie + 语义纠错）
+command-executor.js   指令执行模块（凭据管理 + 桥接通信 + 执行按钮）
+config.json           配置文件（模型名称、SE服务器连接、桥接端口）
+.env.example          环境变量模板（复制为 .env 后填入凭据，.env 已 gitignore）
+start-local.bat       本地开发一键启动脚本（自动加载 .env）
+
+bridge-server/        本地桥接服务器（HTTP → TCP 帧协议）
+  src/tcp-client.js     SE TCP 帧协议客户端
+  src/index.js          Express 服务器入口
 
 ## CF Dashboard 配置（首次部署前）
 

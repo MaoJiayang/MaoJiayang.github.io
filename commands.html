@@ -186,13 +186,83 @@ tr.note-row.closing{animation:noteFadeOut 0.15s ease forwards}
 .ac-item{padding:12px 14px;min-height:44px}
 .ac-card-body{max-height:160px}
 }
+
+/* === 指令执行 UI === */
+
+.toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+#bridge-status{font-size:11px;color:var(--text-muted);display:inline-flex;align-items:center;gap:5px;user-select:none}
+#cred-indicator{cursor:pointer;font-size:11px;color:var(--text-muted);padding:3px 10px;border-radius:12px;border:1px solid var(--border);background:var(--bg-main);transition:border-color .2s,color .2s,background .2s;user-select:none}
+#cred-indicator:hover{color:var(--text-main);border-color:var(--accent);background:var(--accent-bg)}
+#cred-indicator.has-creds{color:var(--accent);border-color:var(--accent)}
+
+/* 用量显示 */
+#rate-gauge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--text-muted);font-family:var(--font-mono)}
+.gauge-bar{width:36px;height:4px;border-radius:2px;background:var(--border);overflow:hidden}
+.gauge-fill{display:block;height:100%;border-radius:2px;background:var(--accent);transition:width .3s,background .3s}
+.gauge-fill.low{background:#f85149}
+.gauge-fill.mid{background:#d29922}
+.conn-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#8b949e;transition:background .3s}
+.conn-dot.online{background:#4ade80;box-shadow:0 0 6px rgba(74,222,128,.5)}
+.conn-dot.offline{background:#f85149}
+
+#exec-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);z-index:3;opacity:0;pointer-events:none;transition:opacity .15s,transform .15s;width:28px;height:28px;border-radius:4px;border:1px solid var(--border);background:var(--bg-main);color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px}
+#exec-btn.show{opacity:1;pointer-events:auto}
+#exec-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent-active)}
+#exec-btn.executing{pointer-events:none;opacity:.6}
+#exec-btn.executing svg{animation:exec-pulse .8s ease-in-out infinite}
+@keyframes exec-pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* 当执行按钮可见时，输入框右侧留空防止重叠 */
+#exec-btn.show~#q,#exec-btn.show~#ac-ghost{padding-right:44px}
+
+@media(max-width:768px){
+#exec-btn{width:36px;height:36px;font-size:14px}
+#exec-btn.show~#q,#exec-btn.show~#ac-ghost{padding-right:52px}
+}
+
+/* 登录模态框 */
+.modal-overlay{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.show{opacity:1;pointer-events:auto}
+.modal-dialog{background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;width:380px;max-width:90vw;box-shadow:0 16px 48px rgba(0,0,0,.2);overflow:hidden}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600;color:var(--text-main)}
+.modal-close-btn{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);line-height:1}
+.modal-close-btn:hover{color:var(--text-main)}
+.modal-body{padding:18px}
+.modal-field{margin-bottom:14px}
+.modal-field label{display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:4px}
+.modal-field input[type=text],.modal-field input[type=password]{width:100%;padding:8px 12px;font-size:14px;border:1px solid var(--border);border-radius:4px;background:var(--bg-main);color:var(--text-main);font-family:var(--font-mono);box-sizing:border-box}
+.modal-field input:focus{outline:none;border-color:var(--border-focus);box-shadow:0 0 0 3px rgba(27,110,179,.1)}
+.modal-checkbox{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-muted);cursor:pointer}
+.modal-error{background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:4px;padding:8px 12px;font-size:12px;color:#f85149;margin-bottom:14px}
+.modal-error.hide{display:none}
+.modal-submit{width:100%;padding:10px;font-size:14px;font-weight:600;background:var(--accent);color:#fff;border:none;border-radius:4px;cursor:pointer;font-family:inherit}
+.modal-submit:hover{background:var(--accent-active)}
+.modal-clear{width:100%;margin-top:8px;padding:8px;background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--text-muted);font-size:12px;cursor:pointer;font-family:inherit}
+.modal-clear.hide{display:none}
+.modal-clear:hover{border-color:#f85149;color:#f85149}
+.modal-hint{margin-top:12px;font-size:11px;color:var(--text-muted);line-height:1.6;padding:8px;background:var(--bg-main);border-radius:4px;border:1px solid var(--border)}
+.modal-hint code{font-family:var(--font-mono);font-size:11px;background:var(--bg-panel);padding:1px 4px;border-radius:2px}
+
+/* 执行结果提示条 */
+#exec-result{position:fixed;z-index:9997;left:50%;bottom:24px;transform:translateX(-50%);max-width:480px;width:calc(100% - 32px);background:var(--bg-panel);border:1px solid var(--border);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:12px 14px;font-size:13px;display:flex;align-items:flex-start;gap:8px;opacity:0;transform:translateX(-50%) translateY(16px);pointer-events:none;transition:opacity .25s,transform .25s}
+#exec-result.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+#exec-result.success{border-left:3px solid #4ade80}
+#exec-result.error{border-left:3px solid #f85149}
+#exec-result.warning{border-left:3px solid #d29922}
+.exec-result-icon{font-size:16px;flex-shrink:0;line-height:1.4}
+.exec-result-body{flex:1;min-width:0;word-break:break-word;color:var(--text-main);line-height:1.5;white-space:pre-wrap;max-height:120px;overflow-y:auto}
+.exec-result-dismiss{background:none;border:none;font-size:16px;cursor:pointer;color:var(--text-muted);flex-shrink:0;padding:0 2px;line-height:1}
+.exec-result-dismiss:hover{color:var(--text-main)}
+@media(max-width:768px){#exec-result{bottom:12px;max-width:100%}}
 </style>
 <div class="wrap">
+<div class="toolbar"><span id="bridge-status"><span class="conn-dot" id="conn-dot"></span> <span id="bridge-label">检测中</span> <span id="rate-gauge" class="hide"><span class="gauge-bar"><span class="gauge-fill" id="gauge-fill"></span></span><span id="rate-text">30/30</span></span></span><span id="cred-indicator" title="点击登录">未登录</span></div>
 <div class="search-wrap" id="search-wrap-container">
 <svg class="search-ic" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z" fill="currentColor"/></svg>
 <div id="ac-ghost"></div>
 <input id="q" type="text" placeholder="搜点什么，比如 买船、赚钱、存物资…" autocomplete="off">
 <span id="ac-mode-tag" class="ac-mode-tag">&#x2328;&#xFE0F; 补全 &#x2715;</span>
+<button id="exec-btn" title="执行指令 (Ctrl+Enter)" aria-label="执行指令">▶</button>
 <div id="sem-panel"></div>
 <div id="ac-panel"></div>
 </div>
@@ -246,7 +316,7 @@ const SECTION_META = {
 };
 const SECTION_ORDER = ['hangar','shipmarket','storage','build','trade','pmarket','combat','mission','finance','info','grid','list','lcd','safe'];
 
-var ITEMS = ['石头','镍矿','铁矿','钴矿','硅矿','镁矿','银矿','金矿','铂金矿','铀矿','冰','沙石','镍锭','铁锭','钴锭','硅片','镁粉','银锭','金锭','铂金锭','铀棒','原型材料','5-10','5-208','5-10E','MR-20','MR-8P','MR-50A','MR-30E','RO-1','PRO-1','氧气瓶','氢气瓶','焊接器','一级焊接器','二级焊接器','三级焊接器','切割机','一级切割机','二级切割机','三级切割机','手电钻','一级手电钻','二级手电钻','三级手电钻','S-10弹匣','S-20A弹匣','S-10E弹匣','MR-20弹匣','MR-50A弹匣','MR-8P弹匣','MR-30E弹匣','5.56mm弹匣','加特林弹药箱','火箭弹','重型火炮炮弹','突击火炮炮弹','大型轨道炮穿甲弹','小型轨道炮穿甲弹','机炮弹匣','医疗包','电力装置','抗辐射医疔箱','数据板','太空货币','结构零件','金属网格','内衬板','钢板','梁','小钢管','大型钢管','马达','显示器','防弹玻璃','超导体','计算机','反应堆零件','推进器零件','重力发生器零件','医疗零件','无线电零件','探测器零件','爆炸物','太阳能板','动力电池','帆布','安全区芯片','原型框架','原型面板','原型电容零件','原型推进零件','原型机械零件','原型电路零件','原型冷却零件','藻类','水果','谷物','蘑菇','蔬菜','生哺乳动物肉','熟哺乳动物肉','生昆虫肉','熟昆虫肉','消耗性供能单元','RG-05热能辐射炮弹弹匣','M-SLUAV导弹无人机','TBC101轨道炮穿甲弹','TBC202轨道炮穿甲弹','TBC404重型穿甲弹','TBR202穿甲弹弹鼓','TBR102机炮弹匣','M102小型动能导弹','M103小型热诱弹','M206中型高爆导弹','M207中型电磁脉冲导弹','M308大型反舰导弹','量子处理器','能量导管','马氏体时效钢','钛基复合板材','高精度轴承','原子振钟组件','微元栅格组件','电容器模块','放射性衰变电池','碳纳米材料','碳纳米管增强碳板','科技点数','无定形碳','钛锭','氧化钛','致密晶体','致密奇异物质','压缩混合气'];
+var ITEMS = ['石头','镍矿','铁矿','钴矿','硅矿','镁矿','银矿','金矿','铂金矿','铀矿','冰','沙石','镍锭','铁锭','钴锭','硅片','镁粉','银锭','金锭','铂金锭','铀棒','原型材料','S-10','S-20A','S-10E','MR-20','MR-8P','MR-50A','MR-30E','RO-1','PRO-1','氧气瓶','氢气瓶','焊接器','一级焊接器','二级焊接器','三级焊接器','切割机','一级切割机','二级切割机','三级切割机','手电钻','一级手电钻','二级手电钻','三级手电钻','S-10弹匣','S-20A弹匣','S-10E弹匣','MR-20弹匣','MR-50A弹匣','MR-8P弹匣','MR-30E弹匣','5.56mm弹匣','加特林弹药箱','火箭弹','重型火炮炮弹','突击火炮炮弹','大型轨道炮穿甲弹','小型轨道炮穿甲弹','机炮弹匣','医疗包','电力装置','抗辐射医疔箱','数据板','太空货币','结构零件','金属网格','内衬板','钢板','梁','小钢管','大型钢管','马达','显示器','防弹玻璃','超导体','计算机','反应堆零件','推进器零件','重力发生器零件','医疗零件','无线电零件','探测器零件','爆炸物','太阳能板','动力电池','帆布','安全区芯片','原型框架','原型面板','原型电容零件','原型推进零件','原型机械零件','原型电路零件','原型冷却零件','藻类','水果','谷物','蘑菇','蔬菜','生哺乳动物肉','熟哺乳动物肉','生昆虫肉','熟昆虫肉','消耗性供能单元','RG-05热能辐射炮弹弹匣','M-SLUAV导弹无人机','TBC101轨道炮穿甲弹','TBC202轨道炮穿甲弹','TBC404重型穿甲弹','TBR202穿甲弹弹鼓','TBR102机炮弹匣','M102小型动能导弹','M103小型热诱弹','M206中型高爆导弹','M207中型电磁脉冲导弹','M308大型反舰导弹','量子处理器','能量导管','马氏体时效钢','钛基复合板材','高精度轴承','原子振钟组件','微元栅格组件','电容器模块','放射性衰变电池','碳纳米材料','碳纳米管增强碳板','科技点数','无定形碳','钛锭','氧化钛','致密晶体','致密奇异物质','压缩混合气'];
 var ITEM_CMD_IDS = new Set(['storage-store','storage-draw','storage-drawtoself','trade-sell','trade-buy','pmarket-sell-order','pmarket-buy-order','pmarket-search','pmarket-autobuy','pmarket-autosell','mission-submit']);
 
 // ---- 渲染工具函数 ----
@@ -418,18 +488,26 @@ function initSearch() {
 
   // 本地开发时使用独立的语义搜索服务（search-server.js），端口从 config.json 读取
   var _searchPort = 5501;
+  var _bridgePort = 3001;
   var SEARCH_URL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
       ? 'http://localhost:' + _searchPort + '/search'
       : '/search';
-  if (SEARCH_URL !== '/search') {
-      fetch('config.json')
-          .then(function (r) { return r.json(); })
-          .then(function (cfg) {
-              if (cfg.searchPort) { _searchPort = cfg.searchPort; }
+
+  // 读取 bridgePort 并初始化指令执行模块（始终执行，不限于 localhost）
+  fetch('config.json')
+      .then(function (r) { return r.json(); })
+      .then(function (cfg) {
+          if (cfg.searchPort) { _searchPort = cfg.searchPort; }
+          if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
               SEARCH_URL = 'http://localhost:' + _searchPort + '/search';
-          })
-          .catch(function () {});  // config.json 不存在时用默认端口
-  }
+          }
+          if (cfg.bridgePort) { _bridgePort = cfg.bridgePort; }
+      })
+      .catch(function () {})
+      .then(function () {
+          // config.json 读取完毕（或失败）后初始化执行模块
+          CmdExec.init({ qInput: q, bridgeUrl: 'http://localhost:' + _bridgePort });
+      });
 
   // ---- 命令补全模块（委托给 AcModule）----
   var ac = AcModule.init({
@@ -720,5 +798,45 @@ fetch('commands.json')
   });
 </script>
 <script src="version-check.js"></script>
+
+<div id="exec-result" class="hide">
+  <span class="exec-result-icon"></span>
+  <span class="exec-result-body"></span>
+  <button class="exec-result-dismiss">&times;</button>
+</div>
+
+<div id="login-modal" class="modal-overlay hide">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <span>账号登录</span>
+      <button id="modal-close" class="modal-close-btn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-field">
+        <label for="login-steamid">SteamID</label>
+        <input id="login-steamid" type="text" placeholder="在游戏中输入 !info myinfo 获取" autocomplete="off">
+      </div>
+      <div class="modal-field">
+        <label for="login-password">游戏密码</label>
+        <input id="login-password" type="password" placeholder="你的游戏密码" autocomplete="off">
+      </div>
+      <div class="modal-field">
+        <label class="modal-checkbox">
+          <input id="login-remember" type="checkbox" checked>
+          <span>记住密码（加密保存在本机）</span>
+        </label>
+      </div>
+      <div id="login-error" class="modal-error hide"></div>
+      <button id="login-submit" class="modal-submit">确认</button>
+      <button id="login-clear" class="modal-clear hide">清除登录信息</button>
+      <div class="modal-hint">
+        登录信息仅缓存在本机浏览器中，不会上传到任何服务器。<br>
+        首次使用请先在游戏内输入 <code>!info myinfo</code> 获取 SteamID。
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="command-executor.js" defer></script>
 </body>
 </html>

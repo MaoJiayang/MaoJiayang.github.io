@@ -1,4 +1,5 @@
 {
   "embeddingModel": "@cf/baai/bge-m3",
-  "searchPort": 5501
+  "searchPort": 5501,
+  "bridgePort": 3001
 }

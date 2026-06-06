@@ -1,2 +1,5 @@
 .github
 .claude
+node_modules/
+.env
+bridge-server/config.json
