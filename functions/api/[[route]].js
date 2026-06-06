@@ -1,5 +1,5 @@
 /**
- * CF Pages Function: /api/command
+ * CF Pages Function: /api/* 统一处理
  *
  * 桥接浏览器请求到 SE Torch 服务器（原始 TCP 帧协议）
  * 协议: 4字节 Big-Endian 长度前缀 + UTF-8 JSON
@@ -107,15 +107,28 @@ async function tcpRequest(host, port, authKey, steamId, command, password) {
   return { code: 500, msg: '无法解析响应', data: null };
 }
 
+function normalizePath(pathname) {
+  return pathname.replace(/\/$/, '') || '/api';
+}
+
+export async function onRequestGet({ request }) {
+  const path = normalizePath(new URL(request.url).pathname);
+
+  if (path === '/api/health') {
+    return Response.json({ code: 200, msg: 'ok', data: { bridge: 'cloudflare' } });
+  }
+
+  return Response.json({ code: 404, msg: '未知接口' }, { status: 404 });
+}
+
 export async function onRequestPost({ request, env }) {
   const cfg = getConfig(env);
-  const url = new URL(request.url);
+  const path = normalizePath(new URL(request.url).pathname);
+
   let body;
   try { body = await request.json(); } catch (_) {
     return Response.json({ code: 400, msg: '请求格式错误' }, { status: 400 });
   }
-
-  const path = url.pathname.replace(/\/$/, '') || '/api/command';
 
   if (path === '/api/command/verify') {
     if (!body.steamId || !body.gamePassword) {
@@ -133,9 +146,5 @@ export async function onRequestPost({ request, env }) {
     return Response.json(result);
   }
 
-  return Response.json({ code: 404, msg: '未知接口' }, { status: 404 });
-}
-
-export async function onRequestGet() {
   return Response.json({ code: 404, msg: '未知接口' }, { status: 404 });
 }
