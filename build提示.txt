@@ -28,6 +28,7 @@ embeddings.json          由 build.js 生成，勿手动编辑
 build.js                 生成脚本，需要上方两个环境变量
 functions/search.js      CF Pages Function，语义搜索接口
 functions/api/command.js CF Pages Function，指令执行桥接（TCP → SE 服务器）
+functions/api/health.js   CF Pages Function，健康检查端点
 commands.html            前端页面，fetch commands.json 动态渲染
 command-autocomplete.js  指令补全模块（Trie + 语义纠错）
 command-executor.js      指令执行模块（登录管理 + 执行按钮 + 用量限制）

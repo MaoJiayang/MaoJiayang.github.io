@@ -63,7 +63,8 @@ var CmdExec = (function () {
   // ========== 桥接通信 ==========
 
   function callBridge(method, path, body) {
-    var headers = { 'Content-Type': 'application/json' };
+    var headers = {};
+    if (body) headers['Content-Type'] = 'application/json';
     if (_apiToken) headers['Authorization'] = 'Bearer ' + _apiToken;
 
     var opts = { method: method, headers: headers };

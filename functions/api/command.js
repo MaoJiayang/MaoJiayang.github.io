@@ -136,10 +136,6 @@ export async function onRequestPost({ request, env }) {
   return Response.json({ code: 404, msg: '未知接口' }, { status: 404 });
 }
 
-export async function onRequestGet({ request, env }) {
-  const url = new URL(request.url);
-  if (url.pathname === '/api/health') {
-    return Response.json({ code: 200, msg: 'ok', data: { bridge: 'cloudflare' } });
-  }
+export async function onRequestGet() {
   return Response.json({ code: 404, msg: '未知接口' }, { status: 404 });
 }
