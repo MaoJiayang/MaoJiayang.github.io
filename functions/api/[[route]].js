@@ -5,9 +5,10 @@
  * 协议: 4字节 Big-Endian 长度前缀 + UTF-8 JSON
  *
  * 环境变量（在 CF Dashboard → Pages → Settings → Environment variables 中配置）:
- *   SE_HOST     — SE 服务器地址
- *   SE_PORT     — SE 服务器端口
- *   SE_AUTH_KEY — 认证密钥
+ *   SE_HOST      — SE 服务器地址
+ *   SE_PORT      — SE 服务器端口
+ *   SE_AUTH_KEY  — 认证密钥
+ *   SE_BLACKLIST — 禁止执行指令的 SteamID，逗号分隔，如 "76561199251433037,76561198248299872"
  */
 import { connect } from 'cloudflare:sockets';
 
@@ -21,6 +22,12 @@ function getConfig(env) {
     host: env.SE_HOST || DEFAULT_HOST,
     port: parseInt(env.SE_PORT || DEFAULT_PORT, 10),
     authKey: env.SE_AUTH_KEY || DEFAULT_AUTH_KEY,
+    blacklist: new Set(
+      (env.SE_BLACKLIST || '')
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+    ),
   };
 }
 
@@ -134,6 +141,9 @@ export async function onRequestPost({ request, env }) {
     if (!body.steamId || !body.gamePassword) {
       return Response.json({ code: 400, msg: '缺少 steamId 或 gamePassword' }, { status: 400 });
     }
+    if (cfg.blacklist.has(String(body.steamId))) {
+      return Response.json({ code: 401, msg: '验证失败' }, { status: 401 });
+    }
     const result = await tcpRequest(cfg.host, cfg.port, cfg.authKey, body.steamId, '!银行 余额', body.gamePassword);
     return Response.json(result);
   }
@@ -141,6 +151,9 @@ export async function onRequestPost({ request, env }) {
   if (path === '/api/command/execute') {
     if (!body.steamId || !body.command || !body.gamePassword) {
       return Response.json({ code: 400, msg: '缺少必要参数' }, { status: 400 });
+    }
+    if (cfg.blacklist.has(String(body.steamId))) {
+      return Response.json({ code: 403, msg: '您的账号已被禁止使用指令执行功能' }, { status: 403 });
     }
     const result = await tcpRequest(cfg.host, cfg.port, cfg.authKey, body.steamId, body.command, body.gamePassword);
     return Response.json(result);
