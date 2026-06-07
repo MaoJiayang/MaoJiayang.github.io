@@ -119,7 +119,7 @@ function hashText(text) {
 // ---- 主流程 ----
 
 async function main() {
-    const commands = JSON.parse(readFileSync('commands.json', 'utf8'));
+    const commands = JSON.parse(readFileSync('commands.json', 'utf8')).commands;
 
     // 尝试加载已有 embeddings，构建 id → { hash, emb } 查找表
     const existingMap = new Map();

@@ -58,6 +58,25 @@ h1{font-family:"Syne",var(--font-sans)}
 .sec-h{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg-main);border-bottom:1px solid var(--border)}
 .sec-t{font-size:15px;font-weight:600;color:var(--text-main);display:flex;align-items:center;gap:6px}
 .sec-s{font-size:12px;color:var(--text-muted);margin-left:auto;background:var(--bg-panel);padding:2px 6px;border-radius:3px;border:1px solid var(--border)}
+/* 系统介绍可折叠条 */
+.intro-strip{border-left:3px solid var(--accent);background:var(--bg-main);margin-bottom:0;cursor:pointer;transition:border-color 0.2s}
+.intro-strip:hover{border-left-color:var(--accent-active)}
+.intro-strip-header{display:flex;align-items:center;gap:6px;padding:8px 14px;font-size:13px;color:var(--text-muted);user-select:none;-webkit-tap-highlight-color:transparent;transition:color 0.2s}
+.intro-strip:hover .intro-strip-header{color:var(--text-main)}
+.intro-strip.open .intro-strip-header{color:var(--text-main);background:var(--accent-bg);border-bottom:1px solid var(--border)}
+.intro-strip-arrow{display:inline-block;font-size:12px;transition:transform 0.2s;color:var(--text-muted);flex-shrink:0;width:14px;text-align:center}
+.intro-strip-arrow.open{transform:rotate(90deg);color:var(--accent)}
+.intro-strip-body{overflow:hidden;max-height:0;transition:max-height 0.35s ease}
+.intro-strip-body.open{max-height:3000px}
+.intro-strip-body-inner{padding:8px 14px 12px;font-size:13px;line-height:1.6;color:var(--text-muted)}
+.intro-strip-body-inner p{margin-bottom:6px}
+.intro-strip-body-inner ul{margin:4px 0;padding-left:18px}
+.intro-strip-body-inner li{margin-bottom:2px}
+.intro-strip-body-inner table{border-collapse:collapse;margin:6px 0;font-size:12px}
+.intro-strip-body-inner th,.intro-strip-body-inner td{padding:4px 10px;border:1px solid var(--border);text-align:left}
+.intro-strip-body-inner th{background:var(--bg-panel);font-weight:600}
+.intro-strip-body-inner code{font-family:var(--font-mono);font-size:11px;background:var(--bg-panel);padding:1px 4px;border-radius:2px;border:1px solid var(--border);color:var(--accent);word-break:break-all;cursor:pointer}
+@media(max-width:768px){.intro-strip-header{font-size:14px;padding:12px 14px}.intro-strip-body-inner{font-size:12.5px}}
 table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
 th{text-align:left;padding:8px 14px;font-size:12px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border)}
 tr.row{border-bottom:1px solid var(--border);transition:background 0.15s}
@@ -436,11 +455,23 @@ function buildRow(item) {
 }
 
 // 构建整个 section div
-function buildSection(secId, items) {
+function buildSection(secId, items, sectionIntros) {
   const m = SECTION_META[secId];
   const rows = items.map(buildRow).join('');
+
+  // 系统介绍可折叠条
+  let introHtml = '';
+  const intro = sectionIntros && sectionIntros[secId];
+  if (intro) {
+    introHtml = `<div class="intro-strip" data-sec="${secId}">
+  <div class="intro-strip-header"><span class="intro-strip-arrow">▸</span><span>了解${esc(m.sub)}</span></div>
+  <div class="intro-strip-body"><div class="intro-strip-body-inner">${renderMd(intro)}</div></div>
+</div>`;
+  }
+
   return `<div class="sec" data-sec="${secId}">
 <div class="sec-h"><span class="sec-t">${m.label}</span><span class="sec-s">${m.sub}</span></div>
+${introHtml}
 <table><thead><tr><th style="width:19%">想做什么</th><th style="width:39%">${m.col2}</th><th style="width:42%">说明 / 注意</th></tr></thead><tbody>
 ${rows}
 </tbody></table></div>`;
@@ -597,7 +628,7 @@ function initSearch() {
       renderHistPanel();
       return;
     }
-    const cmd = e.target.closest('.cmd, .note-body code');
+    const cmd = e.target.closest('.cmd, .note-body code, .intro-strip-body-inner code');
     if (cmd) {
       navigator.clipboard.writeText(cmd.textContent.trim()).then(() => {
         const toast = document.getElementById('toast');
@@ -609,13 +640,22 @@ function initSearch() {
       }).catch(() => {});
       return;
     }
+    const introStrip = e.target.closest('.intro-strip-header');
+    if (introStrip) {
+      const strip = introStrip.closest('.intro-strip');
+      const body = strip.querySelector('.intro-strip-body');
+      const arrow = strip.querySelector('.intro-strip-arrow');
+      body.classList.toggle('open');
+      arrow.classList.toggle('open');
+      return;
+    }
     const row = e.target.closest('tr.row.clickable');
     if (row) toggleNote(row.dataset.id);
   });
 
   // 阻止可复制元素上的文字选中（移动端长按）
   document.addEventListener('selectstart', (e) => {
-    if (e.target.closest('.cmd, .note-body code, .al')) e.preventDefault();
+    if (e.target.closest('.cmd, .note-body code, .intro-strip-body-inner code, .al')) e.preventDefault();
   });
 
   // 面板互斥
@@ -885,16 +925,24 @@ function scrollToItem(id) {
 fetch('commands.json')
   .then(r => r.json())
   .then(data => {
-    AcModule.setData(data);
+    AcModule.setData(data.commands);
     AcModule.setItemConfig(ITEMS);
     buildAcTrie();
 
     const grouped = {};
     SECTION_ORDER.forEach(s => grouped[s] = []);
-    data.forEach(item => { if (grouped[item.section]) grouped[item.section].push(item); });
+    data.commands.forEach(item => { if (grouped[item.section]) grouped[item.section].push(item); });
 
     const container = document.getElementById('cmd-sections');
-    container.innerHTML = SECTION_ORDER.map(s => buildSection(s, grouped[s])).join('\n');
+    container.innerHTML = SECTION_ORDER.map(s => buildSection(s, grouped[s], data.sectionIntros)).join('\n');
+
+    // 第一个有介绍的 section 默认展开作为示范
+    const firstStrip = container.querySelector('.intro-strip');
+    if (firstStrip) {
+      firstStrip.classList.add('open');
+      firstStrip.querySelector('.intro-strip-body').classList.add('open');
+      firstStrip.querySelector('.intro-strip-arrow').classList.add('open');
+    }
 
     initSearch();
   });
