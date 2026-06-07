@@ -447,6 +447,14 @@ var AcModule = (function () {
                     }
                 }
                 if (!subItemMatch && !paramMatch) {
+                    // 参数上下文已识别 → 直接展示匹配指令，不触发语义搜索
+                    if (paramCtx && !paramCtx.ambiguous) {
+                        currentAcResults = [{ cmd: paramCtx.cmd, alias: paramCtx.alias }];
+                        currentAcHlIndex = 0;
+                        showAcMode();
+                        renderAcPanel(currentAcResults, currentAcHlIndex, prefix);
+                        return;
+                    }
                     hideAcMode();
                     hideGhost();
                     acPanel.innerHTML = '<div class="ac-card">'
