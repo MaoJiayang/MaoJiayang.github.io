@@ -51,7 +51,7 @@ function decodeEmb(b64) {
 const decodedEmbs = embData.entries.map(e => ({ id: e.id, emb: decodeEmb(e.emb) }));
 
 // 指令 id → 指令对象的快速查找表
-const cmdMap = Object.fromEntries(cmdsData.map(c => [c.id, c]));
+const cmdMap = Object.fromEntries(cmdsData.commands.map(c => [c.id, c]));
 
 // ---- 工具函数 ----
 
