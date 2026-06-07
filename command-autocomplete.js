@@ -18,10 +18,17 @@ var AcModule = (function () {
         _commandsData = data;
     }
 
-    /** 加载物品名称和物品指令 ID 集合 */
-    function setItemConfig(items, itemCmdIds) {
+    /** 加载物品名称，从已加载的指令数据中自动推导物品指令 ID */
+    function setItemConfig(items) {
         _items = items;
-        _itemCmdIds = new Set(itemCmdIds);
+        _itemCmdIds = new Set();
+        if (_commandsData) {
+            _commandsData.forEach(function (cmd) {
+                if (cmd.params && cmd.params.some(function (p) { return p.autocomplete === 'items'; })) {
+                    _itemCmdIds.add(cmd.id);
+                }
+            });
+        }
     }
 
     /** 构建 Trie 前缀树（仅 ! 开头的别名） */
@@ -44,28 +51,7 @@ var AcModule = (function () {
                 }
             });
         });
-        // 物品指令额外插入「别名 + 物品名」路径
-        if (_items && _itemCmdIds) {
-            _commandsData.forEach(function (cmd) {
-                if (!_itemCmdIds.has(cmd.id)) return;
-                cmd.commands.forEach(function (alias) {
-                    if (!alias.startsWith('!')) return;
-                    var base = alias.toLowerCase() + ' ';
-                    _items.forEach(function (itemName) {
-                        var node = _trieRoot;
-                        var path = base + itemName.toLowerCase();
-                        for (var i = 0; i < path.length; i++) {
-                            var c = path[i];
-                            if (!node.children.has(c)) {
-                                node.children.set(c, { children: new Map(), results: [] });
-                            }
-                            node = node.children.get(c);
-                            node.results.push({ cmd: cmd, alias: alias, type: 'item', itemName: itemName });
-                        }
-                    });
-                });
-            });
-        }
+        // 物品补全不再预建 Trie 路径，改为查询时通过 getParamContext 动态匹配
     }
 
     /** Trie 前缀查找 */
@@ -89,6 +75,71 @@ var AcModule = (function () {
         return _items.filter(function (name) {
             return name.toLowerCase().indexOf(lower) !== -1;
         });
+    }
+
+    /**
+     * 解析当前输入所处的参数上下文
+     * @param {string} raw 原始输入
+     * @returns {Object|null} { cmd, alias, paramIndex, param, partial } 或 null
+     */
+    function getParamContext(raw) {
+        var t = raw.replace(/^\s+/, '').replace(/\s{2,}/g, ' ');
+        if (!t.startsWith('!') && !t.startsWith('！')) return null;
+
+        var endsWithSpace = /\s$/.test(t);
+        var parts = t.trim().split(/\s+/);
+        if (parts.length === 0) return null;
+
+        // 从最长到最短尝试匹配指令前缀
+        for (var i = parts.length; i >= 1; i--) {
+            var cmdPrefix = parts.slice(0, i).join(' ');
+            var allMatches = getMatches(cmdPrefix);
+            if (allMatches.length === 0) continue;
+
+            // 多个匹配时，筛选别名完全等于前缀的那条（解决 "!仓库 存入" vs "!仓库 存入清单" 前缀重叠）
+            var matches = allMatches;
+            if (matches.length > 1) {
+                var lowerPrefix = cmdPrefix.toLowerCase();
+                var exact = matches.filter(function (m) { return m.alias.toLowerCase() === lowerPrefix; });
+                if (exact.length === 1) matches = exact;
+            }
+
+            if (matches.length === 1) {
+                var cmd = matches[0].cmd;
+                var params = cmd.params || [];
+                if (params.length === 0) return null;
+
+                var typedParts = parts.length - i;
+                var paramIndex, partial;
+
+                // 还在输入指令本身，未进入参数区
+                if (typedParts === 0 && !endsWithSpace) return null;
+
+                if (endsWithSpace || typedParts === 0) {
+                    // 指令后跟空格 → 准备输入下一个参数
+                    paramIndex = typedParts;
+                    partial = '';
+                } else {
+                    // 正在输入某个参数值
+                    paramIndex = typedParts - 1;
+                    partial = parts[parts.length - 1];
+                }
+
+                if (paramIndex >= params.length) {
+                    paramIndex = params.length - 1;
+                    partial = parts[parts.length - 1];
+                }
+
+                return {
+                    cmd: cmd,
+                    alias: matches[0].alias,
+                    paramIndex: paramIndex,
+                    param: params[paramIndex],
+                    partial: partial || ''
+                };
+            }
+        }
+        return null;
     }
 
     // ====== 运行时（每个 initSearch() 调用初始化一次）======
@@ -321,19 +372,50 @@ var AcModule = (function () {
             clearTimeout(acSemTimer);
             searchWrap.classList.remove('sem-loading');
             semPanel.classList.remove('show');
+
+            // 参数感知：检测当前是否在输入物品名称参数
+            var paramCtx = getParamContext(input);
+            if (paramCtx && !paramCtx.ambiguous) {
+                var p = paramCtx.param;
+                if (p.autocomplete === 'items') {
+                    _acCorrection = false;
+                    if (paramCtx.partial.length >= 1) {
+                        var matchedItems = matchItemsBySubstring(paramCtx.partial);
+                        if (matchedItems.length > 0) {
+                            currentAcResults = matchedItems.slice(0, 20).map(function (name) {
+                                return { cmd: paramCtx.cmd, alias: paramCtx.alias, type: 'item', itemName: name };
+                            });
+                            currentAcHlIndex = 0;
+                            showAcMode();
+                            renderAcPanel(currentAcResults, currentAcHlIndex, prefix);
+                            return;
+                        }
+                    }
+                    // 空格后无输入 → 展示常用物品提示
+                    if (paramCtx.partial.length === 0) {
+                        currentAcResults = _items.slice(0, 20).map(function (name) {
+                            return { cmd: paramCtx.cmd, alias: paramCtx.alias, type: 'item', itemName: name };
+                        });
+                        currentAcHlIndex = -1;
+                        showAcMode();
+                        renderAcPanel(currentAcResults, currentAcHlIndex, prefix);
+                        return;
+                    }
+                }
+            }
+
             currentAcResults = getMatches(prefix);
             _acCorrection = false;
             if (currentAcResults.length > 0) {
                 currentAcHlIndex = 0;
                 renderAcPanel(currentAcResults, currentAcHlIndex, prefix);
             } else {
-                // 前缀无匹配 → 尝试物品名子串匹配
+                // 前缀无匹配 → 尝试物品名子串匹配（保留旧逻辑作为回退）
                 var lastSpace = prefix.lastIndexOf(' ');
                 var subItemMatch = false;
                 if (lastSpace > 0) {
                     var itemQuery = prefix.slice(lastSpace + 1);
                     if (itemQuery.length >= 1) {
-                        // 取空格前的有效路径，确定是物品指令
                         var basePrefix = prefix.slice(0, lastSpace);
                         var baseResults = getMatches(basePrefix);
                         if (baseResults.length > 0 && _itemCmdIds && _itemCmdIds.has(baseResults[0].cmd.id)) {
