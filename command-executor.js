@@ -455,7 +455,7 @@ var CmdExec = (function () {
 
   function pollHealth() {
     checkBridgeHealth().then(function (result) {
-      updateBridgeLabel(result && result.code === 200);
+      updateBridgeLabel(result !== null ? result.code === 200 : false);
     });
   }
 
@@ -577,6 +577,13 @@ var CmdExec = (function () {
 
     // 桥接地址：本地→localhost，远程配置了 bridgeUrl→国内桥接，否则→同域 CF Function
     _bridgeUrl = ctx.remoteBridgeUrl || '';
+
+    // HTTPS 页面不能直连 HTTP 桥接（Mixed Content），自动降级 CF Function
+    // 部署 cloudflared tunnel 后改为 HTTPS 即可恢复直连
+    if (_bridgeUrl && _bridgeUrl.indexOf('http://') === 0 && location.protocol === 'https:') {
+      console.warn('桥接地址为 HTTP，HTTPS 页面无法直连，已降级到 CF Function');
+      _bridgeUrl = '';
+    }
 
     updateCredLabel();
     updateRateGauge();
