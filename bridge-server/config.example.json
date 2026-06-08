@@ -1,0 +1,6 @@
+{
+  "bridgeHttpPort": 10085,
+  "bridgeGrpcHost": "127.0.0.1",
+  "bridgeGrpcPort": 10086,
+  "bridgeAuthKey": "12345"
+}

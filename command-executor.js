@@ -13,9 +13,7 @@ var CmdExec = (function () {
   var RATE_LIMIT = 25;  // 每分钟调用限制
   var _q = null;
   var _bridgeUrl = 'http://localhost:3001';
-  var _apiToken = null;
   var _gaugeTimer = null;
-  var _isLocal = false;
 
   // ========== 登录管理 ==========
 
@@ -85,12 +83,15 @@ var CmdExec = (function () {
     return getCredentials() !== null;
   }
 
-  // ========== 桥接通信 ==========
+  // ========== 桥接通信（含运行时降级）==========
+
+  // 桥接降级状态（运行时检测到桥接挂了就切到 CF Function）
+  var _bridgeDown = false;
 
   function callBridge(method, path, body) {
     var headers = {};
     if (body) headers['Content-Type'] = 'application/json';
-    if (_apiToken) headers['Authorization'] = 'Bearer ' + _apiToken;
+    // 远程桥接不需要额外 Token（认证由 steamId + gamePassword 完成）
 
     var opts = { method: method, headers: headers };
     if (body) opts.body = JSON.stringify(body);
@@ -98,10 +99,37 @@ var CmdExec = (function () {
     return fetch(_bridgeUrl + path, opts)
       .then(function (r) {
         if (!r.ok) throw new Error('BRIDGE_HTTP_' + r.status);
+        // 远程桥接恢复在线
+        if (_bridgeDown && _bridgeUrl) {
+          _bridgeDown = false;
+          updateBridgeLabel(true);
+        }
         return r.json();
       })
       .catch(function (err) {
+        // HTTP 错误码直接抛出（桥接在线但业务逻辑失败）
         if (err.message && err.message.indexOf('BRIDGE_HTTP_') === 0) throw err;
+
+        // 网络错误 + 当前使用远程桥接 → 降级到同域 CF Function 重试
+        if (_bridgeUrl && _bridgeUrl.indexOf('localhost') === -1) {
+          if (!_bridgeDown) {
+            _bridgeDown = true;
+            updateBridgeLabel(false);
+            console.warn('桥接服务不可用，降级到 CF Function');
+          }
+          // 用相对路径重试，Token 仅本地需要
+          var fbOpts = { method: method, headers: {} };
+          if (body) { fbOpts.headers['Content-Type'] = 'application/json'; fbOpts.body = JSON.stringify(body); }
+          return fetch(path, fbOpts)
+            .then(function (r) {
+              if (!r.ok) throw new Error('BRIDGE_HTTP_' + r.status);
+              return r.json();
+            })
+            .catch(function () {
+              throw new Error('BRIDGE_DOWN');
+            });
+        }
+
         throw new Error('BRIDGE_DOWN');
       });
   }
@@ -123,7 +151,11 @@ var CmdExec = (function () {
   }
 
   function checkBridgeHealth() {
-    return callBridge('GET', '/api/health').catch(function () { return null; });
+    // 直接检测桥接，不走降级。无桥接时用 CF Function 同域路径检测
+    var url = _bridgeUrl ? _bridgeUrl + '/api/health' : '/api/health';
+    return fetch(url)
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; });
   }
 
   // ========== 按钮可见性 ==========
@@ -363,7 +395,11 @@ var CmdExec = (function () {
     if (!dot || !text) return;
     if (online === true) {
       dot.className = 'conn-dot online';
-      text.textContent = '服务在线';
+      if (_bridgeUrl && _bridgeUrl.indexOf('localhost') === -1) {
+        text.textContent = '服务在线(桥接)';
+      } else {
+        text.textContent = '服务在线(云)';
+      }
     } else if (online === false) {
       dot.className = 'conn-dot offline';
       text.textContent = '服务离线';
@@ -539,20 +575,11 @@ var CmdExec = (function () {
       });
     }
 
-    // 同域部署（CF Pages Function）用相对路径，本地开发用 localhost 桥接
-    _isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-    _bridgeUrl = _isLocal ? 'http://localhost:3001' : '';
+    // 桥接地址：本地→localhost，远程配置了 bridgeUrl→国内桥接，否则→同域 CF Function
+    _bridgeUrl = ctx.remoteBridgeUrl || '';
 
     updateCredLabel();
     updateRateGauge();
-
-    // 本地模式获取 Token（CF Pages 同域请求不需要）
-    if (_isLocal) {
-      fetch(_bridgeUrl + '/api/token')
-        .then(function (r) { return r.json(); })
-        .then(function (d) { if (d.data && d.data.token) _apiToken = d.data.token; })
-        .catch(function () { /* 桥接未启动，后续操作会提示连接错误 */ });
-    }
 
     // 延迟 3 秒启动后台任务
     setTimeout(function () {
