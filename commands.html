@@ -49,6 +49,11 @@ h1{font-family:"Syne",var(--font-sans)}
 .search-wrap.cmd-mode .cmd-cursor{display:block}
 #q{width:100%;padding:10px 14px 10px 38px;font-size:14px;line-height:1.5;border:1px solid var(--border);border-radius:4px;background:var(--bg-main);color:var(--text-main);margin-bottom:0;font-family:inherit;transition:border-color 0.2s,box-shadow 0.2s,background 0.2s;animation:search-pulse 2s ease 0.5s 3}
 #q:focus{outline:none;border-color:var(--border-focus);background:var(--bg-panel);box-shadow:0 0 0 3px rgba(27,110,179,0.1)}
+#q::-webkit-search-cancel-button,
+#q::-webkit-search-decoration,
+#q::-webkit-search-results-button,
+#q::-webkit-search-results-decoration{display:none}
+#q[type="search"]{-webkit-appearance:none;appearance:none}
 @media (prefers-reduced-motion:reduce){#q{animation:none}}
 .ftabs{display:grid;grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:8px;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px dashed var(--border);min-height:130px;align-content:start}
 .ftab{display:flex;align-items:center;justify-content:center;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:var(--bg-panel);color:var(--text-muted);transition:all 0.2s;font-weight:500;box-shadow:0 1px 2px rgba(0,0,0,0.02);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;user-select:none;-webkit-tap-highlight-color:transparent}
@@ -304,7 +309,9 @@ tr.note-row.closing{animation:noteFadeOut 0.15s ease forwards}
 <svg class="search-ic" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z" fill="currentColor"/></svg>
 <span class="cmd-cursor">>_</span>
 <div id="ac-ghost"></div>
-<input id="q" type="text" readonly placeholder="搜点什么，比如 买船、赚钱、存物资…" autocomplete="off">
+<input type="text" autocomplete="username" style="position:absolute;left:-9999px;top:-9999px" aria-hidden="true" tabindex="-1">
+<input type="password" autocomplete="new-password" style="position:absolute;left:-9999px;top:-9999px" aria-hidden="true" tabindex="-1">
+<input id="q" type="search" readonly placeholder="搜点什么，比如 买船、赚钱、存物资…" autocomplete="off">
 <script>
   setTimeout(function(){document.getElementById('q').removeAttribute('readonly')}, 50);
 </script>
