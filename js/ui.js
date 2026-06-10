@@ -211,19 +211,11 @@ var UI = (function () {
   var qsheetItem = '';
   var qsheetStock = 0;
   var qsheetQty = 100;
-  var _tapCount = 0;
-  var _lastTapTime = 0;
-  var _tapTimer = null;
-  var _tapStep = 10;
   var _qsheetOnConfirm = null;
 
   // extraField 扩展（市场订单单价等）
   var qsheetExtra = null;       // { label, value, suffix, step, max }
   var qsheetExtraVal = 0;
-  var _extraTapCount = 0;
-  var _extraLastTap = 0;
-  var _extraTapTimer = null;
-  var _extraTapStep = 10;
   var _lockQty = 0;     // >0 表示数量锁定
   var _lockExtra = false; // 单价锁定
 
@@ -235,8 +227,7 @@ var UI = (function () {
   function openQSheet(mode, itemName, stockOrOptions, onConfirm) {
     qsheetMode = mode;
     qsheetItem = itemName;
-    _tapCount = 0;
-    _tapStep = 10;
+    _qtyTap.count = 0;
 
     // 判断 overload：第三个参数是对象则为 options 模式
     var isOptions = typeof stockOrOptions === 'object' && stockOrOptions !== null;
@@ -249,9 +240,6 @@ var UI = (function () {
     _qsheetOnConfirm = options.onConfirm || null;
     qsheetExtra = options.extraField || null;
     qsheetExtraVal = qsheetExtra ? qsheetExtra.value : 0;
-    _extraTapCount = 0;
-    _extraTapStep = 10;
-
     var depositing = mode === 'deposit';
     // 锁定数量（不可拆分）或以存量/无限量限制
     var maxWithdraw = _lockQty > 0 ? _lockQty
@@ -295,8 +283,8 @@ var UI = (function () {
 
   function closeQSheet() {
     document.getElementById('qsheet-overlay').classList.remove('show');
-    clearTimeout(_tapTimer);
-    clearTimeout(_extraTapTimer);
+    clearTimeout(_qtyTap.timer);
+    clearTimeout(_extraTap.timer);
     qsheetExtra = null;
   }
 
@@ -402,7 +390,9 @@ var UI = (function () {
     var min = qsheetExtra && qsheetExtra.min != null ? qsheetExtra.min : 0;
     var max = qsheetExtra && qsheetExtra.max ? qsheetExtra.max : 999999;
     qsheetExtraVal = Math.max(min, Math.min(max, v));
-    _extraTapCount = 0;
+    _extraTap.count = 0;
+    if (qsheetExtraVal >= 1000) input.value = fmtCompact(qsheetExtraVal);
+    updateExtraDisplay();
   }
 
   function adjustExtra(delta) {
@@ -417,18 +407,8 @@ var UI = (function () {
 
   function fastAdjustExtra(deltaDir) {
     if (_lockExtra) return;
-    var now = Date.now();
-    if (_extraLastTap && now - _extraLastTap < 600) {
-      _extraTapCount++;
-      _extraTapStep = getMagStep(qsheetExtraVal) * Math.pow(2, _extraTapCount);
-    } else {
-      _extraTapCount = 0;
-      _extraTapStep = getMagStep(qsheetExtraVal) * 10;
-    }
-    _extraLastTap = now;
-    clearTimeout(_extraTapTimer);
-    _extraTapTimer = setTimeout(function(){ _extraTapCount = 0; _extraLastTap = 0; }, 600);
-    adjustExtra(deltaDir * _extraTapStep);
+    var step = fastStep(qsheetExtraVal, _extraTap);
+    adjustExtra(deltaDir * step);
   }
 
   function updateQSheetTabs() {
@@ -472,7 +452,10 @@ var UI = (function () {
     if (isNaN(v) || v < 1) v = 1;
     var maxWithdraw = qsheetExtra ? Infinity : (qsheetMode === 'deposit' ? Infinity : qsheetStock);
     qsheetQty = Math.max(1, Math.min(maxWithdraw, v));
-    _tapCount = 0;
+    _qtyTap.count = 0;
+    // 数值 ≥1000 时强制 KMB 显示，防止溢出
+    if (qsheetQty >= 1000) input.value = fmtCompact(qsheetQty);
+    updateQSheetDisplay();
   }
 
   function adjustQty(delta) {
@@ -484,20 +467,28 @@ var UI = (function () {
     updateQSheetDisplay();
   }
 
+  /** 通用快速步进：tapState = { count, last, timer }，每次调用更新并返回步长 */
+  function fastStep(currentVal, tapState) {
+    var now = Date.now();
+    if (tapState.last && now - tapState.last < 600) {
+      tapState.count++;
+    } else {
+      tapState.count = 0;
+    }
+    tapState.last = now;
+    var step = getMagStep(currentVal) * Math.pow(2, Math.min(tapState.count, 10));
+    clearTimeout(tapState.timer);
+    tapState.timer = setTimeout(function(){ tapState.count = 0; tapState.last = 0; }, 600);
+    return step;
+  }
+
+  var _qtyTap = { count: 0, last: 0, timer: null };
+  var _extraTap = { count: 0, last: 0, timer: null };
+
   function fastAdjust(deltaDir) {
     if (_lockQty > 0) return;
-    var now = Date.now();
-    if (_lastTapTime && now - _lastTapTime < 600) {
-      _tapCount++;
-      _tapStep = getMagStep(qsheetQty) * Math.pow(2, _tapCount);
-    } else {
-      _tapCount = 0;
-      _tapStep = getMagStep(qsheetQty) * 10;
-    }
-    _lastTapTime = now;
-    clearTimeout(_tapTimer);
-    _tapTimer = setTimeout(function(){ _tapCount = 0; _lastTapTime = 0; }, 600);
-    adjustQty(deltaDir * _tapStep);
+    var step = fastStep(qsheetQty, _qtyTap);
+    adjustQty(deltaDir * step);
   }
 
   function switchQSheetMode(mode) {
@@ -510,7 +501,7 @@ var UI = (function () {
     var maxWithdraw = mode === 'deposit' ? Infinity : qsheetStock;
     if (qsheetQty > maxWithdraw) qsheetQty = maxWithdraw;
     if (qsheetQty < 1) qsheetQty = 1;
-    _tapCount = 0; _tapStep = 10;
+    _qtyTap.count = 0;
     updateQSheetTabs();
     updateQSheetDisplay();
   }
