@@ -31,6 +31,10 @@
   --text-secondary: #A8C4B8;
   --text-muted:     #6A8C80;
   --text-disabled:  #3A5A50;
+  /* 兼容 commands.html 的变量名（给 version-check.js 用） */
+  --border: var(--bg-hover);
+  --text-main: var(--text-primary);
+  --accent: var(--jade-200);
   --font-mono: "JetBrains Mono", Consolas, monospace;
   --font-sans: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   --tab-h: 56px;
@@ -450,6 +454,7 @@ body{
 <div id="toast"><span id="toast-body"></span><button class="t-close" onclick="hideToast()">&times;</button></div>
 
 <script src="se-bridge.js"></script>
+<script src="version-check.js"></script>
 <script>
 // ========== 图标映射 ==========
 var iconMap = {};    // ChineseName → iconFilename
