@@ -20,7 +20,8 @@ PROJ_DIR = os.path.dirname(SCRIPT_DIR)
 ICON_DIR = os.path.join(PROJ_DIR, 'icons')
 MAP_FILE = os.path.join(SCRIPT_DIR, 'icon_sources.json')
 
-CELL = 32        # 每个图标格子像素
+CELL = 64        # 每个图标格子像素（2x Retina）
+DISPLAY = 32     # CSS 显示尺寸
 COLS = 16        # 每行列数
 QUALITY = 85     # WebP 质量
 
@@ -68,13 +69,16 @@ def main():
     print(f"Sprite: {canvas.width}x{canvas.height}, {size_kb:.0f}KB")
 
     # 5. 生成 CSS
+    # CSS 坐标：background-size 缩放到 DISPLAY*COLS x DISPLAY*ROWS
+    css_bg_w = DISPLAY * COLS
+    css_bg_h = DISPLAY * rows
     css = [
-        '/* 虚空终端 — 物品图标 CSS Sprite（自动生成） */',
+        '/* 虚空终端 — 物品图标 CSS Sprite（自动生成，2x Retina） */',
         '',
         '.si {',
-        f'  width: {CELL}px; height: {CELL}px;',
+        f'  width: {DISPLAY}px; height: {DISPLAY}px;',
         '  background-image: url(sprite.webp);',
-        '  background-size: ' + str(canvas.width) + 'px ' + str(canvas.height) + 'px;',
+        f'  background-size: {css_bg_w}px {css_bg_h}px;',
         '  display: inline-block; flex-shrink: 0;',
         '  border-radius: 4px;',
         '  image-rendering: auto;',
@@ -82,9 +86,8 @@ def main():
         '',
     ]
     for src, (col, row) in src_to_pos.items():
-        # 用 DDS 文件名（不含扩展名）作为 CSS 类名
         class_name = os.path.splitext(os.path.basename(src))[0]
-        css.append(f'.si-{class_name} {{ background-position: -{col * CELL}px -{row * CELL}px; }}')
+        css.append(f'.si-{class_name} {{ background-position: -{col * DISPLAY}px -{row * DISPLAY}px; }}')
 
     css_path = os.path.join(ICON_DIR, 'sprite.css')
     with open(css_path, 'w', encoding='utf-8') as f:
