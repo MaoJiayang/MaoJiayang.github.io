@@ -155,6 +155,9 @@ body{
   transition:border-color .2s;
 }
 .wh-search:focus{border-color:var(--jade-400)}
+.wh-toolbar{display:flex;align-items:center;justify-content:flex-end;margin-bottom:8px}
+.wh-toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer;user-select:none}
+.wh-toggle input[type=checkbox]{accent-color:var(--jade-200)}
 .wh-cat{margin-bottom:12px}
 .wh-cat-h{
   display:flex;align-items:center;gap:8px;padding:8px 0;
@@ -189,9 +192,9 @@ body{
 .wh-card:hover,.wh-card:active{background:var(--bg-hover);border-color:var(--jade-400)}
 .wh-card.zero{opacity:.45}
 .wh-card.zero .wh-card-amt{color:var(--text-disabled)}
-.wh-card-icon{width:36px;height:36px;border-radius:4px;flex-shrink:0}
+.wh-card-icon{width:32px;height:32px;border-radius:4px;flex-shrink:0}
 .wh-card-icon-fb{
-  width:36px;height:36px;border-radius:4px;flex-shrink:0;
+  width:32px;height:32px;border-radius:4px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
   font-size:16px;font-weight:700;color:var(--jade-50);
 }
@@ -401,6 +404,9 @@ body{
   <!-- 仓库面板 -->
   <div class="tab-panel" id="panel-warehouse">
     <input class="wh-search" id="wh-search" type="text" placeholder="搜索物品…" oninput="renderWarehouse()">
+    <div class="wh-toolbar" id="wh-toolbar" style="display:none">
+      <label class="wh-toggle"><input id="wh-showall" type="checkbox" onchange="toggleShowAll(this.checked)"><span>显示全部物品</span></label>
+    </div>
     <div id="wh-categories"></div>
     <div class="wh-empty" id="wh-empty" style="display:none">没有匹配的物品</div>
     <div class="wh-quick">
@@ -508,6 +514,7 @@ var currentTab = 'warehouse';
 var warehouseData = null;       // { items: { name: amount }, steamId }
 var warehouseLoading = false;
 var warehouseOpenCat = null;    // 记住展开的分类，null=展开第一个
+var warehouseShowAll = false;   // 是否显示库存为0的物品
 var qsheetMode = 'deposit';     // 'deposit' | 'withdraw'
 var qsheetItem = '';
 var qsheetStock = 0;           // 仓库中该物品的当前数量
@@ -707,6 +714,11 @@ function renderWarehouse() {
   var whItems = (warehouseData && warehouseData.items) ? warehouseData.items : {};
   var catOrder = ['矿石','矿锭','零件','弹药','工具','消耗品','其他'];
   var groups = {};
+  var hasOwnedItems = Object.keys(whItems).length > 0;
+
+  // 显示/隐藏工具栏
+  var toolbar = document.getElementById('wh-toolbar');
+  if (toolbar) toolbar.style.display = hasOwnedItems ? '' : 'none';
 
   catOrder.forEach(function(cat){
     var catalog = itemCategories[cat];
@@ -715,6 +727,7 @@ function renderWarehouse() {
     catalog.forEach(function(name){
       if (search && name.toLowerCase().indexOf(search) === -1) return;
       var amount = whItems.hasOwnProperty(name) ? whItems[name] : 0;
+      if (!warehouseShowAll && amount === 0) return;  // 默认隐藏零库存
       items.push({ name: name, amount: amount });
     });
     if (items.length === 0) return;
@@ -777,6 +790,12 @@ function renderWarehouse() {
   } else if (totalVisible === 0 && !hasAny) {
     emptyEl.innerHTML = '暂无物品数据<br><span style="font-size:11px;opacity:.6">输入 !仓库 列表 指令获取库存</span>';
   }
+}
+
+function toggleShowAll(show) {
+  warehouseShowAll = show;
+  warehouseOpenCat = null;  // 切换视图时重置展开态
+  renderWarehouse();
 }
 
 function toggleCategory(el) {
