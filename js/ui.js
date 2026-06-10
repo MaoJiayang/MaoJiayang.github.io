@@ -91,6 +91,21 @@ var UI = (function () {
     showToast('success', '已断开连接');
   }
 
+  // ========== 指令确认弹窗 ==========
+
+  var _cfOnConfirm = null;
+
+  function showConfirmDialog(msg, onConfirm) {
+    document.getElementById('cf-msg').textContent = msg;
+    _cfOnConfirm = onConfirm;
+    document.getElementById('cf-overlay').classList.add('show');
+  }
+
+  function hideConfirmDialog() {
+    document.getElementById('cf-overlay').classList.remove('show');
+    _cfOnConfirm = null;
+  }
+
   // ========== 登录引导 ==========
 
   function showLoginGuide() {
@@ -249,7 +264,7 @@ var UI = (function () {
       extraEl.style.display = 'block';
       document.getElementById('qs-extra-label').textContent = qsheetExtra.label;
       document.getElementById('qs-extra-val').value = qsheetExtraVal;
-      confirmBtn.textContent = '确认发布';
+      confirmBtn.textContent = qsheetExtra.confirmLabel || (qsheetMode === 'buy' ? '确认购买' : '确认出售');
     } else {
       extraEl.style.display = 'none';
       var label;
@@ -493,6 +508,17 @@ var UI = (function () {
       if (e.target === this) closeQSheet();
     });
 
+    // 指令确认弹窗
+    document.getElementById('cf-cancel').addEventListener('click', hideConfirmDialog);
+    document.getElementById('cf-confirm').addEventListener('click', function(){
+      var fn = _cfOnConfirm;
+      hideConfirmDialog();
+      if (fn) fn();
+    });
+    document.getElementById('cf-overlay').addEventListener('click', function(e){
+      if (e.target === this) hideConfirmDialog();
+    });
+
     // Dots
     updateTabDots();
   }
@@ -510,6 +536,8 @@ var UI = (function () {
     // Disconnect
     closeDcDialog: closeDcDialog,
     confirmDisconnect: confirmDisconnect,
+    showConfirmDialog: showConfirmDialog,
+    hideConfirmDialog: hideConfirmDialog,
     // Login
     handleLogin: handleLogin,
     showLoginGuide: showLoginGuide,

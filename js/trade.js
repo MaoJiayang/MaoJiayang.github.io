@@ -29,6 +29,29 @@ var Trade = (function () {
         if (okLabel) UI.showToast('success', okLabel);
         return r.data;
       }
+      // 服务器要求重复输入确认（匹配所有确认类响应）
+      if (r.msg && /(?:重复输入|再次输入).*(?:确认|指令)/.test(r.msg)) {
+        return new Promise(function (resolve, reject) {
+          UI.showConfirmDialog(r.msg, function () {
+            if (SeBridge.isRateLimited()) {
+              UI.showToast('error', 'API 调用次数已用完');
+              reject('RATE_LIMITED');
+              return;
+            }
+            SeBridge.executeCommand(cmd).then(function (r2) {
+              SeBridge.trackCall();
+              UI.updateGauge();
+              if (r2.code === 200) {
+                if (okLabel) UI.showToast('success', okLabel);
+                resolve(r2.data);
+              } else {
+                UI.showToast('error', r2.msg || '操作失败');
+                reject(r2.msg);
+              }
+            }).catch(reject);
+          });
+        });
+      }
       UI.showToast('error', r.msg || '指令执行失败');
       return Promise.reject(r.msg);
     });
@@ -175,8 +198,8 @@ var Trade = (function () {
       noCap: isBuy,
       onConfirm: function (m, qty) {
         var cmd = shopMode === 'buy'
-          ? '!购买 ' + name + ' ' + qty
-          : '!出售 ' + name + ' ' + qty;
+          ? '!采购 提交 ' + name + ' ' + qty
+          : '!收购 提交 ' + name + ' ' + qty;
         var label = shopMode === 'buy' ? '已购买 ' + name : '已出售 ' + name;
         exec(cmd, label).then(function () {
           exec('!银行 余额', null).then(function (d) { bankInfo = d; renderShop(); }).catch(function () {});
@@ -325,7 +348,7 @@ var Trade = (function () {
       // 打开 QSheet 填数量和单价
       UI.openQSheet(modeForQ, itemName, {
         stock: 0,
-        extraField: { label: '单价 SC', value: 100, suffix: 'SC', step: 10, max: 999999 },
+        extraField: { label: '单价 SC', value: 100, suffix: 'SC', step: 10, max: 999999, confirmLabel: modeForQ === 'sell' ? '确认发布卖单' : '确认发布收单' },
         onConfirm: function (m, qty, price) {
           var cmd = modeForQ === 'sell'
             ? '!市场 发布卖单 ' + itemName + ' ' + qty + ' ' + price

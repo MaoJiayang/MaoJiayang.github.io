@@ -316,6 +316,23 @@ var Warehouse = (function () {
       SeBridge.trackCall();
       UI.updateGauge();
       if (r.code === 200) {
+        // 服务器要求重复输入确认（重力环境存入/取出等）
+        if (r.msg && /(?:重复输入|再次输入).*(?:确认|指令)/.test(r.msg)) {
+          UI.showConfirmDialog(r.msg, function () {
+            if (SeBridge.isRateLimited()) { UI.showToast('error', 'API 调用次数已用完'); return; }
+            SeBridge.executeCommand(cmd).then(function (r2) {
+              SeBridge.trackCall();
+              UI.updateGauge();
+              if (r2.code === 200) {
+                UI.showToast('success', '「' + label + '」已完成');
+                setTimeout(load, 1500);
+              } else {
+                UI.showToast('error', r2.msg || '操作失败');
+              }
+            }).catch(function () { UI.showToast('error', '网络错误'); });
+          });
+          return;
+        }
         UI.showToast('success', '「' + label + '」指令已发送');
         setTimeout(load, 1500);
       } else {

@@ -424,27 +424,28 @@ body{
 .placeholder .ph-text{font-size:13px}
 
 /* ========== 断开确认弹窗 ========== */
-#dc-overlay{
+#dc-overlay,#cf-overlay{
   position:fixed;inset:0;z-index:250;background:rgba(0,0,0,.5);
   display:flex;align-items:center;justify-content:center;
   opacity:0;pointer-events:none;transition:opacity .2s;
 }
-#dc-overlay.show{opacity:1;pointer-events:auto}
-#dc-dialog{
+#dc-overlay.show,#cf-overlay.show{opacity:1;pointer-events:auto}
+#dc-dialog,#cf-dialog{
   background:var(--bg-panel);border:1px solid var(--bg-hover);
   border-radius:8px;width:320px;max-width:90vw;padding:24px;text-align:center;
 }
-#dc-dialog .dc-icon{font-size:36px;margin-bottom:10px}
-#dc-dialog .dc-msg{font-size:14px;color:var(--text-secondary);margin-bottom:20px;line-height:1.5}
-#dc-dialog .dc-actions{display:flex;gap:8px}
-#dc-dialog .dc-actions button{
+#dc-dialog .dc-icon,#cf-dialog .dc-icon{font-size:36px;margin-bottom:10px}
+#dc-dialog .dc-msg,#cf-dialog .dc-msg{font-size:14px;color:var(--text-secondary);margin-bottom:20px;line-height:1.5}
+#dc-dialog .dc-actions,#cf-dialog .dc-actions{display:flex;gap:8px}
+#dc-dialog .dc-actions button,#cf-dialog .dc-actions button{
   flex:1;padding:10px;font-size:14px;font-weight:600;
   border-radius:4px;border:none;cursor:pointer;font-family:inherit;
 }
 #dc-dialog .dc-confirm{background:var(--color-error);color:#fff}
-#dc-dialog .dc-confirm:hover{opacity:.85}
-#dc-dialog .dc-cancel{background:var(--bg-card);color:var(--text-secondary);border:1px solid var(--bg-hover)!important}
-#dc-dialog .dc-cancel:hover{background:var(--bg-hover)}
+#dc-dialog .dc-confirm:hover,#cf-dialog .dc-confirm:hover{opacity:.85}
+#dc-dialog .dc-cancel,#cf-dialog .dc-cancel{background:var(--bg-card);color:var(--text-secondary);border:1px solid var(--bg-hover)!important}
+#dc-dialog .dc-cancel:hover,#cf-dialog .dc-cancel:hover{background:var(--bg-hover)}
+#cf-dialog .dc-confirm{background:var(--jade-200);color:var(--bg-void)}
 
 /* ========== 响应式 ========== */
 @media(min-width:768px){
