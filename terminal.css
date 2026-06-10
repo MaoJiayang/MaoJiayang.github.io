@@ -279,6 +279,9 @@ body{
 }
 .tr-order-sell{border-left:3px solid var(--jade-200)}
 .tr-order-buy{border-left:3px solid var(--blue-200)}
+.tr-order-card{cursor:pointer}
+.tr-order-card:hover,.tr-order-card:active{background:var(--bg-hover)}
+.tr-order-buy{border-left:3px solid var(--blue-200)}
 .tr-order-tag{
   font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px;
   color:var(--bg-void);flex-shrink:0;min-width:24px;text-align:center;

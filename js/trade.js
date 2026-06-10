@@ -229,6 +229,25 @@ var Trade = (function () {
     loadMarket();
   }
 
+  /** 点击订单快捷匹配：卖单→自动购买，收单→自动出售 */
+  function quickTrade(name, price, isSell) {
+    var mode = isSell ? 'buy' : 'sell';  // 卖单=我要买, 收单=我要卖
+    UI.openQSheet(mode, name, {
+      stock: 0,
+      extraField: { label: '单价 SC', value: price, suffix: 'SC', step: 10, max: 999999 },
+      onConfirm: function (m, qty, p) {
+        var cmd = isSell
+          ? '!市场 自动购买 ' + name + ' ' + qty + ' ' + p
+          : '!市场 自动出售 ' + name + ' ' + qty + ' ' + p;
+        var label = (isSell ? '自动购买 ' : '自动出售 ') + name;
+        exec(cmd, label).then(function () {
+          Warehouse.markStale();
+          loadMarket();
+        }).catch(function () {});
+      }
+    });
+  }
+
   function initMarket() {
     document.querySelectorAll('.tr-market-mode').forEach(function (el) {
       el.addEventListener('click', function () {
@@ -263,10 +282,15 @@ var Trade = (function () {
 
     var html = '';
     filtered.forEach(function (bill) {
-      var isSell = bill.orderType === 1;    // 0=收单, 1=卖单
+      var isSell = bill.orderType === 1;    // 0=收单, 1=卖单(出)
       var tagClass = isSell ? 'sell' : 'buy';
-      var tagText = isSell ? '卖' : '收';
-      html += '<div class="tr-order-card ' + (isSell ? 'tr-order-sell' : 'tr-order-buy') + '">'
+      var tagText = isSell ? '出' : '收';
+      var clickAttr = '';
+      if (marketMode === 'all') {
+        // 点击订单快捷匹配：卖单→自动购买，收单→自动出售
+        clickAttr = ' onclick="Trade.quickTrade(\'' + escAttr(bill.itemName) + '\',' + bill.univalence + ',' + (isSell ? 1 : 0) + ')"';
+      }
+      html += '<div class="tr-order-card ' + (isSell ? 'tr-order-sell' : 'tr-order-buy') + '"' + clickAttr + '>'
         + '<span class="tr-order-tag ' + tagClass + '">' + tagText + '</span>'
         + '<div class="tr-order-body">'
         + '<span class="tr-order-name">' + escHtml(bill.itemName) + '</span>'
@@ -372,5 +396,6 @@ var Trade = (function () {
     cancelOrder: cancelOrder,
     publishOrder: publishOrder,
     refreshMarket: refreshMarket,
+    quickTrade: quickTrade,
   };
 })();

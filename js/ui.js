@@ -404,15 +404,20 @@ var UI = (function () {
   function confirmQSheet() {
     if (qsheetQty < 1) qsheetQty = 1;
     if (qsheetExtra && qsheetExtraVal < 1) qsheetExtraVal = 1;
-    var label = qsheetMode === 'deposit' ? '存入' : '取出';
     closeQSheet();
     if (_qsheetOnConfirm) {
       if (qsheetExtra) {
-        _qsheetOnConfirm(qsheetMode, qsheetQty, qsheetExtraVal, label);
+        // 市场订单发布：传 mode + qty + extraVal
+        _qsheetOnConfirm(qsheetMode, qsheetQty, qsheetExtraVal);
+      } else if (qsheetMode === 'buy' || qsheetMode === 'sell') {
+        // 商店买入/卖出：传 mode + qty
+        _qsheetOnConfirm(qsheetMode, qsheetQty);
       } else {
+        // 仓库存入/取出：传完整指令
         var cmd = qsheetMode === 'deposit'
           ? '!仓库 存入 ' + qsheetItem + ' ' + qsheetQty
           : '!仓库 取出 ' + qsheetItem + ' ' + qsheetQty;
+        var label = qsheetMode === 'deposit' ? '存入' : '取出';
         _qsheetOnConfirm(cmd, label);
       }
     }
