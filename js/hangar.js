@@ -1,6 +1,6 @@
 /**
  * Hangar Panel — 船坞面板（我的船坞 + 世界网格 + 舰船市场占位）
- * 依赖: UI, SeBridge, Warehouse（全局）
+ * 依赖: UI, SeBridge（全局）
  */
 var Hangar = (function () {
   'use strict';
@@ -10,11 +10,43 @@ var Hangar = (function () {
   var hangarData = null;        // { grids: string[], unsyncedGrids: string[] }
   var worldGrids = null;        // GridVO[]
   var loading = false;
+  var showFullName = false;     // 名称显示切换
 
   // ========== 通用执行 ==========
 
   function exec(cmd, okLabel) {
     return UI.executeWithConfirm(cmd, okLabel);
+  }
+
+  // ========== 名称处理 ==========
+
+  /** 从全名中提取 [...] 内的短名，若无则返回原值 */
+  function shortName(full) {
+    if (!full) return '';
+    var m = full.match(/\[([^\]]+)\]/);
+    return m ? m[1] : full;
+  }
+
+  /** 根据 showFullName 切换返回显示用的名称 */
+  function showName(full) {
+    return showFullName ? (full || '') : shortName(full);
+  }
+
+  /** 用双引号包裹名称（含空格时指令解析需要） */
+  function q(name) {
+    return '"' + (name || '') + '"';
+  }
+
+  function toggleNameFmt() {
+    showFullName = !showFullName;
+    updateNameToggleBtn();
+    renderMy();
+    renderWorld();
+  }
+
+  function updateNameToggleBtn() {
+    var btn = document.getElementById('ha-name-toggle');
+    if (btn) btn.textContent = showFullName ? '简洁' : '完整';
   }
 
   // ========== 子 Tab 切换 ==========
@@ -80,7 +112,7 @@ var Hangar = (function () {
     });
   }
 
-  // ========== 渲染：我的船坞 ==========
+  // ========== 渲染：我的船坞（列表形式） ==========
 
   function renderMy() {
     var container = document.getElementById('ha-grids');
@@ -93,9 +125,12 @@ var Hangar = (function () {
       return;
     }
 
+    // 搜索匹配全名或短名
     var allGrids = (hangarData.grids || []).concat(hangarData.unsyncedGrids || []);
     var filtered = allGrids.filter(function (name) {
-      return !search || name.toLowerCase().indexOf(search) !== -1;
+      if (!search) return true;
+      return name.toLowerCase().indexOf(search) !== -1
+        || shortName(name).toLowerCase().indexOf(search) !== -1;
     });
 
     if (filtered.length === 0) {
@@ -113,11 +148,11 @@ var Hangar = (function () {
         + '<span class="wh-cat-dot" style="background:var(--jade-200)"></span>'
         + '<span class="wh-cat-label">已同步船舶</span>'
         + '<span class="wh-cat-count">' + syncedFiltered.length + ' 艘</span>'
-        + '</div><div class="wh-cat-body open"><div class="wh-grid">';
+        + '</div><div class="wh-cat-body open">';
       syncedFiltered.forEach(function (name) {
-        html += renderGridCard(name, false);
+        html += renderGridRow(name, false);
       });
-      html += '</div></div></div>';
+      html += '</div></div>';
     }
 
     if (unsyncedFiltered.length > 0) {
@@ -125,91 +160,56 @@ var Hangar = (function () {
         + '<span class="wh-cat-dot" style="background:var(--color-warn)"></span>'
         + '<span class="wh-cat-label">未同步船舶</span>'
         + '<span class="wh-cat-count">' + unsyncedFiltered.length + ' 艘</span>'
-        + '</div><div class="wh-cat-body open"><div class="wh-grid">';
+        + '</div><div class="wh-cat-body open">';
       unsyncedFiltered.forEach(function (name) {
-        html += renderGridCard(name, true);
+        html += renderGridRow(name, true);
       });
-      html += '</div></div></div>';
+      html += '</div></div>';
     }
 
     container.innerHTML = html;
   }
 
-  function renderGridCard(name, isUnsynced) {
-    return '<div class="ha-grid-card" onclick="Hangar.showLoadOptions(this,\'' + escAttr(name) + '\')">'
+  function renderGridRow(full, isUnsynced) {
+    var label = showName(full);
+    return '<div class="ha-grid-row">'
       + '<span class="ha-grid-icon">🚀</span>'
       + '<div class="ha-grid-info">'
-      + '<span class="ha-grid-name">' + escHtml(name) + '</span>'
+      + '<span class="ha-grid-name" title="' + escAttr(full) + '">' + escHtml(label) + '</span>'
       + (isUnsynced ? '<span class="ha-grid-badge">仅本服</span>' : '')
       + '</div>'
-      + '<span class="ha-grid-btn">加载</span>'
-      + '<div class="ha-load-actions" style="display:none"></div>'
+      + '<div class="ha-row-actions">'
+      + '<button class="ha-act-btn" onclick="Hangar.checkPos(\'' + escAttr(full) + '\')" title="GPS 推送">📍</button>'
+      + '<button class="ha-act-btn" onclick="Hangar.loadNear(\'' + escAttr(full) + '\')">就近</button>'
+      + '<button class="ha-act-btn" onclick="Hangar.loadLocal(\'' + escAttr(full) + '\')">原地</button>'
+      + '<button class="ha-act-btn ha-act-danger" onclick="Hangar.loadForceLocal(\'' + escAttr(full) + '\')" title="强制原地（无碰撞检测）">强制</button>'
+      + '</div>'
       + '</div>';
   }
 
-  // ========== 加载选项面板 ==========
+  // ========== 加载操作 ==========
 
-  var _activeLoadCard = null;
-
-  function showLoadOptions(card, name) {
-    // 关闭之前打开的选项面板
-    if (_activeLoadCard && _activeLoadCard !== card) {
-      var oldActions = _activeLoadCard.querySelector('.ha-load-actions');
-      if (oldActions) oldActions.style.display = 'none';
-    }
-    _activeLoadCard = card;
-    var actions = card.querySelector('.ha-load-actions');
-    if (!actions) return;
-    var isOpen = actions.style.display !== 'none';
-    if (isOpen) {
-      actions.style.display = 'none';
-      return;
-    }
-    actions.innerHTML = ''
-      + '<button class="ha-load-btn" onclick="event.stopPropagation();Hangar.checkPos(\'' + escAttr(name) + '\')">📍 查看保存位置</button>'
-      + '<button class="ha-load-btn" onclick="event.stopPropagation();Hangar.loadNear(\'' + escAttr(name) + '\')">就近加载</button>'
-      + '<button class="ha-load-btn" onclick="event.stopPropagation();Hangar.loadLocal(\'' + escAttr(name) + '\')">原地加载</button>'
-      + '<button class="ha-load-btn ha-load-danger" onclick="event.stopPropagation();Hangar.loadForceLocal(\'' + escAttr(name) + '\')">强制原地</button>';
-    actions.style.display = 'flex';
-  }
-
-  /** 📍 查看保存位置 */
   function checkPos(name) {
     UI.showToast('success', 'GPS 已发送，请在游戏中查看');
-    exec('!网格 船坞位置 ' + name, null).catch(function () {});
-    closeLoadOptions();
+    exec('!网格 船坞位置 ' + q(name), null).catch(function () {});
   }
 
-  /** 就近加载 */
   function loadNear(name) {
-    closeLoadOptions();
-    exec('!网格 加载 ' + name, '正在取出 ' + name).then(function () {
+    exec('!网格 加载 ' + q(name), '正在取出 ' + shortName(name)).then(function () {
       loadHangar();
     }).catch(function () {});
   }
 
-  /** 原地加载 */
   function loadLocal(name) {
-    closeLoadOptions();
-    exec('!网格 原地加载 ' + name, '正在原地取出 ' + name).then(function () {
+    exec('!网格 原地加载 ' + q(name), '正在原地取出 ' + shortName(name)).then(function () {
       loadHangar();
     }).catch(function () {});
   }
 
-  /** 强制原地（无碰撞检测，危险） */
   function loadForceLocal(name) {
-    closeLoadOptions();
-    exec('!网格 原地加载 ' + name + ' false true', '强制原地加载 ' + name).then(function () {
+    exec('!网格 原地加载 ' + q(name) + ' false true', '强制原地加载 ' + shortName(name)).then(function () {
       loadHangar();
     }).catch(function () {});
-  }
-
-  function closeLoadOptions() {
-    if (_activeLoadCard) {
-      var actions = _activeLoadCard.querySelector('.ha-load-actions');
-      if (actions) actions.style.display = 'none';
-      _activeLoadCard = null;
-    }
   }
 
   // ========== 保存飞船 ==========
@@ -234,7 +234,10 @@ var Hangar = (function () {
     }
 
     var filtered = (worldGrids || []).filter(function (g) {
-      return !search || (g.displayName && g.displayName.toLowerCase().indexOf(search) !== -1);
+      if (!search) return true;
+      var dn = g.displayName || '';
+      return dn.toLowerCase().indexOf(search) !== -1
+        || shortName(dn).toLowerCase().indexOf(search) !== -1;
     });
 
     if (filtered.length === 0) {
@@ -244,22 +247,23 @@ var Hangar = (function () {
 
     var html = '';
     filtered.forEach(function (g) {
-      html += '<div class="ha-world-card">'
+      var dn = g.displayName || '未命名';
+      var label = showName(dn);
+      html += '<div class="ha-world-row">'
         + '<span class="ha-grid-icon">🚀</span>'
         + '<div class="ha-world-info">'
-        + '<span class="ha-world-name">' + escHtml(g.displayName || '未命名') + '</span>'
+        + '<span class="ha-world-name" title="' + escAttr(dn) + '">' + escHtml(label) + '</span>'
         + '<span class="ha-world-meta">PCU ' + (g.pcu || 0) + ' · ' + (g.blocksCount || 0) + ' 方块 · ' + formatNum(g.price) + ' SC</span>'
         + '</div>'
-        + '<button class="ha-world-save" onclick="event.stopPropagation();Hangar.saveRemote(\'' + escAttr(g.displayName || '') + '\')">保存到船坞</button>'
+        + '<button class="ha-world-save" onclick="Hangar.saveRemote(\'' + escAttr(dn) + '\')">保存到船坞</button>'
         + '</div>';
     });
     container.innerHTML = html;
   }
 
-  /** 远程保存：发 !网格 保存 <name> */
   function saveRemote(name) {
-    exec('!网格 保存 ' + name, '正在保存 ' + name).then(function () {
-      UI.showToast('success', '「' + name + '」已保存到船坞');
+    exec('!网格 保存 ' + q(name), '正在保存 ' + shortName(name)).then(function () {
+      UI.showToast('success', '「' + shortName(name) + '」已保存到船坞');
       loadHangar();
     }).catch(function () {});
   }
@@ -275,6 +279,10 @@ var Hangar = (function () {
 
   function init() {
     initSubTabs();
+
+    // 名称切换按钮
+    var nameToggle = document.getElementById('ha-name-toggle');
+    if (nameToggle) nameToggle.addEventListener('click', toggleNameFmt);
 
     // 搜索
     var searchInput = document.getElementById('ha-search');
@@ -306,7 +314,7 @@ var Hangar = (function () {
     switchSubTab: switchSubTab,
     load: loadHangar,
     loadWorldGrids: loadWorldGrids,
-    showLoadOptions: showLoadOptions,
+    toggleNameFmt: toggleNameFmt,
     checkPos: checkPos,
     loadNear: loadNear,
     loadLocal: loadLocal,

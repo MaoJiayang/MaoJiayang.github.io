@@ -490,7 +490,7 @@ namespace BridgeServer
                     { "command", "!银行 余额" },
                     { "gamePassword", password },
                     { "forcePlayerOnline", false },
-                    { "dontSendToGameScreen", false },
+                    { "dontSendToGameScreen", true },
                 });
 
                 // 构造 RequestMessage
@@ -532,7 +532,7 @@ namespace BridgeServer
                     { "command", command },
                     { "gamePassword", password },
                     { "forcePlayerOnline", false },
-                    { "dontSendToGameScreen", false },
+                    { "dontSendToGameScreen", true },
                 });
 
                 // 构造 RequestMessage

@@ -447,37 +447,36 @@ body{
 #cf-dialog .dc-confirm{background:var(--jade-200);color:var(--bg-void)}
 
 /* ========== 船坞面板 ========== */
-.ha-subtabs{display:flex;margin-bottom:12px}
+.ha-subtabs{display:flex;margin-bottom:12px;align-items:center;gap:8px}
 .ha-subtab{flex:1;padding:6px 0;font-size:13px;font-weight:600;color:var(--text-secondary);background:none;border:none;cursor:pointer;font-family:inherit;border-bottom:2px solid transparent;transition:color .2s,border .2s}
 .ha-subtab.active{color:var(--jade-200);border-bottom-color:var(--jade-200)}
 .ha-subtab:hover{color:var(--text-primary)}
 .ha-section{position:relative}
 .ha-refresh{cursor:pointer;font-size:20px;color:var(--text-muted);position:absolute;top:0;right:0;line-height:36px;width:36px;text-align:center}
 .ha-refresh:hover{color:var(--jade-200)}
+#ha-name-toggle{font-size:11px;padding:2px 8px;border-radius:3px;background:var(--bg-card);color:var(--text-muted);border:1px solid var(--bg-hover);cursor:pointer;font-family:inherit;flex-shrink:0}
+#ha-name-toggle:hover{color:var(--text-primary);background:var(--bg-hover)}
 
-/* 网格卡片 */
-.ha-grid-card{display:flex;align-items:center;padding:10px 12px;background:var(--bg-card);border-radius:4px;margin-bottom:4px;cursor:pointer;position:relative;flex-wrap:wrap}
-.ha-grid-card:hover{background:var(--bg-hover)}
-.ha-grid-icon{font-size:20px;margin-right:10px;flex-shrink:0}
-.ha-grid-info{flex:1;min-width:0;display:flex;align-items:center;gap:8px}
-.ha-grid-name{font-size:14px;font-weight:500;color:var(--text-primary)}
-.ha-grid-badge{font-size:10px;padding:1px 6px;border-radius:3px;background:var(--color-warn);color:var(--bg-void)}
-.ha-grid-btn{font-size:12px;padding:4px 12px;border-radius:3px;background:var(--jade-200);color:var(--bg-void);border:none;cursor:pointer;font-family:inherit;font-weight:600;margin-left:8px;flex-shrink:0}
+/* 船坞列表行 */
+.ha-grid-row{display:flex;align-items:center;padding:8px 10px;background:var(--bg-card);border-radius:4px;margin-bottom:4px;gap:8px}
+.ha-grid-row:hover{background:var(--bg-hover)}
+.ha-grid-icon{font-size:18px;flex-shrink:0}
+.ha-grid-info{flex:1;min-width:0;display:flex;align-items:center;gap:6px}
+.ha-grid-name{font-size:14px;font-weight:500;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ha-grid-badge{font-size:10px;padding:1px 6px;border-radius:3px;background:var(--color-warn);color:var(--bg-void);flex-shrink:0}
+.ha-row-actions{display:flex;gap:4px;flex-shrink:0}
+.ha-act-btn{font-size:12px;padding:3px 8px;border-radius:3px;background:var(--bg-hover);color:var(--text-secondary);border:1px solid transparent;cursor:pointer;font-family:inherit;white-space:nowrap}
+.ha-act-btn:hover{background:var(--jade-400);color:var(--bg-void);border-color:var(--jade-400)}
+.ha-act-danger{color:var(--color-error)}
+.ha-act-danger:hover{background:var(--color-error);color:#fff;border-color:var(--color-error)}
 
-/* 加载选项 */
-.ha-load-actions{display:none;flex-wrap:wrap;gap:6px;width:100%;margin-top:6px;padding-top:6px;border-top:1px solid var(--bg-hover)}
-.ha-load-btn{flex:1 1 calc(50% - 3px);min-width:100px;padding:6px 8px;font-size:12px;font-weight:500;background:var(--bg-hover);color:var(--text-primary);border:1px solid var(--bg-hover);border-radius:3px;cursor:pointer;font-family:inherit}
-.ha-load-btn:hover{background:var(--jade-400);color:var(--bg-void)}
-.ha-load-danger{color:var(--color-error)}
-.ha-load-danger:hover{background:var(--color-error);color:#fff}
-
-/* 世界网格 */
-.ha-world-card{display:flex;align-items:center;padding:10px 12px;background:var(--bg-card);border-radius:4px;margin-bottom:4px}
-.ha-world-card:hover{background:var(--bg-hover)}
-.ha-world-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.ha-world-name{font-size:14px;font-weight:500;color:var(--text-primary)}
-.ha-world-meta{font-size:12px;color:var(--text-muted)}
-.ha-world-save{font-size:12px;padding:4px 12px;border-radius:3px;background:var(--jade-200);color:var(--bg-void);border:none;cursor:pointer;font-family:inherit;font-weight:600;white-space:nowrap;margin-left:8px}
+/* 世界网格列表行 */
+.ha-world-row{display:flex;align-items:center;padding:8px 10px;background:var(--bg-card);border-radius:4px;margin-bottom:4px;gap:8px}
+.ha-world-row:hover{background:var(--bg-hover)}
+.ha-world-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.ha-world-name{font-size:14px;font-weight:500;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ha-world-meta{font-size:11px;color:var(--text-muted)}
+.ha-world-save{font-size:12px;padding:4px 10px;border-radius:3px;background:var(--jade-200);color:var(--bg-void);border:none;cursor:pointer;font-family:inherit;font-weight:600;white-space:nowrap;flex-shrink:0}
 .ha-world-save:hover{opacity:.85}
 
 /* ========== 响应式 ========== */
