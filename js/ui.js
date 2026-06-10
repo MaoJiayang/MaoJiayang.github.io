@@ -1,0 +1,407 @@
+/**
+ * UI Kit — 伊卡洛斯虚空终端共享 UI 模块
+ * Toast / Modal / BottomSheet / Tabs / Swipe / Topbar
+ * 依赖: SeBridge（全局）
+ */
+var UI = (function () {
+  'use strict';
+
+  var TAB_ORDER = ['warehouse','trade','shipyard','hangar','settings'];
+  var currentTab = 'warehouse';
+  var _tabCallbacks = {};
+  var toastTimer = null;
+
+  // ========== Toast ==========
+
+  function showToast(type, msg) {
+    var el = document.getElementById('toast');
+    clearTimeout(toastTimer);
+    el.className = type + ' show';
+    document.getElementById('toast-body').textContent = msg;
+    toastTimer = setTimeout(hideToast, 3500);
+  }
+
+  function hideToast() {
+    var el = document.getElementById('toast');
+    el.classList.remove('show');
+  }
+
+  // ========== Topbar 状态 ==========
+
+  function setConnDot(state) {
+    var dot = document.getElementById('conn-dot');
+    dot.className = 'conn-dot' + (state ? ' ' + state : '');
+    dot.title = state === 'online' ? '服务在线' : state === 'offline' ? '服务离线' : '检测中';
+  }
+
+  function pollHealth() {
+    SeBridge.checkBridgeHealth().then(function(r){
+      setConnDot(r !== null && r.code === 200 ? 'online' : 'offline');
+    }).catch(function(){
+      setConnDot('offline');
+    });
+  }
+
+  function updateGauge() {
+    var bar = document.getElementById('gauge-bar');
+    if (!SeBridge.hasCredentials()) {
+      bar.style.display = 'none';
+      return;
+    }
+    bar.style.display = 'inline-block';
+    var remain = SeBridge.getRemainingCalls();
+    var limit = SeBridge.getRateLimit();
+    var pct = (remain / limit) * 100;
+    var fill = document.getElementById('gauge-fill');
+    fill.style.width = pct + '%';
+    fill.className = 'gauge-fill' + (pct <= 20 ? ' low' : pct <= 50 ? ' mid' : '');
+  }
+
+  function updateUserBadge() {
+    var el = document.getElementById('user-badge');
+    if (SeBridge.hasCredentials()) {
+      el.textContent = '已连接';
+      el.classList.add('logged-in');
+    } else {
+      el.textContent = '未登录';
+      el.classList.remove('logged-in');
+    }
+    updateGauge();
+  }
+
+  function handleUserBadgeClick() {
+    if (SeBridge.hasCredentials()) {
+      document.getElementById('dc-overlay').classList.add('show');
+    } else {
+      showLoginGuide();
+    }
+  }
+
+  // ========== 断开确认弹窗 ==========
+
+  function closeDcDialog() {
+    document.getElementById('dc-overlay').classList.remove('show');
+  }
+
+  function confirmDisconnect() {
+    closeDcDialog();
+    SeBridge.clearCredentials();
+    updateUserBadge();
+    showLoginGuide();
+    showToast('success', '已断开连接');
+  }
+
+  // ========== 登录引导 ==========
+
+  function showLoginGuide() {
+    document.getElementById('login-guide').style.display = 'flex';
+    document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+    document.getElementById('tabbar').style.display = 'none';
+    document.getElementById('wh-bar').style.display = 'none';
+  }
+
+  function hideLoginGuide() {
+    document.getElementById('login-guide').style.display = 'none';
+    document.getElementById('tabbar').style.display = 'flex';
+  }
+
+  function showLoginErr(msg) {
+    var el = document.getElementById('lg-err');
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+
+  function onLoginSuccess() {
+    hideLoginGuide();
+    updateUserBadge();
+    updateGauge();
+    document.getElementById('wh-bar').style.display = '';
+    fireTabCallback(currentTab);
+    showToast('success', '已连接至伊卡洛斯星服务器');
+  }
+
+  // ========== Tab 系统 ==========
+
+  function switchTab(tab) {
+    var sameTab = tab === currentTab;
+    currentTab = tab;
+    document.querySelectorAll('#sidebar .sitem').forEach(function(s){
+      s.classList.toggle('active', s.dataset.tab === tab);
+    });
+    document.querySelectorAll('#tabbar .tab').forEach(function(t){
+      t.classList.toggle('active', t.dataset.tab === tab);
+    });
+    var switching = !sameTab || !document.querySelector('.tab-panel.active');
+    if (switching) {
+      document.querySelectorAll('.tab-panel').forEach(function(p){
+        p.classList.remove('active');
+      });
+      var panel = document.getElementById('panel-' + tab);
+      if (panel) panel.classList.add('active');
+    }
+    updateTabDots();
+    if (!sameTab) fireTabCallback(tab);
+  }
+
+  function updateTabDots() {
+    var dots = document.getElementById('tab-dots');
+    if (!dots) return;
+    var html = '';
+    TAB_ORDER.forEach(function(t){
+      html += '<span class="dot' + (t === currentTab ? ' active' : '') + '"></span>';
+    });
+    dots.innerHTML = html;
+  }
+
+  function onTabChange(tab, fn) {
+    _tabCallbacks[tab] = fn;
+  }
+
+  function fireTabCallback(tab) {
+    if (_tabCallbacks[tab]) _tabCallbacks[tab]();
+  }
+
+  function getCurrentTab() { return currentTab; }
+
+  // ========== 滑动切换 ==========
+
+  function initSwipe(container) {
+    var startX = 0, startY = 0, swiping = false;
+
+    container.addEventListener('touchstart', function(e){
+      if (e.target.closest('#qsheet-overlay') || e.target.closest('#dc-overlay')) return;
+      if (e.target.closest('.wh-grid') || e.target.closest('.wh-cat-body') ||
+          e.target.closest('.sem-card-body') || e.target.closest('.ac-card-body') ||
+          e.target.closest('.hist-card-body')) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      swiping = true;
+    }, { passive: true });
+
+    container.addEventListener('touchend', function(e){
+      if (!swiping) return;
+      swiping = false;
+      var dx = (e.changedTouches[0] || e.touches[0]).clientX - startX;
+      var dy = (e.changedTouches[0] || e.touches[0]).clientY - startY;
+      if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return;
+      var idx = TAB_ORDER.indexOf(currentTab);
+      if (dx < 0 && idx < TAB_ORDER.length - 1) switchTab(TAB_ORDER[idx + 1]);
+      else if (dx > 0 && idx > 0) switchTab(TAB_ORDER[idx - 1]);
+    });
+  }
+
+  // ========== 数量输入 Bottom Sheet ==========
+
+  var qsheetMode = 'deposit';
+  var qsheetItem = '';
+  var qsheetStock = 0;
+  var qsheetQty = 100;
+  var _tapCount = 0;
+  var _lastTapTime = 0;
+  var _tapTimer = null;
+  var _tapStep = 10;
+  var _qsheetOnConfirm = null;
+
+  function openQSheet(mode, itemName, stock, onConfirm) {
+    qsheetMode = mode;
+    qsheetItem = itemName;
+    qsheetStock = stock || 0;
+    qsheetQty = 100;
+    _tapCount = 0;
+    _tapStep = 10;
+    _qsheetOnConfirm = onConfirm;
+    var depositing = mode === 'deposit';
+    var maxWithdraw = depositing ? Infinity : qsheetStock;
+    if (qsheetQty > maxWithdraw) qsheetQty = maxWithdraw;
+    if (qsheetQty < 1) qsheetQty = 1;
+    document.getElementById('qs-item').textContent = itemName;
+    document.getElementById('qs-stock').textContent = '库存 ' + qsheetStock.toLocaleString();
+    document.getElementById('qs-qty').value = qsheetQty;
+    document.getElementById('qs-confirm').textContent = depositing ? '确认存入 ' + qsheetQty.toLocaleString() : '确认取出 ' + qsheetQty.toLocaleString();
+    document.getElementById('qsheet-overlay').classList.add('show');
+    updateQSheetTabs();
+    updateQSheetBtns();
+  }
+
+  function closeQSheet() {
+    document.getElementById('qsheet-overlay').classList.remove('show');
+    clearTimeout(_tapTimer);
+  }
+
+  function updateQSheetDisplay() {
+    document.getElementById('qs-qty').value = qsheetQty;
+    document.getElementById('qs-confirm').textContent = (qsheetMode === 'deposit' ? '确认存入 ' : '确认取出 ') + qsheetQty.toLocaleString();
+    updateQSheetBtns();
+  }
+
+  function updateQSheetTabs() {
+    var tabDep = document.getElementById('qs-tab-deposit');
+    var tabWdr = document.getElementById('qs-tab-withdraw');
+    tabDep.classList.toggle('active', qsheetMode === 'deposit');
+    tabWdr.classList.toggle('active', qsheetMode === 'withdraw');
+    tabWdr.disabled = qsheetStock === 0;
+  }
+
+  function updateQSheetBtns() {
+    var maxWithdraw = qsheetMode === 'deposit' ? Infinity : qsheetStock;
+    document.getElementById('qs-minus').disabled = qsheetQty <= 1;
+    document.getElementById('qs-minus-fast').disabled = qsheetQty <= 1;
+    document.getElementById('qs-plus').disabled = qsheetQty >= maxWithdraw;
+    document.getElementById('qs-plus-fast').disabled = qsheetQty >= maxWithdraw;
+  }
+
+  function onQtyInput() {
+    var input = document.getElementById('qs-qty');
+    var v = parseInt(input.value) || 1;
+    var maxWithdraw = qsheetMode === 'deposit' ? Infinity : qsheetStock;
+    qsheetQty = Math.max(1, Math.min(maxWithdraw, v));
+    input.value = qsheetQty;
+    document.getElementById('qs-confirm').textContent = (qsheetMode === 'deposit' ? '确认存入 ' : '确认取出 ') + qsheetQty.toLocaleString();
+    _tapCount = 0; _tapStep = 10;
+  }
+
+  function adjustQty(delta) {
+    var maxWithdraw = qsheetMode === 'deposit' ? Infinity : qsheetStock;
+    qsheetQty = Math.max(1, Math.min(maxWithdraw, qsheetQty + delta));
+    updateQSheetDisplay();
+  }
+
+  function fastAdjust(deltaDir) {
+    var now = Date.now();
+    if (_lastTapTime && now - _lastTapTime < 600) {
+      _tapCount++;
+      _tapStep = Math.min(1000, 10 * Math.pow(2, _tapCount));
+    } else {
+      _tapCount = 0;
+      _tapStep = 10;
+    }
+    _lastTapTime = now;
+    clearTimeout(_tapTimer);
+    _tapTimer = setTimeout(function(){ _tapCount = 0; _tapStep = 10; _lastTapTime = 0; }, 600);
+    adjustQty(deltaDir * _tapStep);
+  }
+
+  function switchQSheetMode(mode) {
+    if (mode === qsheetMode) return;
+    if (mode === 'withdraw' && qsheetStock === 0) return;
+    qsheetMode = mode;
+    qsheetQty = 100;
+    var maxWithdraw = mode === 'deposit' ? Infinity : qsheetStock;
+    if (qsheetQty > maxWithdraw) qsheetQty = maxWithdraw;
+    if (qsheetQty < 1) qsheetQty = 1;
+    _tapCount = 0; _tapStep = 10;
+    updateQSheetTabs();
+    updateQSheetDisplay();
+  }
+
+  function confirmQSheet() {
+    if (qsheetQty < 1) qsheetQty = 1;
+    var cmd = qsheetMode === 'deposit'
+      ? '!仓库 存入 ' + qsheetItem + ' ' + qsheetQty
+      : '!仓库 取出 ' + qsheetItem + ' ' + qsheetQty;
+    closeQSheet();
+    if (_qsheetOnConfirm) _qsheetOnConfirm(cmd, qsheetMode === 'deposit' ? '存入' : '取出');
+  }
+
+  // ========== 初始化 ==========
+
+  // ========== 登录流程 ==========
+
+  function handleLogin() {
+    var steamId = document.getElementById('lg-steamid').value.trim();
+    var pwd = document.getElementById('lg-pwd').value.trim();
+    var remember = document.getElementById('lg-remember').checked;
+    var btn = document.getElementById('lg-submit');
+
+    if (!steamId) { showLoginErr('请输入 SteamID'); return; }
+    if (!pwd) { showLoginErr('请输入游戏密码'); return; }
+
+    btn.disabled = true;
+    btn.textContent = '正在验证…';
+    var errEl = document.getElementById('lg-err');
+    errEl.classList.remove('show');
+
+    SeBridge.verifyCredentials(steamId, pwd).then(function(r){
+      btn.disabled = false;
+      btn.textContent = '连接服务器';
+      if (r.code === 200) {
+        SeBridge.saveCredentials(steamId, pwd, remember);
+        SeBridge.syncUser().catch(function(){});
+        onLoginSuccess();
+      } else {
+        showLoginErr(r.msg || '验证失败');
+      }
+    }).catch(function(){
+      btn.disabled = false;
+      btn.textContent = '连接服务器';
+      showLoginErr('连接失败，请稍后重试');
+    });
+  }
+
+  // ========== 初始化 ==========
+
+  function init() {
+    // Tab 点击绑定
+    document.querySelectorAll('#sidebar .sitem').forEach(function(s){
+      s.addEventListener('click', function(){ switchTab(s.dataset.tab); });
+    });
+    document.querySelectorAll('#tabbar .tab').forEach(function(t){
+      t.addEventListener('click', function(){ switchTab(t.dataset.tab); });
+    });
+
+    // 滑动
+    initSwipe(document.getElementById('main'));
+
+    // QSheet 按钮
+    document.getElementById('qs-minus').addEventListener('click', function(){ adjustQty(-1); });
+    document.getElementById('qs-plus').addEventListener('click', function(){ adjustQty(1); });
+    document.getElementById('qs-minus-fast').addEventListener('click', function(){ fastAdjust(-1); });
+    document.getElementById('qs-plus-fast').addEventListener('click', function(){ fastAdjust(1); });
+
+    // QSheet tab 切换
+    document.getElementById('qs-tab-deposit').addEventListener('click', function(){ switchQSheetMode('deposit'); });
+    document.getElementById('qs-tab-withdraw').addEventListener('click', function(){ switchQSheetMode('withdraw'); });
+
+    // QSheet 遮罩关闭
+    document.getElementById('qsheet-overlay').addEventListener('click', function(e){
+      if (e.target === this) closeQSheet();
+    });
+
+    // Dots
+    updateTabDots();
+  }
+
+  return {
+    // Toast
+    showToast: showToast,
+    hideToast: hideToast,
+    // Topbar
+    setConnDot: setConnDot,
+    pollHealth: pollHealth,
+    updateGauge: updateGauge,
+    updateUserBadge: updateUserBadge,
+    handleUserBadgeClick: handleUserBadgeClick,
+    // Disconnect
+    closeDcDialog: closeDcDialog,
+    confirmDisconnect: confirmDisconnect,
+    // Login
+    handleLogin: handleLogin,
+    showLoginGuide: showLoginGuide,
+    hideLoginGuide: hideLoginGuide,
+    showLoginErr: showLoginErr,
+    onLoginSuccess: onLoginSuccess,
+    // Tabs
+    switchTab: switchTab,
+    updateTabDots: updateTabDots,
+    onTabChange: onTabChange,
+    getCurrentTab: getCurrentTab,
+    // QSheet
+    openQSheet: openQSheet,
+    closeQSheet: closeQSheet,
+    confirmQSheet: confirmQSheet,
+    onQtyInput: onQtyInput,
+    switchQSheetMode: switchQSheetMode,
+    // Init
+    init: init,
+  };
+})();
