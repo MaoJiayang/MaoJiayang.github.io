@@ -145,6 +145,22 @@ var SeBridge = (function () {
     });
   }
 
+  // ========== 世界网格 ==========
+
+  /** 获取玩家当前世界中的活跃网格列表（GridVO[]） */
+  function getWorldGrids() {
+    var creds = getCredentials();
+    if (!creds) return Promise.reject(new Error('NOT_LOGGED_IN'));
+    return callBridge('POST', '/api/grid/world-grids', {
+      steamId: creds.steamId,
+      gamePassword: creds.gamePassword,
+    }).then(function (r) {
+      // API 调用计入限流
+      trackCall();
+      return r;
+    });
+  }
+
   // ========== 客户端限流 ==========
 
   function loadCallTimes() {
@@ -217,6 +233,9 @@ var SeBridge = (function () {
 
     // 用户同步
     syncUser: syncUser,
+
+    // 世界网格
+    getWorldGrids: getWorldGrids,
 
     // 限流
     isRateLimited: isRateLimited,

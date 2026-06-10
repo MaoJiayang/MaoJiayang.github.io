@@ -112,7 +112,7 @@ async function readFrame(socket, timeoutMs) {
 /**
  * 发送 TCP 帧到 SE 服务器，返回归一化后的响应
  */
-async function tcpRequest(host, port, authKey, steamId, command, password) {
+async function tcpRequest(host, port, authKey, steamId, command, password, customPath) {
   const innerBody = JSON.stringify({
     steamId,
     command,
@@ -122,7 +122,7 @@ async function tcpRequest(host, port, authKey, steamId, command, password) {
   });
 
   const requestJson = JSON.stringify({
-    path: '/command',
+    path: customPath || '/command',
     bodyJson: innerBody,
     authKey,
   });
@@ -262,6 +262,28 @@ export async function onRequestPost({ request, env }) {
 
   if (path === '/api/user/sync') {
     return handleUserSync(body, env, cfg, request);
+  }
+
+  if (path === '/api/grid/world-grids') {
+    if (!body.steamId || !body.gamePassword) {
+      return Response.json({ code: 400, msg: '缺少 steamId 或 gamePassword' }, { status: 400 });
+    }
+    if (cfg.blacklist.has(String(body.steamId))) {
+      return Response.json({ code: 403, msg: '账号已被禁用' }, { status: 403 });
+    }
+    const banCheck3 = await checkBanned(body.steamId, env.LOG_DB);
+    if (banCheck3) return banCheck3;
+    const result = await tcpRequest(cfg.host, cfg.port, cfg.authKey, body.steamId, '', body.gamePassword, '/getWorldGridsBySteamId');
+    // 服务端将 GridVO[] 序列化到 msg 字段，解析为 data
+    if (result.code === 200 && result.msg) {
+      try {
+        const parsed = JSON.parse(result.msg);
+        if (Array.isArray(parsed)) {
+          result.data = parsed;
+        }
+      } catch (_) { /* msg 不是 JSON，保持原样 */ }
+    }
+    return Response.json(result);
   }
 
   return Response.json({ code: 404, msg: '未知接口' }, { status: 404 });

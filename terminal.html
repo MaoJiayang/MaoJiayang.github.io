@@ -120,7 +120,29 @@
     </div>
   </div>
   <div class="tab-panel" id="panel-shipyard"><div class="placeholder"><span class="ph-icon">🏭</span><span class="ph-text">船厂面板 — 即将开放</span></div></div>
-  <div class="tab-panel" id="panel-hangar"><div class="placeholder"><span class="ph-icon">🚁</span><span class="ph-text">船坞面板 — 即将开放</span></div></div>
+  <div class="tab-panel" id="panel-hangar">
+	    <div class="ha-subtabs">
+	      <button class="ha-subtab active" data-ha-tab="my">我的船坞</button>
+	      <button class="ha-subtab" data-ha-tab="world">世界网格</button>
+	      <button class="ha-subtab" data-ha-tab="market">舰船市场</button>
+	    </div>
+	    <div class="ha-section" id="hangar-my">
+	      <input class="wh-search" id="ha-search" type="text" placeholder="搜索船名…">
+	      <span class="ha-refresh" onclick="Hangar.load()" title="刷新">↻</span>
+	      <div id="ha-grids"></div>
+	      <div class="tr-actions">
+	        <button class="tr-act-btn" id="ha-save">+ 保存飞船</button>
+	      </div>
+	    </div>
+	    <div class="ha-section" id="hangar-world" style="display:none">
+	      <input class="wh-search" id="ha-world-search" type="text" placeholder="搜索船名…">
+	      <span class="ha-refresh" onclick="Hangar.loadWorldGrids()" title="刷新">↻</span>
+	      <div id="ha-world-grids"></div>
+	    </div>
+	    <div class="ha-section" id="hangar-market" style="display:none">
+	      <div class="placeholder"><span class="ph-icon">📜</span><span class="ph-text">舰船市场 — 即将开放</span></div>
+	    </div>
+	  </div>
   <div class="tab-panel" id="panel-settings"><div class="placeholder"><span class="ph-icon">⚙</span><span class="ph-text">设置 — 即将开放</span></div></div>
   </div><!-- /#panels-wrap -->
   <div id="tab-dots"></div>
@@ -203,6 +225,7 @@
 <script src="js/ui.js"></script>
 <script src="js/warehouse.js"></script>
 <script src="js/trade.js"></script>
+<script src="js/hangar.js"></script>
 <script>
 // ========== 伊卡洛斯虚空终端 — 入口 ==========
 SeBridge.init({ bridgeUrl: '' });
@@ -217,10 +240,12 @@ fetch('/version.json?t=' + Date.now())
 UI.init();
 Warehouse.init();
 Trade.init();
+Hangar.init();
 
 // Tab 回调
 UI.onTabChange('warehouse', function(){ Warehouse.onTabActivated(); });
 UI.onTabChange('trade', function(){ Trade.onTabActivated(); });
+UI.onTabChange('hangar', function(){ Hangar.onTabActivated(); });
 
 // 断开/撤销弹窗关闭时清理
 var origCloseDc = UI.closeDcDialog;
