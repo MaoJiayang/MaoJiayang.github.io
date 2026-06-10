@@ -202,36 +202,123 @@ var UI = (function () {
   var _tapStep = 10;
   var _qsheetOnConfirm = null;
 
-  function openQSheet(mode, itemName, stock, onConfirm) {
+  // extraField 扩展（市场订单单价等）
+  var qsheetExtra = null;       // { label, value, suffix, step, max }
+  var qsheetExtraVal = 0;
+  var _extraTapCount = 0;
+  var _extraLastTap = 0;
+  var _extraTapTimer = null;
+  var _extraTapStep = 10;
+
+  /**
+   * openQSheet(mode, itemName, stock, onConfirm)        ← 仓库用法（向后兼容）
+   * openQSheet(mode, itemName, options)                  ← 市场用法
+   *   options: { stock, extraField: { label, value, suffix, step, max }, onConfirm }
+   */
+  function openQSheet(mode, itemName, stockOrOptions, onConfirm) {
     qsheetMode = mode;
     qsheetItem = itemName;
-    qsheetStock = stock || 0;
-    qsheetQty = 100;
     _tapCount = 0;
     _tapStep = 10;
-    _qsheetOnConfirm = onConfirm;
+
+    // 判断 overload：第三个参数是对象则为 options 模式
+    var isOptions = typeof stockOrOptions === 'object' && stockOrOptions !== null;
+    var options = isOptions ? stockOrOptions : { stock: stockOrOptions || 0, onConfirm: onConfirm };
+
+    qsheetStock = options.stock || 0;
+    qsheetQty = 100;
+    _qsheetOnConfirm = options.onConfirm || null;
+    qsheetExtra = options.extraField || null;
+    qsheetExtraVal = qsheetExtra ? qsheetExtra.value : 0;
+    _extraTapCount = 0;
+    _extraTapStep = 10;
+
     var depositing = mode === 'deposit';
     var maxWithdraw = depositing ? Infinity : qsheetStock;
     if (qsheetQty > maxWithdraw) qsheetQty = maxWithdraw;
     if (qsheetQty < 1) qsheetQty = 1;
     document.getElementById('qs-item').textContent = itemName;
-    document.getElementById('qs-stock').textContent = '库存 ' + qsheetStock.toLocaleString();
+    document.getElementById('qs-stock').textContent = qsheetExtra ? '' : ('库存 ' + qsheetStock.toLocaleString());
     document.getElementById('qs-qty').value = qsheetQty;
-    document.getElementById('qs-confirm').textContent = depositing ? '确认存入 ' + qsheetQty.toLocaleString() : '确认取出 ' + qsheetQty.toLocaleString();
+
+    // extra field
+    var extraEl = document.getElementById('qs-extra');
+    var confirmBtn = document.getElementById('qs-confirm');
+    if (qsheetExtra) {
+      extraEl.style.display = 'block';
+      document.getElementById('qs-extra-label').textContent = qsheetExtra.label;
+      document.getElementById('qs-extra-val').value = qsheetExtraVal;
+      confirmBtn.textContent = '确认发布';
+    } else {
+      extraEl.style.display = 'none';
+      confirmBtn.textContent = depositing ? '确认存入 ' + qsheetQty.toLocaleString() : '确认取出 ' + qsheetQty.toLocaleString();
+    }
+
     document.getElementById('qsheet-overlay').classList.add('show');
     updateQSheetTabs();
     updateQSheetBtns();
+    updateExtraDisplay();
   }
 
   function closeQSheet() {
     document.getElementById('qsheet-overlay').classList.remove('show');
     clearTimeout(_tapTimer);
+    clearTimeout(_extraTapTimer);
+    qsheetExtra = null;
   }
 
   function updateQSheetDisplay() {
     document.getElementById('qs-qty').value = qsheetQty;
-    document.getElementById('qs-confirm').textContent = (qsheetMode === 'deposit' ? '确认存入 ' : '确认取出 ') + qsheetQty.toLocaleString();
+    if (!qsheetExtra) {
+      document.getElementById('qs-confirm').textContent = (qsheetMode === 'deposit' ? '确认存入 ' : '确认取出 ') + qsheetQty.toLocaleString();
+    }
     updateQSheetBtns();
+    if (qsheetExtra) updateExtraDisplay();
+  }
+
+  function updateExtraDisplay() {
+    if (!qsheetExtra) return;
+    document.getElementById('qs-extra-val').value = qsheetExtraVal;
+    var total = qsheetQty * qsheetExtraVal;
+    var el = document.getElementById('qs-extra-total');
+    if (total > 0) el.textContent = '总价 ' + total.toLocaleString() + ' ' + (qsheetExtra.suffix || 'SC');
+    else el.textContent = '';
+    updateExtraBtns();
+  }
+
+  function updateExtraBtns() {
+    var max = qsheetExtra && qsheetExtra.max ? qsheetExtra.max : 999999;
+    document.getElementById('qs-extra-minus').disabled = qsheetExtraVal <= 1;
+    document.getElementById('qs-extra-minus-fast').disabled = qsheetExtraVal <= 1;
+    document.getElementById('qs-extra-plus').disabled = qsheetExtraVal >= max;
+    document.getElementById('qs-extra-plus-fast').disabled = qsheetExtraVal >= max;
+  }
+
+  function onExtraInput() {
+    var input = document.getElementById('qs-extra-val');
+    var v = parseInt(input.value) || 1;
+    var max = qsheetExtra && qsheetExtra.max ? qsheetExtra.max : 999999;
+    qsheetExtraVal = Math.max(1, Math.min(max, v));
+    input.value = qsheetExtraVal;
+    updateExtraDisplay();
+  }
+
+  function adjustExtra(delta) {
+    var max = qsheetExtra && qsheetExtra.max ? qsheetExtra.max : 999999;
+    qsheetExtraVal = Math.max(1, Math.min(max, qsheetExtraVal + delta));
+    updateExtraDisplay();
+  }
+
+  function fastAdjustExtra(deltaDir) {
+    var now = Date.now();
+    if (_extraLastTap && now - _extraLastTap < 600) {
+      _extraTapCount++;
+      _extraTapStep = Math.min(1000, 10 * Math.pow(2, _extraTapCount));
+    } else { _extraTapCount = 0; _extraTapStep = 10; }
+    _extraLastTap = now;
+    clearTimeout(_extraTapTimer);
+    _extraTapTimer = setTimeout(function(){ _extraTapCount = 0; _extraTapStep = 10; _extraLastTap = 0; }, 600);
+    adjustExtra(deltaDir * _extraTapStep);
   }
 
   function updateQSheetTabs() {
@@ -296,11 +383,19 @@ var UI = (function () {
 
   function confirmQSheet() {
     if (qsheetQty < 1) qsheetQty = 1;
-    var cmd = qsheetMode === 'deposit'
-      ? '!仓库 存入 ' + qsheetItem + ' ' + qsheetQty
-      : '!仓库 取出 ' + qsheetItem + ' ' + qsheetQty;
+    if (qsheetExtra && qsheetExtraVal < 1) qsheetExtraVal = 1;
+    var label = qsheetMode === 'deposit' ? '存入' : '取出';
     closeQSheet();
-    if (_qsheetOnConfirm) _qsheetOnConfirm(cmd, qsheetMode === 'deposit' ? '存入' : '取出');
+    if (_qsheetOnConfirm) {
+      if (qsheetExtra) {
+        _qsheetOnConfirm(qsheetMode, qsheetQty, qsheetExtraVal, label);
+      } else {
+        var cmd = qsheetMode === 'deposit'
+          ? '!仓库 存入 ' + qsheetItem + ' ' + qsheetQty
+          : '!仓库 取出 ' + qsheetItem + ' ' + qsheetQty;
+        _qsheetOnConfirm(cmd, label);
+      }
+    }
   }
 
   // ========== 初始化 ==========
@@ -358,6 +453,12 @@ var UI = (function () {
     document.getElementById('qs-minus-fast').addEventListener('click', function(){ fastAdjust(-1); });
     document.getElementById('qs-plus-fast').addEventListener('click', function(){ fastAdjust(1); });
 
+    // QSheet extra 按钮
+    document.getElementById('qs-extra-minus').addEventListener('click', function(){ adjustExtra(-1); });
+    document.getElementById('qs-extra-plus').addEventListener('click', function(){ adjustExtra(1); });
+    document.getElementById('qs-extra-minus-fast').addEventListener('click', function(){ fastAdjustExtra(-1); });
+    document.getElementById('qs-extra-plus-fast').addEventListener('click', function(){ fastAdjustExtra(1); });
+
     // QSheet tab 切换
     document.getElementById('qs-tab-deposit').addEventListener('click', function(){ switchQSheetMode('deposit'); });
     document.getElementById('qs-tab-withdraw').addEventListener('click', function(){ switchQSheetMode('withdraw'); });
@@ -400,6 +501,7 @@ var UI = (function () {
     closeQSheet: closeQSheet,
     confirmQSheet: confirmQSheet,
     onQtyInput: onQtyInput,
+    onExtraInput: onExtraInput,
     switchQSheetMode: switchQSheetMode,
     // Init
     init: init,

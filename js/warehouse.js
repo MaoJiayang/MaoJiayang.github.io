@@ -88,6 +88,10 @@ var Warehouse = (function () {
     return '其他';
   }
 
+  function getIcon(itemName) {
+    return iconMap[itemName] || null;
+  }
+
   function renderCardIcon(itemName) {
     var iconFile = iconMap[itemName];
     var cat = getItemCategory(itemName);
@@ -302,6 +306,10 @@ var Warehouse = (function () {
     if (!warehouseData) load();
   }
 
+  function markStale() {
+    warehouseData = null;
+  }
+
   // ========== 工具函数 ==========
 
   function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -319,5 +327,7 @@ var Warehouse = (function () {
     saveAll: saveAll,
     saveAllNoArg: saveAllNoArg,
     onTabActivated: onTabActivated,
+    markStale: markStale,
+    getIcon: getIcon,
   };
 })();

@@ -74,8 +74,44 @@
     <div class="wh-empty" id="wh-empty" style="display:none">没有匹配的物品</div>
   </div>
 
-  <!-- 占位面板 -->
-  <div class="tab-panel" id="panel-trade"><div class="placeholder"><span class="ph-icon">💰</span><span class="ph-text">交易面板 — 即将开放</span></div></div>
+  <!-- 交易面板 -->
+  <div class="tab-panel" id="panel-trade">
+    <div class="tr-subtabs">
+      <button class="tr-subtab active" data-trade-tab="shop">服营商店</button>
+      <button class="tr-subtab" data-trade-tab="market">玩家市场</button>
+      <button class="tr-subtab" data-trade-tab="contract">合同</button>
+    </div>
+
+    <!-- 服营商店 -->
+    <div class="tr-section" id="trade-shop">
+      <div class="tr-balance" id="trade-balance" style="display:none"></div>
+      <div class="tr-modebar">
+        <button class="tr-shop-mode active" data-shop-mode="buy">买入</button>
+        <button class="tr-shop-mode" data-shop-mode="sell">卖出</button>
+      </div>
+      <input class="wh-search" id="tr-shop-search" type="text" placeholder="搜索物品…">
+      <div id="trade-shop-list"></div>
+    </div>
+
+    <!-- 玩家市场 -->
+    <div class="tr-section" id="trade-market" style="display:none">
+      <div class="tr-modebar">
+        <button class="tr-market-mode active" data-market-mode="all">全部</button>
+        <button class="tr-market-mode" data-market-mode="mine">我的</button>
+      </div>
+      <input class="wh-search" id="tr-market-search" type="text" placeholder="搜索物品…">
+      <div id="trade-market-list"></div>
+      <div class="tr-actions">
+        <button class="tr-act-btn" id="trade-pub-sell">+ 发布卖单</button>
+        <button class="tr-act-btn" id="trade-pub-buy">+ 发布收单</button>
+      </div>
+    </div>
+
+    <!-- 合同（占位） -->
+    <div class="tr-section" id="trade-contract" style="display:none">
+      <div class="placeholder"><span class="ph-icon">📜</span><span class="ph-text">合同 — 即将开放</span></div>
+    </div>
+  </div>
   <div class="tab-panel" id="panel-shipyard"><div class="placeholder"><span class="ph-icon">🏭</span><span class="ph-text">船厂面板 — 即将开放</span></div></div>
   <div class="tab-panel" id="panel-hangar"><div class="placeholder"><span class="ph-icon">🚁</span><span class="ph-text">船坞面板 — 即将开放</span></div></div>
   <div class="tab-panel" id="panel-settings"><div class="placeholder"><span class="ph-icon">⚙</span><span class="ph-text">设置 — 即将开放</span></div></div>
@@ -110,6 +146,17 @@
       <button class="qs-add" id="qs-plus" title="增加">+</button>
       <button class="qs-add qs-fast" id="qs-plus-fast" title="快速增加">++</button>
     </div>
+    <div class="qs-extra" id="qs-extra" style="display:none">
+      <div class="qs-extra-label" id="qs-extra-label">单价</div>
+      <div class="qs-btns">
+        <button class="qs-sub qs-fast" id="qs-extra-minus-fast" title="快速减少">−−</button>
+        <button class="qs-sub" id="qs-extra-minus" title="减少">−</button>
+        <input id="qs-extra-val" type="number" value="100" min="1" oninput="UI.onExtraInput()">
+        <button class="qs-add" id="qs-extra-plus" title="增加">+</button>
+        <button class="qs-add qs-fast" id="qs-extra-plus-fast" title="快速增加">++</button>
+      </div>
+      <div class="qs-extra-total" id="qs-extra-total"></div>
+    </div>
     <div class="qs-actions">
       <button class="qs-cancel" onclick="UI.closeQSheet()">取消</button>
       <button class="qs-confirm" id="qs-confirm" onclick="UI.confirmQSheet()">确认存入</button>
@@ -121,10 +168,10 @@
 <div id="dc-overlay">
   <div id="dc-dialog">
     <div class="dc-icon">⚠</div>
-    <div class="dc-msg">断开后将需要重新输入密码才能执行指令。<br>确定要断开连接吗？</div>
+    <div class="dc-msg" id="dc-msg">断开后将需要重新输入密码才能执行指令。<br>确定要断开连接吗？</div>
     <div class="dc-actions">
       <button class="dc-cancel" onclick="UI.closeDcDialog()">取消</button>
-      <button class="dc-confirm" onclick="UI.confirmDisconnect()">断开</button>
+      <button class="dc-confirm" id="dc-confirm-btn" onclick="UI.confirmDisconnect()">断开</button>
     </div>
   </div>
 </div>
@@ -136,6 +183,7 @@
 <script src="version-check.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/warehouse.js"></script>
+<script src="js/trade.js"></script>
 <script>
 // ========== 伊卡洛斯虚空终端 — 入口 ==========
 SeBridge.init({ bridgeUrl: '' });
@@ -149,9 +197,21 @@ fetch('/version.json?t=' + Date.now())
 // 初始化模块
 UI.init();
 Warehouse.init();
+Trade.init();
 
-// Tab 回调 → 仓库加载
+// Tab 回调
 UI.onTabChange('warehouse', function(){ Warehouse.onTabActivated(); });
+UI.onTabChange('trade', function(){ Trade.onTabActivated(); });
+
+// 断开/撤销弹窗关闭时清理
+var origCloseDc = UI.closeDcDialog;
+UI.closeDcDialog = function() {
+  document.getElementById('dc-dialog').dataset.cancelOrderId = '';
+  document.getElementById('dc-msg').textContent = '断开后将需要重新输入密码才能执行指令。\n确定要断开连接吗？';
+  document.getElementById('dc-confirm-btn').textContent = '断开';
+  document.getElementById('dc-confirm-btn').onclick = function(){ UI.confirmDisconnect(); };
+  origCloseDc();
+};
 
 // 后台轮询
 setTimeout(function(){
