@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>伊卡洛斯虚空终端</title>
+<style>
+/* ========== 须弥风格变量 ========== */
+:root {
+  --bg-void:      #0B0F14;
+  --bg-deep:      #111921;
+  --bg-panel:     #182331;
+  --bg-card:      #1E2D3D;
+  --bg-hover:     #253748;
+  --jade-600:     #1B6B4A;
+  --jade-400:     #2EA870;
+  --jade-200:     #5DDDAA;
+  --jade-100:     #9FFADA;
+  --jade-50:      #D0FFF0;
+  --blue-200:     #5B9EF0;
+  --blue-100:     #9DCFFF;
+  --gold-200:     #F0BE3A;
+  --gold-400:     #C48A0A;
+  --color-success: #5DDDAA;
+  --color-info:    #5B9EF0;
+  --color-warn:    #F0BE3A;
+  --color-error:   #F07070;
+  --color-arcane:  #B07AE0;
+  --text-primary:   #E8F4EE;
+  --text-secondary: #A8C4B8;
+  --text-muted:     #6A8C80;
+  --text-disabled:  #3A5A50;
+  --font-mono: "JetBrains Mono", Consolas, monospace;
+  --font-sans: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --tab-h: 56px;
+  --topbar-h: 44px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:var(--font-sans);
+  background:var(--bg-void);
+  color:var(--text-primary);
+  min-height:100vh;
+  min-height:100dvh;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ========== 全局顶栏 ========== */
+#topbar{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  height:var(--topbar-h);
+  background:var(--bg-deep);
+  border-bottom:1px solid var(--bg-hover);
+  display:flex;align-items:center;
+  padding:0 12px;gap:10px;
+}
+#topbar .logo{
+  font-family:var(--font-mono);font-size:13px;font-weight:600;
+  color:var(--jade-200);letter-spacing:0.04em;white-space:nowrap;
+}
+#topbar .spacer{flex:1}
+#topbar .gauge-wrap{
+  display:flex;align-items:center;gap:5px;font-size:10.5px;
+  font-family:var(--font-mono);color:var(--text-muted);
+}
+.gauge-bar{width:28px;height:4px;border-radius:2px;background:var(--bg-hover);overflow:hidden}
+.gauge-fill{display:block;height:100%;border-radius:2px;background:var(--jade-200);transition:width .3s,background .3s}
+.gauge-fill.low{background:var(--color-error)}
+.gauge-fill.mid{background:var(--color-warn)}
+#user-badge{
+  font-size:11px;color:var(--text-muted);cursor:pointer;
+  padding:3px 8px;border-radius:12px;border:1px solid var(--bg-hover);
+  background:var(--bg-panel);transition:border-color .2s,color .2s;
+  white-space:nowrap;
+}
+#user-badge:hover{color:var(--text-primary);border-color:var(--jade-400)}
+#user-badge.logged-in{color:var(--jade-200);border-color:var(--jade-600)}
+
+/* ========== 主内容区 ========== */
+#main{
+  padding-top:var(--topbar-h);
+  padding-bottom:calc(var(--tab-h) + env(safe-area-inset-bottom, 0px));
+  min-height:100vh;min-height:100dvh;
+}
+
+/* ========== 登录引导页 ========== */
+#login-guide{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:calc(100vh - var(--topbar-h) - var(--tab-h));
+  min-height:calc(100dvh - var(--topbar-h) - var(--tab-h));
+  padding:32px 24px;text-align:center;
+}
+#login-guide .hero-icon{font-size:48px;margin-bottom:16px}
+#login-guide h2{
+  font-family:var(--font-mono);font-size:20px;color:var(--jade-200);
+  margin-bottom:8px;letter-spacing:0.04em;
+}
+#login-guide .subtitle{font-size:13px;color:var(--text-muted);margin-bottom:24px;line-height:1.6}
+#login-guide .login-card{
+  background:var(--bg-panel);border:1px solid var(--bg-hover);border-radius:8px;
+  padding:24px;width:100%;max-width:380px;text-align:left;
+}
+.login-card .field{margin-bottom:14px}
+.login-card label{display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px;font-weight:600}
+.login-card input[type=text],.login-card input[type=password]{
+  width:100%;padding:9px 12px;font-size:14px;
+  border:1px solid var(--bg-hover);border-radius:4px;
+  background:var(--bg-deep);color:var(--text-primary);
+  font-family:var(--font-mono);outline:none;
+  transition:border-color .2s;
+}
+.login-card input:focus{border-color:var(--jade-400)}
+.login-card .chk-row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-muted);cursor:pointer}
+.login-card .err{background:rgba(240,112,112,.1);border:1px solid rgba(240,112,112,.3);border-radius:4px;padding:8px 12px;font-size:12px;color:var(--color-error);margin-bottom:14px;display:none}
+.login-card .err.show{display:block}
+.login-card .btn-primary{
+  width:100%;padding:10px;font-size:14px;font-weight:600;
+  background:var(--jade-200);color:var(--bg-void);border:none;
+  border-radius:4px;cursor:pointer;font-family:inherit;
+  transition:background .2s;
+}
+.login-card .btn-primary:hover{background:var(--jade-400)}
+.login-card .btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.login-card .hint{
+  margin-top:12px;font-size:11px;color:var(--text-muted);line-height:1.6;
+  padding:8px;background:var(--bg-deep);border-radius:4px;border:1px solid var(--bg-hover);
+}
+.login-card .hint code{
+  font-family:var(--font-mono);font-size:11px;background:var(--bg-panel);
+  padding:1px 4px;border-radius:2px;color:var(--jade-200);
+}
+
+/* ========== Tab 内容面板 ========== */
+.tab-panel{display:none;padding:16px}
+.tab-panel.active{display:block}
+
+/* ========== 仓库面板 ========== */
+.wh-search{
+  width:100%;padding:9px 12px;font-size:14px;
+  border:1px solid var(--bg-hover);border-radius:4px;
+  background:var(--bg-deep);color:var(--text-primary);
+  font-family:inherit;outline:none;margin-bottom:14px;
+  transition:border-color .2s;
+}
+.wh-search:focus{border-color:var(--jade-400)}
+.wh-cat{margin-bottom:12px}
+.wh-cat-h{
+  display:flex;align-items:center;gap:8px;padding:8px 0;
+  font-size:13px;font-weight:600;color:var(--text-secondary);
+  cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;
+  border-bottom:1px solid var(--bg-hover);
+}
+.wh-cat-h .arrow{display:inline-block;font-size:11px;transition:transform .2s;color:var(--text-muted);width:14px;text-align:center}
+.wh-cat-h .arrow.open{transform:rotate(90deg)}
+.wh-cat-count{font-size:11px;color:var(--text-muted);margin-left:4px}
+.wh-cat-body{display:none}
+.wh-cat-body.open{display:block}
+.wh-item{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 0 10px 22px;border-bottom:1px solid var(--bg-deep);
+  font-size:13px;
+}
+.wh-item-name{flex:1;min-width:0;color:var(--text-primary)}
+.wh-item-amt{font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);white-space:nowrap}
+.wh-item-acts{display:flex;gap:4px;flex-shrink:0}
+.wh-item-acts button{
+  font-size:11px;padding:3px 8px;border-radius:3px;border:1px solid var(--bg-hover);
+  background:var(--bg-card);color:var(--text-secondary);cursor:pointer;
+  font-family:inherit;transition:all .15s;
+}
+.wh-item-acts button:hover{background:var(--bg-hover);color:var(--text-primary)}
+.wh-item-acts .btn-deposit:hover{border-color:var(--jade-400);color:var(--jade-200)}
+.wh-item-acts .btn-withdraw:hover{border-color:var(--color-warn);color:var(--color-warn)}
+.wh-quick{
+  display:flex;flex-wrap:wrap;gap:6px;margin-top:16px;
+  padding-top:14px;border-top:1px solid var(--bg-hover);
+}
+.wh-quick button{
+  font-size:12px;padding:7px 14px;border-radius:4px;border:1px solid var(--bg-hover);
+  background:var(--bg-panel);color:var(--text-secondary);cursor:pointer;
+  font-family:inherit;transition:all .15s;
+}
+.wh-quick button:hover{background:var(--bg-hover);color:var(--text-primary);border-color:var(--jade-400)}
+.wh-empty{padding:32px;text-align:center;color:var(--text-muted);font-size:13px}
+
+/* ========== 数量输入 Bottom Sheet ========== */
+#qsheet-overlay{
+  position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.5);
+  display:flex;align-items:flex-end;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+#qsheet-overlay.show{opacity:1;pointer-events:auto}
+#qsheet{
+  background:var(--bg-panel);border:1px solid var(--bg-hover);
+  border-radius:12px 12px 0 0;width:100%;max-width:480px;
+  padding:20px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  transform:translateY(100%);transition:transform .25s cubic-bezier(.2,.8,.2,1);
+}
+#qsheet-overlay.show #qsheet{transform:translateY(0)}
+#qsheet .qs-title{font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:14px}
+#qsheet .qs-item-name{font-size:13px;color:var(--jade-200);margin-bottom:12px}
+#qsheet .qs-row{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+#qsheet .qs-row input{
+  flex:1;padding:10px 12px;font-size:16px;text-align:center;
+  border:1px solid var(--bg-hover);border-radius:4px;
+  background:var(--bg-deep);color:var(--text-primary);
+  font-family:var(--font-mono);outline:none;
+}
+#qsheet .qs-row input:focus{border-color:var(--jade-400)}
+#qsheet .qs-row button{
+  width:40px;height:40px;font-size:20px;border-radius:50%;
+  border:1px solid var(--bg-hover);background:var(--bg-card);
+  color:var(--text-primary);cursor:pointer;font-family:inherit;
+  transition:all .15s;display:flex;align-items:center;justify-content:center;
+}
+#qsheet .qs-row button:hover{background:var(--bg-hover)}
+#qsheet .qs-actions{display:flex;gap:8px}
+#qsheet .qs-actions button{
+  flex:1;padding:10px;font-size:14px;font-weight:600;
+  border-radius:4px;border:none;cursor:pointer;font-family:inherit;
+}
+#qsheet .qs-confirm{background:var(--jade-200);color:var(--bg-void)}
+#qsheet .qs-confirm:hover{background:var(--jade-400)}
+#qsheet .qs-cancel{background:var(--bg-card);color:var(--text-secondary);border:1px solid var(--bg-hover)!important}
+#qsheet .qs-cancel:hover{background:var(--bg-hover)}
+
+/* ========== Toast ========== */
+#toast{
+  position:fixed;z-index:300;left:50%;bottom:100px;
+  transform:translateX(-50%) translateY(16px);
+  max-width:420px;width:calc(100% - 32px);
+  background:var(--bg-panel);border:1px solid var(--bg-hover);
+  border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.25);
+  padding:12px 14px;font-size:13px;display:flex;align-items:flex-start;gap:8px;
+  opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+#toast.success{border-left:3px solid var(--color-success)}
+#toast.error{border-left:3px solid var(--color-error)}
+#toast.warning{border-left:3px solid var(--color-warn)}
+#toast .t-close{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;flex-shrink:0}
+
+/* ========== 底部 Tab 栏 (移动端) ========== */
+#tabbar{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  height:var(--tab-h);padding-bottom:env(safe-area-inset-bottom, 0px);
+  background:var(--bg-deep);border-top:1px solid var(--bg-hover);
+  display:flex;align-items:center;
+}
+#tabbar .tab{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;height:var(--tab-h);cursor:pointer;color:var(--text-muted);
+  font-size:10px;transition:color .15s;user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+#tabbar .tab .tab-icon{font-size:18px;line-height:1}
+#tabbar .tab.active{color:var(--jade-200)}
+
+/* ========== 桌面端侧边栏 ========== */
+#sidebar{
+  display:none;
+  position:fixed;left:0;top:var(--topbar-h);bottom:0;z-index:90;
+  width:180px;background:var(--bg-deep);border-right:1px solid var(--bg-hover);
+  flex-direction:column;padding:12px 0;
+}
+#sidebar .sitem{
+  display:flex;align-items:center;gap:10px;padding:10px 20px;
+  font-size:13px;color:var(--text-muted);cursor:pointer;
+  transition:all .15s;border-left:2px solid transparent;
+}
+#sidebar .sitem:hover{color:var(--text-primary);background:var(--bg-panel)}
+#sidebar .sitem.active{color:var(--jade-200);border-left-color:var(--jade-200);background:var(--bg-panel)}
+#sidebar .sitem .sitem-icon{font-size:16px;width:20px;text-align:center}
+
+/* ========== 占位面板 ========== */
+.placeholder{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:50vh;color:var(--text-muted);text-align:center;gap:8px;
+}
+.placeholder .ph-icon{font-size:36px;opacity:.5}
+.placeholder .ph-text{font-size:13px}
+
+/* ========== 响应式 ========== */
+@media(min-width:768px){
+  #sidebar{display:flex}
+  #tabbar{display:none}
+  #main{margin-left:180px;padding-bottom:0}
+  #login-guide{min-height:calc(100vh - var(--topbar-h))}
+}
+</style>
+</head>
+<body>
+
+<!-- 全局顶栏 -->
+<div id="topbar">
+  <span class="logo">◈ 虚空终端</span>
+  <span class="spacer"></span>
+  <span class="gauge-wrap" id="gauge-wrap" style="display:none">
+    <span class="gauge-bar"><span class="gauge-fill" id="gauge-fill"></span></span>
+    <span id="gauge-text">20/20</span>
+  </span>
+  <span id="user-badge" onclick="handleUserBadgeClick()">未登录</span>
+</div>
+
+<!-- 桌面侧边栏 -->
+<nav id="sidebar">
+  <div class="sitem active" data-tab="warehouse"><span class="sitem-icon">📦</span>仓库</div>
+  <div class="sitem" data-tab="trade"><span class="sitem-icon">💰</span>交易</div>
+  <div class="sitem" data-tab="shipyard"><span class="sitem-icon">🏭</span>船厂</div>
+  <div class="sitem" data-tab="hangar"><span class="sitem-icon">🚁</span>船坞</div>
+  <div class="sitem" data-tab="settings"><span class="sitem-icon">⚙</span>设置</div>
+</nav>
+
+<!-- 主内容区 -->
+<div id="main">
+  <!-- 登录引导 -->
+  <div id="login-guide">
+    <div class="hero-icon">🌿</div>
+    <h2>伊卡洛斯虚空终端</h2>
+    <p class="subtitle">连接至伊卡洛斯星服务器<br>可视化操作你的星际资产</p>
+    <div class="login-card">
+      <div class="field">
+        <label for="lg-steamid">SteamID</label>
+        <input id="lg-steamid" type="text" placeholder="在游戏内输入 !info myinfo 获取" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="lg-pwd">游戏密码</label>
+        <input id="lg-pwd" type="password" placeholder="你的游戏密码" autocomplete="off">
+      </div>
+      <div class="field">
+        <label class="chk-row"><input id="lg-remember" type="checkbox" checked><span>记住密码（加密保存在本机）</span></label>
+      </div>
+      <div class="err" id="lg-err"></div>
+      <button class="btn-primary" id="lg-submit" onclick="handleLogin()">连接服务器</button>
+      <div class="hint">
+        凭据仅缓存在本机浏览器中，不会上传。<br>
+        首次使用：游戏内 <code>!设置 密码</code> 设定密码，<br>
+        然后 <code>!info myinfo</code> 获取 SteamID。
+      </div>
+    </div>
+  </div>
+
+  <!-- 仓库面板 -->
+  <div class="tab-panel" id="panel-warehouse">
+    <input class="wh-search" id="wh-search" type="text" placeholder="搜索物品…" oninput="renderWarehouse()">
+    <div id="wh-categories"></div>
+    <div class="wh-empty" id="wh-empty" style="display:none">没有匹配的物品</div>
+    <div class="wh-quick">
+      <button onclick="quickAction('存入全部')">存入全部</button>
+      <button onclick="quickAction('存入全部 矿石')">存入矿石</button>
+      <button onclick="quickAction('存入全部 零件')">存入零件</button>
+      <button onclick="quickAction('存入全部 弹药')">存入弹药</button>
+    </div>
+  </div>
+
+  <!-- 占位面板 -->
+  <div class="tab-panel" id="panel-trade"><div class="placeholder"><span class="ph-icon">💰</span><span class="ph-text">交易面板 — 即将开放</span></div></div>
+  <div class="tab-panel" id="panel-shipyard"><div class="placeholder"><span class="ph-icon">🏭</span><span class="ph-text">船厂面板 — 即将开放</span></div></div>
+  <div class="tab-panel" id="panel-hangar"><div class="placeholder"><span class="ph-icon">🚁</span><span class="ph-text">船坞面板 — 即将开放</span></div></div>
+  <div class="tab-panel" id="panel-settings"><div class="placeholder"><span class="ph-icon">⚙</span><span class="ph-text">设置 — 即将开放</span></div></div>
+</div>
+
+<!-- 底部 Tab 栏 -->
+<div id="tabbar">
+  <div class="tab active" data-tab="warehouse"><span class="tab-icon">📦</span>仓库</div>
+  <div class="tab" data-tab="trade"><span class="tab-icon">💰</span>交易</div>
+  <div class="tab" data-tab="shipyard"><span class="tab-icon">🏭</span>船厂</div>
+  <div class="tab" data-tab="hangar"><span class="tab-icon">🚁</span>船坞</div>
+  <div class="tab" data-tab="settings"><span class="tab-icon">⚙</span>设置</div>
+</div>
+
+<!-- 数量输入 Bottom Sheet -->
+<div id="qsheet-overlay">
+  <div id="qsheet">
+    <div class="qs-title" id="qs-title">存入物品</div>
+    <div class="qs-item-name" id="qs-item"></div>
+    <div class="qs-row">
+      <button onclick="adjustQty(-10)">−10</button>
+      <button onclick="adjustQty(-1)">−</button>
+      <input id="qs-qty" type="number" value="100" min="1" onchange="clampQty()">
+      <button onclick="adjustQty(1)">+</button>
+      <button onclick="adjustQty(10)">+10</button>
+    </div>
+    <div class="qs-actions">
+      <button class="qs-cancel" onclick="closeQSheet()">取消</button>
+      <button class="qs-confirm" id="qs-confirm" onclick="confirmQSheet()">确认存入</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"><span id="toast-body"></span><button class="t-close" onclick="hideToast()">&times;</button></div>
+
+<script src="se-bridge.js"></script>
+<script>
+// ========== 物品分类加载 ==========
+var itemCategories = {};
+fetch('items_catalog.json')
+  .then(function(r){ return r.json() })
+  .then(function(cat){ itemCategories = cat; })
+  .catch(function(){ console.warn('items_catalog.json 加载失败，使用默认分组'); });
+
+function getItemCategory(name) {
+  for (var cat in itemCategories) {
+    if (itemCategories[cat].indexOf(name) !== -1) return cat;
+  }
+  return '其他';
+}
+
+// ========== 全局状态 ==========
+var currentTab = 'warehouse';
+var warehouseData = null;       // { items: { name: amount }, steamId }
+var warehouseLoading = false;
+var qsheetMode = 'deposit';     // 'deposit' | 'withdraw'
+var qsheetItem = '';
+var toastTimer = null;
+
+// ========== 初始化 ==========
+SeBridge.init({ bridgeUrl: '' });
+
+setTimeout(function(){
+  SeBridge.checkBridgeHealth().then(function(r){
+    var online = r !== null && r.code === 200;
+    updateBridgeStatus(online);
+  });
+  if (SeBridge.hasCredentials()) onLoginSuccess();
+  startGaugePolling();
+}, 100);
+
+// ========== 顶栏/状态 ==========
+function updateBridgeStatus(online) {
+  // 简洁处理，仅影响 gauge 可见性
+}
+
+function updateGauge() {
+  if (!SeBridge.hasCredentials()) {
+    document.getElementById('gauge-wrap').style.display = 'none';
+    return;
+  }
+  document.getElementById('gauge-wrap').style.display = 'flex';
+  var remain = SeBridge.getRemainingCalls();
+  var limit = SeBridge.getRateLimit();
+  var pct = (remain / limit) * 100;
+  var fill = document.getElementById('gauge-fill');
+  fill.style.width = pct + '%';
+  fill.className = 'gauge-fill' + (pct <= 20 ? ' low' : pct <= 50 ? ' mid' : '');
+  document.getElementById('gauge-text').textContent = remain + '/' + limit;
+}
+
+function updateUserBadge() {
+  var el = document.getElementById('user-badge');
+  if (SeBridge.hasCredentials()) {
+    el.textContent = '已连接';
+    el.classList.add('logged-in');
+  } else {
+    el.textContent = '未登录';
+    el.classList.remove('logged-in');
+  }
+}
+
+function handleUserBadgeClick() {
+  if (SeBridge.hasCredentials()) {
+    SeBridge.clearCredentials();
+    updateUserBadge();
+    updateGauge();
+    showLoginGuide();
+    showToast('success', '已断开连接');
+  } else {
+    showLoginGuide();
+  }
+}
+
+function startGaugePolling() {
+  setInterval(function(){
+    updateGauge();
+    updateUserBadge();
+  }, 5000);
+  updateGauge();
+  updateUserBadge();
+}
+
+// ========== 登录 ==========
+function showLoginGuide() {
+  document.getElementById('login-guide').style.display = 'flex';
+  document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('tabbar').style.display = 'none';
+}
+
+function hideLoginGuide() {
+  document.getElementById('login-guide').style.display = 'none';
+  document.getElementById('tabbar').style.display = 'flex';
+  switchTab(currentTab);
+}
+
+function handleLogin() {
+  var steamId = document.getElementById('lg-steamid').value.trim();
+  var pwd = document.getElementById('lg-pwd').value.trim();
+  var remember = document.getElementById('lg-remember').checked;
+  var errEl = document.getElementById('lg-err');
+  var btn = document.getElementById('lg-submit');
+
+  if (!steamId) { showLoginErr('请输入 SteamID'); return; }
+  if (!pwd) { showLoginErr('请输入游戏密码'); return; }
+
+  btn.disabled = true;
+  btn.textContent = '正在验证…';
+  errEl.classList.remove('show');
+
+  SeBridge.verifyCredentials(steamId, pwd).then(function(r){
+    btn.disabled = false;
+    btn.textContent = '连接服务器';
+    if (r.code === 200) {
+      SeBridge.saveCredentials(steamId, pwd, remember);
+      SeBridge.syncUser().catch(function(){});
+      onLoginSuccess();
+    } else {
+      showLoginErr(r.msg || '验证失败');
+    }
+  }).catch(function(){
+    btn.disabled = false;
+    btn.textContent = '连接服务器';
+    showLoginErr('连接失败，请稍后重试');
+  });
+}
+
+function showLoginErr(msg) {
+  var el = document.getElementById('lg-err');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+function onLoginSuccess() {
+  hideLoginGuide();
+  updateUserBadge();
+  updateGauge();
+  showToast('success', '已连接至伊卡洛斯星服务器');
+  if (currentTab === 'warehouse') loadWarehouse();
+}
+
+// ========== Tab 切换 ==========
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('#sidebar .sitem').forEach(function(s){
+    s.classList.toggle('active', s.dataset.tab === tab);
+  });
+  document.querySelectorAll('#tabbar .tab').forEach(function(t){
+    t.classList.toggle('active', t.dataset.tab === tab);
+  });
+  document.querySelectorAll('.tab-panel').forEach(function(p){
+    p.classList.remove('active');
+  });
+  var panel = document.getElementById('panel-' + tab);
+  if (panel) panel.classList.add('active');
+  if (tab === 'warehouse') loadWarehouse();
+}
+
+document.querySelectorAll('#sidebar .sitem').forEach(function(s){
+  s.addEventListener('click', function(){ switchTab(s.dataset.tab); });
+});
+document.querySelectorAll('#tabbar .tab').forEach(function(t){
+  t.addEventListener('click', function(){ switchTab(t.dataset.tab); });
+});
+
+// ========== 仓库数据 ==========
+function loadWarehouse() {
+  if (warehouseLoading) return;
+  if (!SeBridge.hasCredentials()) return;
+  warehouseLoading = true;
+  SeBridge.executeCommand('!仓库 列表').then(function(r){
+    warehouseLoading = false;
+    if (r.code === 200 && r.data) {
+      warehouseData = { items: r.data.items || {}, steamId: r.data.steamId };
+      renderWarehouse();
+    } else if (r.code === 401) {
+      SeBridge.clearCredentials();
+      updateUserBadge();
+      showLoginGuide();
+      showToast('error', '凭据已过期，请重新登录');
+    } else {
+      showToast('error', '仓库数据获取失败');
+    }
+  }).catch(function(){
+    warehouseLoading = false;
+    showToast('error', '网络错误，请稍后重试');
+  });
+}
+
+function renderWarehouse() {
+  var container = document.getElementById('wh-categories');
+  var emptyEl = document.getElementById('wh-empty');
+  var search = (document.getElementById('wh-search').value || '').toLowerCase().trim();
+
+  if (!warehouseData || !warehouseData.items || Object.keys(warehouseData.items).length === 0) {
+    container.innerHTML = '';
+    emptyEl.style.display = 'block';
+    return;
+  }
+
+  // 按分类分组
+  var groups = {};
+  Object.keys(warehouseData.items).forEach(function(name){
+    if (search && name.toLowerCase().indexOf(search) === -1) return;
+    var cat = getItemCategory(name);
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push({ name: name, amount: warehouseData.items[name] });
+  });
+
+  // 排序分类：矿石 > 矿锭 > 零件 > 弹药 > 工具 > 消耗品 > 其他
+  var catOrder = ['矿石','矿锭','零件','弹药','工具','消耗品','其他'];
+
+  var html = '';
+  catOrder.forEach(function(cat){
+    if (!groups[cat] || groups[cat].length === 0) return;
+    groups[cat].sort(function(a,b){ return a.name.localeCompare(b.name); });
+    html += '<div class="wh-cat">';
+    html += '<div class="wh-cat-h" onclick="toggleCategory(this)"><span class="arrow open">▸</span>'
+      + cat + '<span class="wh-cat-count">' + groups[cat].length + ' 种</span></div>';
+    html += '<div class="wh-cat-body open">';
+    groups[cat].forEach(function(item){
+      var amt = typeof item.amount === 'number' ? item.amount.toLocaleString(undefined, {maximumFractionDigits:1}) : item.amount;
+      html += '<div class="wh-item">'
+        + '<span class="wh-item-name">' + escHtml(item.name) + '</span>'
+        + '<span class="wh-item-amt">' + escHtml(String(amt)) + '</span>'
+        + '<span class="wh-item-acts">'
+        + '<button class="btn-deposit" onclick="openQSheet(\'deposit\',\'' + escAttr(item.name) + '\')">+存</button>'
+        + '<button class="btn-withdraw" onclick="openQSheet(\'withdraw\',\'' + escAttr(item.name) + '\')">-取</button>'
+        + '</span></div>';
+    });
+    html += '</div></div>';
+  });
+
+  container.innerHTML = html;
+  emptyEl.style.display = html ? 'none' : 'block';
+}
+
+function toggleCategory(el) {
+  var arrow = el.querySelector('.arrow');
+  var body = el.nextElementSibling;
+  arrow.classList.toggle('open');
+  body.classList.toggle('open');
+}
+
+// ========== 数量输入面板 ==========
+function openQSheet(mode, itemName) {
+  qsheetMode = mode;
+  qsheetItem = itemName;
+  document.getElementById('qs-title').textContent = mode === 'deposit' ? '存入物品' : '取出物品';
+  document.getElementById('qs-item').textContent = itemName;
+  document.getElementById('qs-qty').value = 100;
+  document.getElementById('qs-confirm').textContent = mode === 'deposit' ? '确认存入' : '确认取出';
+  document.getElementById('qsheet-overlay').classList.add('show');
+  document.getElementById('qs-qty').focus();
+}
+
+function closeQSheet() {
+  document.getElementById('qsheet-overlay').classList.remove('show');
+}
+
+function adjustQty(delta) {
+  var input = document.getElementById('qs-qty');
+  var v = parseInt(input.value) || 0;
+  input.value = Math.max(1, v + delta);
+}
+
+function clampQty() {
+  var input = document.getElementById('qs-qty');
+  if (parseInt(input.value) < 1) input.value = 1;
+}
+
+function confirmQSheet() {
+  var qty = parseInt(document.getElementById('qs-qty').value) || 100;
+  if (qty < 1) qty = 1;
+  var cmd = qsheetMode === 'deposit'
+    ? '!仓库 存入 ' + qsheetItem + ' ' + qty
+    : '!仓库 取出 ' + qsheetItem + ' ' + qty;
+  closeQSheet();
+  executeAndRefresh(cmd, qsheetMode === 'deposit' ? '存入' : '取出');
+}
+
+function quickAction(action) {
+  var cmd = '!仓库 ' + action;
+  executeAndRefresh(cmd, action);
+}
+
+function executeAndRefresh(cmd, label) {
+  if (!SeBridge.hasCredentials()) { showLoginGuide(); return; }
+  if (SeBridge.isRateLimited()) { showToast('error', '调用次数已用完，请稍后再试'); return; }
+  SeBridge.executeCommand(cmd).then(function(r){
+    SeBridge.trackCall();
+    updateGauge();
+    if (r.code === 200) {
+      showToast('success', '「' + label + '」指令已发送');
+      setTimeout(loadWarehouse, 1500);
+    } else {
+      showToast('error', r.msg || '指令执行失败');
+    }
+  }).catch(function(){
+    showToast('error', '网络错误');
+  });
+}
+
+// ========== Toast ==========
+function showToast(type, msg) {
+  var el = document.getElementById('toast');
+  clearTimeout(toastTimer);
+  el.className = type + ' show';
+  document.getElementById('toast-body').textContent = msg;
+  toastTimer = setTimeout(hideToast, 3500);
+}
+
+function hideToast() {
+  var el = document.getElementById('toast');
+  el.classList.remove('show');
+}
+
+// ========== 工具函数 ==========
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escAttr(s) { return String(s).replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+
+// ========== 点击遮罩关闭 ==========
+document.getElementById('qsheet-overlay').addEventListener('click', function(e){
+  if (e.target === this) closeQSheet();
+});
+
+// ========== 初始状态 ==========
+if (SeBridge.hasCredentials()) {
+  onLoginSuccess();
+} else {
+  showLoginGuide();
+}
+</script>
+</body>
+</html>
