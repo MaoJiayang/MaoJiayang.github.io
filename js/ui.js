@@ -224,7 +224,8 @@ var UI = (function () {
   var _extraLastTap = 0;
   var _extraTapTimer = null;
   var _extraTapStep = 10;
-  var _lockQty = 0;  // >0 表示数量锁定（不可拆分订单）
+  var _lockQty = 0;     // >0 表示数量锁定
+  var _lockExtra = false; // 单价锁定
 
   /**
    * openQSheet(mode, itemName, stock, onConfirm)        ← 仓库用法（向后兼容）
@@ -243,6 +244,7 @@ var UI = (function () {
 
     qsheetStock = options.stock || 0;
     _lockQty = options.lockQty || 0;
+    _lockExtra = options.lockExtra === true;
     qsheetQty = _lockQty > 0 ? _lockQty : 100;
     _qsheetOnConfirm = options.onConfirm || null;
     qsheetExtra = options.extraField || null;
@@ -263,9 +265,9 @@ var UI = (function () {
     } else if (qsheetExtra) {
       document.getElementById('qs-stock').textContent = '';
     } else {
-      document.getElementById('qs-stock').textContent = '库存 ' + qsheetStock.toLocaleString();
+      document.getElementById('qs-stock').textContent = '库存 ' + fmtCompact(qsheetStock);
     }
-    document.getElementById('qs-qty').value = qsheetQty;
+    document.getElementById('qs-qty').value = fmtCompact(qsheetQty);
 
     // extra field
     var extraEl = document.getElementById('qs-extra');
@@ -273,7 +275,7 @@ var UI = (function () {
     if (qsheetExtra) {
       extraEl.style.display = 'block';
       document.getElementById('qs-extra-label').textContent = qsheetExtra.label;
-      document.getElementById('qs-extra-val').value = qsheetExtraVal;
+      document.getElementById('qs-extra-val').value = fmtCompact(qsheetExtraVal);
       confirmBtn.textContent = qsheetExtra.confirmLabel || (qsheetMode === 'buy' ? '确认购买' : '确认出售');
     } else {
       extraEl.style.display = 'none';
@@ -282,7 +284,7 @@ var UI = (function () {
       else if (qsheetMode === 'withdraw') label = '确认取出 ';
       else if (qsheetMode === 'buy') label = '确认购买 ';
       else label = '确认出售 ';
-      confirmBtn.textContent = label + qsheetQty.toLocaleString();
+      confirmBtn.textContent = label + fmtCompact(qsheetQty);
     }
 
     document.getElementById('qsheet-overlay').classList.add('show');
@@ -298,15 +300,49 @@ var UI = (function () {
     qsheetExtra = null;
   }
 
+  // ========== KMB 格式 & 步长 ==========
+
+  function fmtCompact(n) {
+    if (n >= 1e9) return (n / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'k';
+    return n.toLocaleString();
+  }
+
+  function parseCompact(s) {
+    s = String(s).trim().toUpperCase();
+    var m = s.match(/^([\d.]+)\s*([KM B])?$/i);
+    if (!m) return NaN;
+    var v = parseFloat(m[1]);
+    var u = (m[2] || '').replace(/\s/g, '');
+    if (u === 'B') v *= 1e9;
+    else if (u === 'M') v *= 1e6;
+    else if (u === 'K') v *= 1e3;
+    return Math.round(v);
+  }
+
+  /** 根据数值量级返回步长：≥1B→1B, ≥1M→1M, ≥1K→1K, 否则→1 */
+  function getMagStep(v) {
+    if (v >= 1e9) return 1e9;
+    if (v >= 1e6) return 1e6;
+    if (v >= 1e3) return 1e3;
+    return 1;
+  }
+
+  // ========== 显示更新 ==========
+
   function updateQSheetDisplay() {
-    document.getElementById('qs-qty').value = qsheetQty;
+    var input = document.getElementById('qs-qty');
+    if (document.activeElement !== input) {
+      input.value = fmtCompact(qsheetQty);
+    }
     if (!qsheetExtra) {
       var label;
       if (qsheetMode === 'deposit') label = '确认存入 ';
       else if (qsheetMode === 'withdraw') label = '确认取出 ';
       else if (qsheetMode === 'buy') label = '确认购买 ';
       else label = '确认出售 ';
-      document.getElementById('qs-confirm').textContent = label + qsheetQty.toLocaleString();
+      document.getElementById('qs-confirm').textContent = label + fmtCompact(qsheetQty);
     }
     updateQSheetBtns();
     if (qsheetExtra) updateExtraDisplay();
@@ -314,17 +350,44 @@ var UI = (function () {
 
   function updateExtraDisplay() {
     if (!qsheetExtra) return;
-    document.getElementById('qs-extra-val').value = qsheetExtraVal;
+    var input = document.getElementById('qs-extra-val');
+    if (document.activeElement !== input) {
+      input.value = fmtCompact(qsheetExtraVal);
+    }
     var total = qsheetQty * qsheetExtraVal;
     var el = document.getElementById('qs-extra-total');
-    if (total > 0) el.textContent = '总价 ' + total.toLocaleString() + ' ' + (qsheetExtra.suffix || 'SC');
+    if (total > 0) el.textContent = '总价 ' + fmtCompact(total) + ' ' + (qsheetExtra.suffix || 'SC');
     else el.textContent = '';
     updateExtraBtns();
+  }
+
+  // ========== 输入焦点切换 ==========
+
+  function onQtyFocus() {
+    document.getElementById('qs-qty').value = qsheetQty;
+  }
+  function onQtyBlur() {
+    document.getElementById('qs-qty').value = fmtCompact(qsheetQty);
+  }
+  function onExtraFocus() {
+    document.getElementById('qs-extra-val').value = qsheetExtraVal;
+  }
+  function onExtraBlur() {
+    document.getElementById('qs-extra-val').value = fmtCompact(qsheetExtraVal);
   }
 
   function updateExtraBtns() {
     var min = qsheetExtra && qsheetExtra.min != null ? qsheetExtra.min : 0;
     var max = qsheetExtra && qsheetExtra.max ? qsheetExtra.max : 999999;
+    if (_lockExtra) {
+      document.getElementById('qs-extra-minus').disabled = true;
+      document.getElementById('qs-extra-minus-fast').disabled = true;
+      document.getElementById('qs-extra-plus').disabled = true;
+      document.getElementById('qs-extra-plus-fast').disabled = true;
+      document.getElementById('qs-extra-val').readOnly = true;
+      return;
+    }
+    document.getElementById('qs-extra-val').readOnly = false;
     document.getElementById('qs-extra-minus').disabled = qsheetExtraVal <= min;
     document.getElementById('qs-extra-minus-fast').disabled = qsheetExtraVal <= min;
     document.getElementById('qs-extra-plus').disabled = qsheetExtraVal >= max;
@@ -332,17 +395,20 @@ var UI = (function () {
   }
 
   function onExtraInput() {
+    if (_lockExtra) return;
     var input = document.getElementById('qs-extra-val');
-    var v = parseInt(input.value);
+    var v = parseCompact(input.value);
     if (isNaN(v)) v = 0;
     var min = qsheetExtra && qsheetExtra.min != null ? qsheetExtra.min : 0;
     var max = qsheetExtra && qsheetExtra.max ? qsheetExtra.max : 999999;
     qsheetExtraVal = Math.max(min, Math.min(max, v));
-    input.value = qsheetExtraVal;
-    updateExtraDisplay();
+    _extraTapCount = 0;
   }
 
   function adjustExtra(delta) {
+    if (_lockExtra) return;
+    var step = getMagStep(qsheetExtraVal);
+    if (Math.abs(delta) < step) delta = delta > 0 ? step : -step;
     var min = qsheetExtra && qsheetExtra.min != null ? qsheetExtra.min : 0;
     var max = qsheetExtra && qsheetExtra.max ? qsheetExtra.max : 999999;
     qsheetExtraVal = Math.max(min, Math.min(max, qsheetExtraVal + delta));
@@ -350,14 +416,18 @@ var UI = (function () {
   }
 
   function fastAdjustExtra(deltaDir) {
+    if (_lockExtra) return;
     var now = Date.now();
     if (_extraLastTap && now - _extraLastTap < 600) {
       _extraTapCount++;
-      _extraTapStep = Math.min(1000, 10 * Math.pow(2, _extraTapCount));
-    } else { _extraTapCount = 0; _extraTapStep = 10; }
+      _extraTapStep = getMagStep(qsheetExtraVal) * Math.pow(2, _extraTapCount);
+    } else {
+      _extraTapCount = 0;
+      _extraTapStep = getMagStep(qsheetExtraVal) * 10;
+    }
     _extraLastTap = now;
     clearTimeout(_extraTapTimer);
-    _extraTapTimer = setTimeout(function(){ _extraTapCount = 0; _extraTapStep = 10; _extraLastTap = 0; }, 600);
+    _extraTapTimer = setTimeout(function(){ _extraTapCount = 0; _extraLastTap = 0; }, 600);
     adjustExtra(deltaDir * _extraTapStep);
   }
 
@@ -388,41 +458,45 @@ var UI = (function () {
     document.getElementById('qs-qty').readOnly = false;
     var depositing = qsheetMode === 'deposit';
     var maxWithdraw = (qsheetExtra) ? Infinity : (depositing ? Infinity : qsheetStock);
-    document.getElementById('qs-minus').disabled = qsheetQty <= 1;
-    document.getElementById('qs-minus-fast').disabled = qsheetQty <= 1;
-    document.getElementById('qs-plus').disabled = qsheetQty >= maxWithdraw;
-    document.getElementById('qs-plus-fast').disabled = qsheetQty >= maxWithdraw;
+    var step = getMagStep(qsheetQty);
+    document.getElementById('qs-minus').disabled = qsheetQty - step < 1;
+    document.getElementById('qs-minus-fast').disabled = qsheetQty - step < 1;
+    document.getElementById('qs-plus').disabled = qsheetQty + step > maxWithdraw;
+    document.getElementById('qs-plus-fast').disabled = qsheetQty + step > maxWithdraw;
   }
 
   function onQtyInput() {
+    if (_lockQty > 0) return;
     var input = document.getElementById('qs-qty');
-    var v = parseInt(input.value) || 1;
-    var maxWithdraw = qsheetMode === 'deposit' ? Infinity : qsheetStock;
+    var v = parseCompact(input.value);
+    if (isNaN(v) || v < 1) v = 1;
+    var maxWithdraw = qsheetExtra ? Infinity : (qsheetMode === 'deposit' ? Infinity : qsheetStock);
     qsheetQty = Math.max(1, Math.min(maxWithdraw, v));
-    input.value = qsheetQty;
-    document.getElementById('qs-confirm').textContent = (qsheetMode === 'deposit' ? '确认存入 ' : '确认取出 ') + qsheetQty.toLocaleString();
-    _tapCount = 0; _tapStep = 10;
+    _tapCount = 0;
   }
 
   function adjustQty(delta) {
-    if (_lockQty > 0) return;  // 锁定状态不允许修改
-    var maxWithdraw = qsheetMode === 'deposit' ? Infinity : qsheetStock;
+    if (_lockQty > 0) return;
+    var step = getMagStep(qsheetQty);
+    if (Math.abs(delta) < step) delta = delta > 0 ? step : -step;
+    var maxWithdraw = qsheetExtra ? Infinity : (qsheetMode === 'deposit' ? Infinity : qsheetStock);
     qsheetQty = Math.max(1, Math.min(maxWithdraw, qsheetQty + delta));
     updateQSheetDisplay();
   }
 
   function fastAdjust(deltaDir) {
+    if (_lockQty > 0) return;
     var now = Date.now();
     if (_lastTapTime && now - _lastTapTime < 600) {
       _tapCount++;
-      _tapStep = Math.min(1000, 10 * Math.pow(2, _tapCount));
+      _tapStep = getMagStep(qsheetQty) * Math.pow(2, _tapCount);
     } else {
       _tapCount = 0;
-      _tapStep = 10;
+      _tapStep = getMagStep(qsheetQty) * 10;
     }
     _lastTapTime = now;
     clearTimeout(_tapTimer);
-    _tapTimer = setTimeout(function(){ _tapCount = 0; _tapStep = 10; _lastTapTime = 0; }, 600);
+    _tapTimer = setTimeout(function(){ _tapCount = 0; _lastTapTime = 0; }, 600);
     adjustQty(deltaDir * _tapStep);
   }
 
@@ -579,7 +653,11 @@ var UI = (function () {
     closeQSheet: closeQSheet,
     confirmQSheet: confirmQSheet,
     onQtyInput: onQtyInput,
+    onQtyFocus: onQtyFocus,
+    onQtyBlur: onQtyBlur,
     onExtraInput: onExtraInput,
+    onExtraFocus: onExtraFocus,
+    onExtraBlur: onExtraBlur,
     switchQSheetMode: switchQSheetMode,
     // Init
     init: init,

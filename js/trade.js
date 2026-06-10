@@ -258,6 +258,7 @@ var Trade = (function () {
     UI.openQSheet(mode, name, {
       stock: 0,
       lockQty: count || 1,
+      lockExtra: true,
       extraField: { label: '单价 SC', value: price, suffix: 'SC', step: 10, min: 0, max: 999999 },
       onConfirm: function (m, qty, p) {
         var cmd = isSell
