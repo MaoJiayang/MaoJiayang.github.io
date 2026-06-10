@@ -44,6 +44,14 @@ var Hangar = (function () {
     renderWorld();
   }
 
+  /** 点击名称切换单行短名/全名 */
+  function tapName(el) {
+    var full = el.getAttribute('data-full') || '';
+    if (!full) return;
+    var showingFull = el.textContent === full;
+    el.textContent = showingFull ? shortName(full) : full;
+  }
+
   function updateNameToggleBtn() {
     var btn = document.getElementById('ha-name-toggle');
     if (btn) btn.textContent = showFullName ? '简洁' : '完整';
@@ -175,7 +183,7 @@ var Hangar = (function () {
     return '<div class="ha-grid-row">'
       + '<span class="ha-grid-icon">🚀</span>'
       + '<div class="ha-grid-info">'
-      + '<span class="ha-grid-name" title="' + escAttr(full) + '">' + escHtml(label) + '</span>'
+      + '<span class="ha-grid-name" data-full="' + escAttr(full) + '" onclick="Hangar.tapName(this)">' + escHtml(label) + '</span>'
       + (isUnsynced ? '<span class="ha-grid-badge">仅本服</span>' : '')
       + '</div>'
       + '<div class="ha-row-actions">'
@@ -252,7 +260,7 @@ var Hangar = (function () {
       html += '<div class="ha-world-row">'
         + '<span class="ha-grid-icon">🚀</span>'
         + '<div class="ha-world-info">'
-        + '<span class="ha-world-name" title="' + escAttr(dn) + '">' + escHtml(label) + '</span>'
+        + '<span class="ha-world-name" data-full="' + escAttr(dn) + '" onclick="Hangar.tapName(this)">' + escHtml(label) + '</span>'
         + '<span class="ha-world-meta">PCU ' + (g.pcu || 0) + ' · ' + (g.blocksCount || 0) + ' 方块 · ' + formatNum(g.price) + ' SC</span>'
         + '</div>'
         + '<button class="ha-world-save" onclick="Hangar.saveRemote(\'' + escAttr(dn) + '\')">保存到船坞</button>'
@@ -315,6 +323,7 @@ var Hangar = (function () {
     load: loadHangar,
     loadWorldGrids: loadWorldGrids,
     toggleNameFmt: toggleNameFmt,
+    tapName: tapName,
     checkPos: checkPos,
     loadNear: loadNear,
     loadLocal: loadLocal,

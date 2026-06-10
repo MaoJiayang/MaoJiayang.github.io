@@ -1,3 +1,0 @@
-atomickitty17th.duckdns.org {
-    reverse_proxy localhost:10085
-}
