@@ -96,6 +96,11 @@ var Warehouse = (function () {
     return iconMap[itemName] || null;
   }
 
+  function getStock(itemName) {
+    if (!warehouseData || !warehouseData.items) return 0;
+    return warehouseData.items[itemName] || 0;
+  }
+
   function renderCardIcon(itemName) {
     var iconFile = iconMap[itemName];
     var cat = getItemCategory(itemName);
@@ -364,6 +369,7 @@ var Warehouse = (function () {
     onTabActivated: onTabActivated,
     markStale: markStale,
     getIcon: getIcon,
+    getStock: getStock,
     enterSelectionMode: enterSelectionMode,
     exitSelectionMode: exitSelectionMode,
   };

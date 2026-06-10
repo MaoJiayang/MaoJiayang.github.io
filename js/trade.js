@@ -48,7 +48,6 @@ var Trade = (function () {
   // ========== 子 Tab 切换 ==========
 
   function switchSubTab(tab) {
-    if (tab === 'contract') return; // 占位
     if (tab === currentSubTab) return;
     currentSubTab = tab;
     document.querySelectorAll('.tr-subtab').forEach(function (el) {
@@ -58,7 +57,7 @@ var Trade = (function () {
       el.style.display = el.id === 'trade-' + tab ? 'block' : 'none';
     });
     if (tab === 'shop' && !bankInfo) loadShop();
-    if (tab === 'market' && !shopBuyData) loadMarket(); // 用 shopBuyData 做简单初始化标记
+    if (tab === 'market' && !marketDataCache && !marketLoading) loadMarket();
   }
 
   function initSubTabs() {
@@ -156,10 +155,10 @@ var Trade = (function () {
     var html = '';
     filtered.forEach(function (item) {
       var priceStr = item.price != null ? formatNum(item.price) + ' SC' : '—';
-      html += '<div class="tr-shop-row" onclick="Trade.shopBuySell(\'' + escAttr(item.name) + '\',\'' + escAttr(priceStr) + '\')">'
+      html += '<div class="tr-shop-row" onclick="Trade.shopBuySell(\'' + escAttr(item.name) + '\')">'
         + iconHtml(item.name)
         + '<span class="tr-shop-name">' + escHtml(item.name) + '</span>'
-        + '<span class="tr-shop-price">' + escHtml(priceStr) + '</span>'
+        + '<span class="tr-shop-price">' + priceStr + '</span>'
         + '<span class="tr-shop-btn">' + (shopMode === 'buy' ? '购买' : '出售') + '</span>'
         + '</div>';
     });
@@ -168,17 +167,19 @@ var Trade = (function () {
 
   function shopBuySell(name) {
     var mode = shopMode === 'buy' ? 'buy' : 'sell';
+    // 买入：显示库存但不限量 (noCap)；卖出：库存即上限
+    var isBuy = shopMode === 'buy';
+    var stock = Warehouse.getStock(name);
     UI.openQSheet(mode, name, {
-      stock: 0,
+      stock: stock,
+      noCap: isBuy,
       onConfirm: function (m, qty) {
         var cmd = shopMode === 'buy'
           ? '!购买 ' + name + ' ' + qty
           : '!出售 ' + name + ' ' + qty;
         var label = shopMode === 'buy' ? '已购买 ' + name : '已出售 ' + name;
         exec(cmd, label).then(function () {
-          // 刷新余额
           exec('!银行 余额', null).then(function (d) { bankInfo = d; renderShop(); }).catch(function () {});
-          // 标记仓库过期
           Warehouse.markStale();
         }).catch(function () {});
       }
@@ -190,12 +191,13 @@ var Trade = (function () {
   function loadMarket() {
     if (marketLoading) return;
     marketLoading = true;
+    cacheMarket(null);  // 清空旧数据，防止模式切换时残留
     renderMarket();
     var cmd = marketMode === 'all' ? '!市场 列表' : '!市场 我的订单';
     exec(cmd, null).then(function (d) {
       cacheMarket(d);
       renderMarket();
-    }).catch(function () { cacheMarket(null); renderMarket(); }).finally(function () { marketLoading = false; });
+    }).catch(function () { cacheMarket([]); renderMarket(); }).finally(function () { marketLoading = false; });
   }
 
   var marketDataCache = null;
@@ -220,6 +222,10 @@ var Trade = (function () {
     document.querySelectorAll('.tr-market-mode').forEach(function (el) {
       el.classList.toggle('active', el.dataset.marketMode === mode);
     });
+    loadMarket();
+  }
+
+  function refreshMarket() {
     loadMarket();
   }
 
@@ -340,9 +346,18 @@ var Trade = (function () {
     if (n == null) return '0';
     if (typeof n === 'object' && n.toString) n = parseFloat(n.toString());
     if (isNaN(n)) return '0';
-    if (n >= 1e9) return (n / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
-    if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
-    if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'k';
+    if (n >= 1e9) {
+      var val = (n / 1e9).toFixed(1).replace(/\.0$/, '');
+      return val + '<span class="wh-num-sfx num-b">B</span>';
+    }
+    if (n >= 1e6) {
+      var val = (n / 1e6).toFixed(1).replace(/\.0$/, '');
+      return val + '<span class="wh-num-sfx num-m">M</span>';
+    }
+    if (n >= 1e3) {
+      var val = (n / 1e3).toFixed(1).replace(/\.0$/, '');
+      return val + '<span class="wh-num-sfx num-k">k</span>';
+    }
     return Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 });
   }
 
@@ -356,5 +371,6 @@ var Trade = (function () {
     shopBuySell: shopBuySell,
     cancelOrder: cancelOrder,
     publishOrder: publishOrder,
+    refreshMarket: refreshMarket,
   };
 })();

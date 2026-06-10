@@ -234,8 +234,8 @@ var UI = (function () {
     _extraTapStep = 10;
 
     var depositing = mode === 'deposit';
-    // 市场模式（有 extraField）无数量上限；仓库模式按存量限制
-    var maxWithdraw = qsheetExtra ? Infinity : (depositing ? Infinity : qsheetStock);
+    // 市场模式（有 extraField）或无上限标记时不限量，否则按存量限制
+    var maxWithdraw = (qsheetExtra || options.noCap) ? Infinity : (depositing ? Infinity : qsheetStock);
     if (qsheetQty > maxWithdraw) qsheetQty = maxWithdraw;
     if (qsheetQty < 1) qsheetQty = 1;
     document.getElementById('qs-item').textContent = itemName;
@@ -252,7 +252,12 @@ var UI = (function () {
       confirmBtn.textContent = '确认发布';
     } else {
       extraEl.style.display = 'none';
-      confirmBtn.textContent = depositing ? '确认存入 ' + qsheetQty.toLocaleString() : '确认取出 ' + qsheetQty.toLocaleString();
+      var label;
+      if (qsheetMode === 'deposit') label = '确认存入 ';
+      else if (qsheetMode === 'withdraw') label = '确认取出 ';
+      else if (qsheetMode === 'buy') label = '确认购买 ';
+      else label = '确认出售 ';
+      confirmBtn.textContent = label + qsheetQty.toLocaleString();
     }
 
     document.getElementById('qsheet-overlay').classList.add('show');
@@ -271,7 +276,12 @@ var UI = (function () {
   function updateQSheetDisplay() {
     document.getElementById('qs-qty').value = qsheetQty;
     if (!qsheetExtra) {
-      document.getElementById('qs-confirm').textContent = (qsheetMode === 'deposit' ? '确认存入 ' : '确认取出 ') + qsheetQty.toLocaleString();
+      var label;
+      if (qsheetMode === 'deposit') label = '确认存入 ';
+      else if (qsheetMode === 'withdraw') label = '确认取出 ';
+      else if (qsheetMode === 'buy') label = '确认购买 ';
+      else label = '确认出售 ';
+      document.getElementById('qs-confirm').textContent = label + qsheetQty.toLocaleString();
     }
     updateQSheetBtns();
     if (qsheetExtra) updateExtraDisplay();
@@ -323,8 +333,15 @@ var UI = (function () {
   }
 
   function updateQSheetTabs() {
+    var tabsEl = document.getElementById('qs-tabs');
     var tabDep = document.getElementById('qs-tab-deposit');
     var tabWdr = document.getElementById('qs-tab-withdraw');
+    // 非仓库模式（商店/市场）隐藏存入/取出 tabs
+    if (qsheetMode === 'buy' || qsheetMode === 'sell') {
+      tabsEl.style.display = 'none';
+      return;
+    }
+    tabsEl.style.display = '';
     tabDep.classList.toggle('active', qsheetMode === 'deposit');
     tabWdr.classList.toggle('active', qsheetMode === 'withdraw');
     tabWdr.disabled = qsheetStock === 0;
@@ -371,6 +388,8 @@ var UI = (function () {
 
   function switchQSheetMode(mode) {
     if (mode === qsheetMode) return;
+    // 非仓库模式不允许切换
+    if (qsheetMode !== 'deposit' && qsheetMode !== 'withdraw') return;
     if (mode === 'withdraw' && qsheetStock === 0) return;
     qsheetMode = mode;
     qsheetQty = 100;

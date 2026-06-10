@@ -251,6 +251,11 @@ body{
   cursor:pointer;font-family:inherit;transition:all .15s;
 }
 .tr-shop-mode.active,.tr-market-mode.active{background:var(--jade-200);color:var(--bg-void)}
+.tr-refresh{
+  font-size:16px;color:var(--text-muted);cursor:pointer;padding:4px 8px;
+  margin-left:auto;transition:color .15s;user-select:none;
+}
+.tr-refresh:hover{color:var(--jade-200)}
 
 .tr-shop-row{
   display:flex;align-items:center;gap:8px;padding:10px 8px;
