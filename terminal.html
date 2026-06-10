@@ -77,6 +77,12 @@ body{
 }
 #user-badge:hover{color:var(--text-primary);border-color:var(--jade-400)}
 #user-badge.logged-in{color:var(--jade-200);border-color:var(--jade-600)}
+.conn-dot{
+  display:inline-block;width:8px;height:8px;border-radius:50%;
+  background:#8b949e;flex-shrink:0;transition:background .3s;
+}
+.conn-dot.online{background:#4ade80;box-shadow:0 0 6px rgba(74,222,128,.5)}
+.conn-dot.offline{background:#f85149}
 
 /* ========== 主内容区 ========== */
 #main{
@@ -288,6 +294,29 @@ body{
 .placeholder .ph-icon{font-size:36px;opacity:.5}
 .placeholder .ph-text{font-size:13px}
 
+/* ========== 断开确认弹窗 ========== */
+#dc-overlay{
+  position:fixed;inset:0;z-index:250;background:rgba(0,0,0,.5);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+#dc-overlay.show{opacity:1;pointer-events:auto}
+#dc-dialog{
+  background:var(--bg-panel);border:1px solid var(--bg-hover);
+  border-radius:8px;width:320px;max-width:90vw;padding:24px;text-align:center;
+}
+#dc-dialog .dc-icon{font-size:36px;margin-bottom:10px}
+#dc-dialog .dc-msg{font-size:14px;color:var(--text-secondary);margin-bottom:20px;line-height:1.5}
+#dc-dialog .dc-actions{display:flex;gap:8px}
+#dc-dialog .dc-actions button{
+  flex:1;padding:10px;font-size:14px;font-weight:600;
+  border-radius:4px;border:none;cursor:pointer;font-family:inherit;
+}
+#dc-dialog .dc-confirm{background:var(--color-error);color:#fff}
+#dc-dialog .dc-confirm:hover{opacity:.85}
+#dc-dialog .dc-cancel{background:var(--bg-card);color:var(--text-secondary);border:1px solid var(--bg-hover)!important}
+#dc-dialog .dc-cancel:hover{background:var(--bg-hover)}
+
 /* ========== 响应式 ========== */
 @media(min-width:768px){
   #sidebar{display:flex}
@@ -303,10 +332,8 @@ body{
 <div id="topbar">
   <span class="logo">◈ 虚空终端</span>
   <span class="spacer"></span>
-  <span class="gauge-wrap" id="gauge-wrap" style="display:none">
-    <span class="gauge-bar"><span class="gauge-fill" id="gauge-fill"></span></span>
-    <span id="gauge-text">20/20</span>
-  </span>
+  <span class="conn-dot" id="conn-dot" title="检测中"></span>
+  <span class="gauge-bar" id="gauge-bar" style="display:none"><span class="gauge-fill" id="gauge-fill"></span></span>
   <span id="user-badge" onclick="handleUserBadgeClick()">未登录</span>
 </div>
 
@@ -396,6 +423,18 @@ body{
   </div>
 </div>
 
+<!-- 断开确认弹窗 -->
+<div id="dc-overlay">
+  <div id="dc-dialog">
+    <div class="dc-icon">⚠</div>
+    <div class="dc-msg">断开后将需要重新输入密码才能执行指令。<br>确定要断开连接吗？</div>
+    <div class="dc-actions">
+      <button class="dc-cancel" onclick="closeDcDialog()">取消</button>
+      <button class="dc-confirm" onclick="confirmDisconnect()">断开</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div id="toast"><span id="toast-body"></span><button class="t-close" onclick="hideToast()">&times;</button></div>
 
@@ -443,33 +482,41 @@ var toastTimer = null;
 // ========== 初始化 ==========
 SeBridge.init({ bridgeUrl: '' });
 
+// 延迟启动后台轮询
 setTimeout(function(){
-  SeBridge.checkBridgeHealth().then(function(r){
-    var online = r !== null && r.code === 200;
-    updateBridgeStatus(online);
-  });
-  if (SeBridge.hasCredentials()) onLoginSuccess();
-  startGaugePolling();
+  pollHealth();                    // 首次连接检测
+  setInterval(pollHealth, 30000);  // 每 30s 检测
+  setInterval(updateGauge, 5000);  // 每 5s 更新用量
 }, 100);
 
 // ========== 顶栏/状态 ==========
-function updateBridgeStatus(online) {
-  // 简洁处理，仅影响 gauge 可见性
+function setConnDot(state) {
+  var dot = document.getElementById('conn-dot');
+  dot.className = 'conn-dot' + (state ? ' ' + state : '');
+  dot.title = state === 'online' ? '服务在线' : state === 'offline' ? '服务离线' : '检测中';
+}
+
+function pollHealth() {
+  SeBridge.checkBridgeHealth().then(function(r){
+    setConnDot(r !== null && r.code === 200 ? 'online' : 'offline');
+  }).catch(function(){
+    setConnDot('offline');
+  });
 }
 
 function updateGauge() {
+  var bar = document.getElementById('gauge-bar');
   if (!SeBridge.hasCredentials()) {
-    document.getElementById('gauge-wrap').style.display = 'none';
+    bar.style.display = 'none';
     return;
   }
-  document.getElementById('gauge-wrap').style.display = 'flex';
+  bar.style.display = 'inline-block';
   var remain = SeBridge.getRemainingCalls();
   var limit = SeBridge.getRateLimit();
   var pct = (remain / limit) * 100;
   var fill = document.getElementById('gauge-fill');
   fill.style.width = pct + '%';
   fill.className = 'gauge-fill' + (pct <= 20 ? ' low' : pct <= 50 ? ' mid' : '');
-  document.getElementById('gauge-text').textContent = remain + '/' + limit;
 }
 
 function updateUserBadge() {
@@ -481,27 +528,28 @@ function updateUserBadge() {
     el.textContent = '未登录';
     el.classList.remove('logged-in');
   }
+  updateGauge();
 }
 
 function handleUserBadgeClick() {
   if (SeBridge.hasCredentials()) {
-    SeBridge.clearCredentials();
-    updateUserBadge();
-    updateGauge();
-    showLoginGuide();
-    showToast('success', '已断开连接');
+    // 弹出确认弹窗
+    document.getElementById('dc-overlay').classList.add('show');
   } else {
     showLoginGuide();
   }
 }
 
-function startGaugePolling() {
-  setInterval(function(){
-    updateGauge();
-    updateUserBadge();
-  }, 5000);
-  updateGauge();
+function closeDcDialog() {
+  document.getElementById('dc-overlay').classList.remove('show');
+}
+
+function confirmDisconnect() {
+  closeDcDialog();
+  SeBridge.clearCredentials();
   updateUserBadge();
+  showLoginGuide();
+  showToast('success', '已断开连接');
 }
 
 // ========== 登录 ==========
