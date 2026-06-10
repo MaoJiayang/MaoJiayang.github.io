@@ -352,16 +352,24 @@ var UI = (function () {
   // ========== 输入焦点切换 ==========
 
   function onQtyFocus() {
-    document.getElementById('qs-qty').value = qsheetQty;
+    var input = document.getElementById('qs-qty');
+    input.value = qsheetQty;
+    fitFontSize(input);
   }
   function onQtyBlur() {
-    document.getElementById('qs-qty').value = fmtCompact(qsheetQty);
+    var input = document.getElementById('qs-qty');
+    input.value = fmtCompact(qsheetQty);
+    input.style.fontSize = '';
   }
   function onExtraFocus() {
-    document.getElementById('qs-extra-val').value = qsheetExtraVal;
+    var input = document.getElementById('qs-extra-val');
+    input.value = qsheetExtraVal;
+    fitFontSize(input);
   }
   function onExtraBlur() {
-    document.getElementById('qs-extra-val').value = fmtCompact(qsheetExtraVal);
+    var input = document.getElementById('qs-extra-val');
+    input.value = fmtCompact(qsheetExtraVal);
+    input.style.fontSize = '';
   }
 
   function updateExtraBtns() {
@@ -385,13 +393,14 @@ var UI = (function () {
   function onExtraInput() {
     if (_lockExtra) return;
     var input = document.getElementById('qs-extra-val');
+    input.value = input.value.replace(/[^\d.kKmMbB]/g, '');
+    fitFontSize(input);
     var v = parseCompact(input.value);
     if (isNaN(v)) v = 0;
     var min = qsheetExtra && qsheetExtra.min != null ? qsheetExtra.min : 0;
     var max = qsheetExtra && qsheetExtra.max ? qsheetExtra.max : 999999;
     qsheetExtraVal = Math.max(min, Math.min(max, v));
     _extraTap.count = 0;
-    if (qsheetExtraVal >= 1000) input.value = fmtCompact(qsheetExtraVal);
     updateExtraDisplay();
   }
 
@@ -445,16 +454,25 @@ var UI = (function () {
     document.getElementById('qs-plus-fast').disabled = qsheetQty + step > maxWithdraw;
   }
 
+  function fitFontSize(input) {
+    var len = input.value.length;
+    if (len <= 7) input.style.fontSize = '';
+    else if (len <= 9) input.style.fontSize = '14px';
+    else if (len <= 12) input.style.fontSize = '12px';
+    else input.style.fontSize = '10px';
+  }
+
   function onQtyInput() {
     if (_lockQty > 0) return;
     var input = document.getElementById('qs-qty');
+    // 过滤非法字符（只允许数字、小数点、K/M/B）
+    input.value = input.value.replace(/[^\d.kKmMbB]/g, '');
+    fitFontSize(input);
     var v = parseCompact(input.value);
     if (isNaN(v) || v < 1) v = 1;
     var maxWithdraw = qsheetExtra ? Infinity : (qsheetMode === 'deposit' ? Infinity : qsheetStock);
     qsheetQty = Math.max(1, Math.min(maxWithdraw, v));
     _qtyTap.count = 0;
-    // 数值 ≥1000 时强制 KMB 显示，防止溢出
-    if (qsheetQty >= 1000) input.value = fmtCompact(qsheetQty);
     updateQSheetDisplay();
   }
 
