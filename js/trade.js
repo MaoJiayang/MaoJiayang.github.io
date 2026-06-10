@@ -396,15 +396,15 @@ var Trade = (function () {
     if (typeof n === 'object' && n.toString) n = parseFloat(n.toString());
     if (isNaN(n)) return '0';
     if (n >= 1e9) {
-      var val = (n / 1e9).toFixed(1).replace(/\.0$/, '');
+      var val = (n / 1e9).toFixed(2).replace(/\.?0+$/, '');
       return val + '<span class="wh-num-sfx num-b">B</span>';
     }
     if (n >= 1e6) {
-      var val = (n / 1e6).toFixed(1).replace(/\.0$/, '');
+      var val = (n / 1e6).toFixed(2).replace(/\.?0+$/, '');
       return val + '<span class="wh-num-sfx num-m">M</span>';
     }
     if (n >= 1e3) {
-      var val = (n / 1e3).toFixed(1).replace(/\.0$/, '');
+      var val = (n / 1e3).toFixed(2).replace(/\.?0+$/, '');
       return val + '<span class="wh-num-sfx num-k">k</span>';
     }
     return Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 });
