@@ -160,7 +160,16 @@ body{
 }
 .wh-cat-h .arrow{display:inline-block;font-size:11px;transition:transform .2s;color:var(--text-muted);width:14px;text-align:center}
 .wh-cat-h .arrow.open{transform:rotate(90deg)}
+.wh-cat-h .cat-spacer{flex:1}
 .wh-cat-count{font-size:11px;color:var(--text-muted);margin-left:4px}
+.wh-cat-save{
+  font-size:11px;padding:4px 10px;min-height:32px;min-width:44px;
+  border-radius:4px;border:1px solid var(--bg-hover);
+  background:var(--bg-card);color:var(--jade-200);cursor:pointer;
+  font-family:inherit;white-space:nowrap;transition:all .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+.wh-cat-save:hover{background:var(--bg-hover);border-color:var(--jade-400)}
 .wh-cat-body{display:none}
 .wh-cat-body.open{display:block}
 .wh-item{
@@ -383,8 +392,10 @@ body{
     <div class="wh-quick">
       <button onclick="quickAction('存入全部')">存入全部</button>
       <button onclick="quickAction('存入全部 矿石')">存入矿石</button>
+      <button onclick="quickAction('存入全部 矿锭')">存入矿锭</button>
       <button onclick="quickAction('存入全部 零件')">存入零件</button>
       <button onclick="quickAction('存入全部 弹药')">存入弹药</button>
+      <button onclick="quickAction('存入全部 手持物')">存入手持物</button>
     </div>
   </div>
 
@@ -686,8 +697,12 @@ function renderWarehouse() {
     if (!groups[cat] || groups[cat].length === 0) return;
     groups[cat].sort(function(a,b){ return a.name.localeCompare(b.name); });
     html += '<div class="wh-cat">';
-    html += '<div class="wh-cat-h" onclick="toggleCategory(this)"><span class="arrow open">▸</span>'
-      + cat + '<span class="wh-cat-count">' + groups[cat].length + ' 种</span></div>';
+    html += '<div class="wh-cat-h">'
+      + '<span onclick="toggleCategory(this.parentElement)" style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">'
+      + '<span class="arrow open">▸</span>' + cat
+      + '<span class="wh-cat-count">' + groups[cat].length + ' 种</span></span>'
+      + '<button class="wh-cat-save" onclick="event.stopPropagation();saveAllForCat(\'' + cat + '\')">全部存入</button>'
+      + '</div>';
     html += '<div class="wh-cat-body open">';
     groups[cat].forEach(function(item){
       var amt = typeof item.amount === 'number' ? item.amount.toLocaleString(undefined, {maximumFractionDigits:1}) : item.amount;
@@ -755,6 +770,15 @@ function confirmQSheet() {
 function quickAction(action) {
   var cmd = '!仓库 ' + action;
   executeAndRefresh(cmd, action);
+}
+
+// 分类名 → 服务器 storageType 参数（工具→手持物，其他不变）
+var catToSaveParam = {
+  '工具': '手持物'
+};
+function saveAllForCat(cat) {
+  var param = catToSaveParam[cat] || cat;
+  quickAction('存入全部 ' + param);
 }
 
 function executeAndRefresh(cmd, label) {
