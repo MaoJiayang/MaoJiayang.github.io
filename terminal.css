@@ -481,6 +481,50 @@ body{
 .ha-world-save{font-size:12px;padding:4px 10px;border-radius:3px;background:var(--jade-200);color:var(--bg-void);border:none;cursor:pointer;font-family:inherit;font-weight:600;white-space:nowrap;flex-shrink:0}
 .ha-world-save:hover{opacity:.85}
 
+/* ========== 船厂面板 ========== */
+.sy-subtabs{display:flex;margin-bottom:12px}
+.sy-subtab{flex:1;padding:6px 0;font-size:13px;font-weight:600;color:var(--text-secondary);background:none;border:none;cursor:pointer;font-family:inherit;border-bottom:2px solid transparent;transition:color .2s,border .2s}
+.sy-subtab.active{color:var(--jade-200);border-bottom-color:var(--jade-200)}
+.sy-subtab:hover{color:var(--text-primary)}
+.sy-section{position:relative}
+
+/* 流水线卡片 */
+.sy-line-card{padding:10px 12px;background:var(--bg-card);border-radius:4px;margin-bottom:6px}
+.sy-line-card.sy-idle{opacity:.6}
+.sy-line-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.sy-line-title{font-size:13px;font-weight:500;color:var(--text-primary)}
+.sy-line-status{font-size:11px;padding:1px 8px;border-radius:3px;font-weight:600}
+.sy-status-active{background:var(--jade-200);color:var(--bg-void)}
+.sy-status-idle{background:var(--bg-hover);color:var(--text-muted)}
+.sy-mission-info{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.sy-mission-type{font-size:12px;color:var(--text-muted)}
+.sy-mission-name{font-size:14px;font-weight:500;color:var(--text-primary)}
+
+/* 进度条 */
+.sy-progress{display:flex;align-items:center;gap:10px}
+.sy-progress-bar{flex:1;height:6px;background:var(--bg-hover);border-radius:3px;overflow:hidden}
+.sy-progress-fill{display:block;height:100%;background:var(--jade-200);border-radius:3px;transition:width .5s}
+.sy-progress-text{font-size:11px;color:var(--text-muted);white-space:nowrap;min-width:90px;text-align:right}
+
+/* 排队任务 */
+.sy-pending-row{display:flex;align-items:center;padding:8px 10px;background:var(--bg-card);border-radius:4px;margin-bottom:4px;gap:8px}
+.sy-pending-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.sy-mission-msg{font-size:11px;color:var(--color-warn)}
+
+/* 模板 */
+.sy-quota{font-size:12px;color:var(--text-muted);margin-bottom:10px}
+.sy-quota strong{color:var(--text-primary)}
+.sy-template-row{display:flex;align-items:center;padding:8px 10px;background:var(--bg-card);border-radius:4px;margin-bottom:4px;gap:8px}
+.sy-template-row:hover{background:var(--bg-hover)}
+.sy-template-name{flex:1;font-size:14px;font-weight:500;color:var(--text-primary)}
+.sy-template-actions{display:flex;gap:4px;flex-shrink:0}
+
+/* 自动建造 */
+.sy-autobuild{padding:20px 0;text-align:center}
+.sy-autobuild-info{font-size:12px;color:var(--text-muted);line-height:1.8;margin-bottom:16px}
+.sy-autobuild-btn{padding:10px 32px;font-size:14px;font-weight:600;background:var(--jade-200);color:var(--bg-void);border:none;border-radius:4px;cursor:pointer;font-family:inherit}
+.sy-autobuild-btn:hover{opacity:.85}
+
 /* ========== 响应式 ========== */
 @media(min-width:768px){
   #sidebar{display:flex}
