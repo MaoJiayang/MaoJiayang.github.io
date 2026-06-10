@@ -252,12 +252,13 @@ var Trade = (function () {
     loadMarket();
   }
 
-  /** 点击订单快捷匹配：卖单→自动购买，收单→自动出售 */
-  function quickTrade(name, price, isSell) {
-    var mode = isSell ? 'buy' : 'sell';  // 卖单=我要买, 收单=我要卖
+  /** 点击订单快捷匹配：卖单→自动购买，收单→自动出售。数量不可改（不能拆单） */
+  function quickTrade(name, price, isSell, count) {
+    var mode = isSell ? 'buy' : 'sell';
     UI.openQSheet(mode, name, {
       stock: 0,
-      extraField: { label: '单价 SC', value: price, suffix: 'SC', step: 10, max: 999999 },
+      lockQty: count || 1,
+      extraField: { label: '单价 SC', value: price, suffix: 'SC', step: 10, min: 0, max: 999999 },
       onConfirm: function (m, qty, p) {
         var cmd = isSell
           ? '!市场 自动购买 ' + name + ' ' + qty + ' ' + p
@@ -311,7 +312,7 @@ var Trade = (function () {
       var clickAttr = '';
       if (marketMode === 'all') {
         // 点击订单快捷匹配：卖单→自动购买，收单→自动出售
-        clickAttr = ' onclick="Trade.quickTrade(\'' + escAttr(bill.itemName) + '\',' + bill.univalence + ',' + (isSell ? 1 : 0) + ')"';
+        clickAttr = ' onclick="Trade.quickTrade(\'' + escAttr(bill.itemName) + '\',' + bill.univalence + ',' + (isSell ? 1 : 0) + ',' + bill.count + ')"';
       }
       html += '<div class="tr-order-card ' + (isSell ? 'tr-order-sell' : 'tr-order-buy') + '"' + clickAttr + '>'
         + '<span class="tr-order-tag ' + tagClass + '">' + tagText + '</span>'
@@ -348,7 +349,7 @@ var Trade = (function () {
       // 打开 QSheet 填数量和单价
       UI.openQSheet(modeForQ, itemName, {
         stock: 0,
-        extraField: { label: '单价 SC', value: 100, suffix: 'SC', step: 10, max: 999999, confirmLabel: modeForQ === 'sell' ? '确认发布卖单' : '确认发布收单' },
+        extraField: { label: '单价 SC', value: 100, suffix: 'SC', step: 10, min: 0, max: 999999, confirmLabel: modeForQ === 'sell' ? '确认发布卖单' : '确认发布收单' },
         onConfirm: function (m, qty, price) {
           var cmd = modeForQ === 'sell'
             ? '!市场 发布卖单 ' + itemName + ' ' + qty + ' ' + price

@@ -224,11 +224,12 @@ var UI = (function () {
   var _extraLastTap = 0;
   var _extraTapTimer = null;
   var _extraTapStep = 10;
+  var _lockQty = 0;  // >0 表示数量锁定（不可拆分订单）
 
   /**
    * openQSheet(mode, itemName, stock, onConfirm)        ← 仓库用法（向后兼容）
    * openQSheet(mode, itemName, options)                  ← 市场用法
-   *   options: { stock, extraField: { label, value, suffix, step, max }, onConfirm }
+   *   options: { stock, lockQty, extraField: { label, value, suffix, step, min, max }, onConfirm }
    */
   function openQSheet(mode, itemName, stockOrOptions, onConfirm) {
     qsheetMode = mode;
@@ -241,7 +242,8 @@ var UI = (function () {
     var options = isOptions ? stockOrOptions : { stock: stockOrOptions || 0, onConfirm: onConfirm };
 
     qsheetStock = options.stock || 0;
-    qsheetQty = 100;
+    _lockQty = options.lockQty || 0;
+    qsheetQty = _lockQty > 0 ? _lockQty : 100;
     _qsheetOnConfirm = options.onConfirm || null;
     qsheetExtra = options.extraField || null;
     qsheetExtraVal = qsheetExtra ? qsheetExtra.value : 0;
@@ -249,12 +251,20 @@ var UI = (function () {
     _extraTapStep = 10;
 
     var depositing = mode === 'deposit';
-    // 市场模式（有 extraField）或无上限标记时不限量，否则按存量限制
-    var maxWithdraw = (qsheetExtra || options.noCap) ? Infinity : (depositing ? Infinity : qsheetStock);
+    // 锁定数量（不可拆分）或以存量/无限量限制
+    var maxWithdraw = _lockQty > 0 ? _lockQty
+      : (qsheetExtra || options.noCap) ? Infinity
+      : (depositing ? Infinity : qsheetStock);
     if (qsheetQty > maxWithdraw) qsheetQty = maxWithdraw;
     if (qsheetQty < 1) qsheetQty = 1;
     document.getElementById('qs-item').textContent = itemName;
-    document.getElementById('qs-stock').textContent = qsheetExtra ? '' : ('库存 ' + qsheetStock.toLocaleString());
+    if (_lockQty > 0) {
+      document.getElementById('qs-stock').textContent = '数量不可拆分';
+    } else if (qsheetExtra) {
+      document.getElementById('qs-stock').textContent = '';
+    } else {
+      document.getElementById('qs-stock').textContent = '库存 ' + qsheetStock.toLocaleString();
+    }
     document.getElementById('qs-qty').value = qsheetQty;
 
     // extra field
@@ -313,25 +323,29 @@ var UI = (function () {
   }
 
   function updateExtraBtns() {
+    var min = qsheetExtra && qsheetExtra.min != null ? qsheetExtra.min : 0;
     var max = qsheetExtra && qsheetExtra.max ? qsheetExtra.max : 999999;
-    document.getElementById('qs-extra-minus').disabled = qsheetExtraVal <= 1;
-    document.getElementById('qs-extra-minus-fast').disabled = qsheetExtraVal <= 1;
+    document.getElementById('qs-extra-minus').disabled = qsheetExtraVal <= min;
+    document.getElementById('qs-extra-minus-fast').disabled = qsheetExtraVal <= min;
     document.getElementById('qs-extra-plus').disabled = qsheetExtraVal >= max;
     document.getElementById('qs-extra-plus-fast').disabled = qsheetExtraVal >= max;
   }
 
   function onExtraInput() {
     var input = document.getElementById('qs-extra-val');
-    var v = parseInt(input.value) || 1;
+    var v = parseInt(input.value);
+    if (isNaN(v)) v = 0;
+    var min = qsheetExtra && qsheetExtra.min != null ? qsheetExtra.min : 0;
     var max = qsheetExtra && qsheetExtra.max ? qsheetExtra.max : 999999;
-    qsheetExtraVal = Math.max(1, Math.min(max, v));
+    qsheetExtraVal = Math.max(min, Math.min(max, v));
     input.value = qsheetExtraVal;
     updateExtraDisplay();
   }
 
   function adjustExtra(delta) {
+    var min = qsheetExtra && qsheetExtra.min != null ? qsheetExtra.min : 0;
     var max = qsheetExtra && qsheetExtra.max ? qsheetExtra.max : 999999;
-    qsheetExtraVal = Math.max(1, Math.min(max, qsheetExtraVal + delta));
+    qsheetExtraVal = Math.max(min, Math.min(max, qsheetExtraVal + delta));
     updateExtraDisplay();
   }
 
@@ -363,7 +377,17 @@ var UI = (function () {
   }
 
   function updateQSheetBtns() {
-    var maxWithdraw = qsheetMode === 'deposit' ? Infinity : qsheetStock;
+    if (_lockQty > 0) {
+      document.getElementById('qs-minus').disabled = true;
+      document.getElementById('qs-minus-fast').disabled = true;
+      document.getElementById('qs-plus').disabled = true;
+      document.getElementById('qs-plus-fast').disabled = true;
+      document.getElementById('qs-qty').readOnly = true;
+      return;
+    }
+    document.getElementById('qs-qty').readOnly = false;
+    var depositing = qsheetMode === 'deposit';
+    var maxWithdraw = (qsheetExtra) ? Infinity : (depositing ? Infinity : qsheetStock);
     document.getElementById('qs-minus').disabled = qsheetQty <= 1;
     document.getElementById('qs-minus-fast').disabled = qsheetQty <= 1;
     document.getElementById('qs-plus').disabled = qsheetQty >= maxWithdraw;
@@ -381,6 +405,7 @@ var UI = (function () {
   }
 
   function adjustQty(delta) {
+    if (_lockQty > 0) return;  // 锁定状态不允许修改
     var maxWithdraw = qsheetMode === 'deposit' ? Infinity : qsheetStock;
     qsheetQty = Math.max(1, Math.min(maxWithdraw, qsheetQty + delta));
     updateQSheetDisplay();
