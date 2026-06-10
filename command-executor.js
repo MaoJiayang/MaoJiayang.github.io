@@ -2,64 +2,23 @@
  * SE 指令执行模块
  * 提供登录管理、连接检测、执行按钮、结果展示
  *
- * 依赖: AcModule (全局, command-autocomplete.js 提供)
- * 用法: CmdExec.init({ qInput, bridgeUrl })
+ * 依赖: SeBridge (se-bridge.js, 共享认证+通信层)
+ *       AcModule (command-autocomplete.js, 指令补全)
+ * 用法: CmdExec.init({ qInput, remoteBridgeUrl })
  */
 var CmdExec = (function () {
   'use strict';
 
-  var CRED_KEY = 'se_credentials';
-  var CALL_KEY = 'se_call_times';
-  var RATE_LIMIT = 25;  // 每分钟调用限制
   var _q = null;
-  var _bridgeUrl = 'http://localhost:3001';
   var _gaugeTimer = null;
 
-  // ========== 登录管理 ==========
-
-  function loadCredentials() {
-    try {
-      var raw = localStorage.getItem(CRED_KEY);
-      if (raw) {
-        var parsed = JSON.parse(raw);
-        if (parsed.steamId && parsed.gamePassword) return parsed;
-      }
-    } catch (_) { /* 格式错误或缓存不可用 */ }
-    return null;
-  }
-
-  function saveCredentials(steamId, gamePassword, remember) {
-    if (remember) {
-      try {
-        localStorage.setItem(CRED_KEY, JSON.stringify({ steamId: steamId, gamePassword: gamePassword }));
-        return true;
-      } catch (_) {
-        showToast('warning', '当前浏览器不支持缓存，登录仅本次有效');
-        return false;
-      }
-    }
-    _memCreds = { steamId: steamId, gamePassword: gamePassword };
-    return true;
-  }
-
-  function clearCredentials() {
-    try { localStorage.removeItem(CRED_KEY); } catch (_) { /* */ }
-    try { sessionStorage.removeItem(CALL_KEY); } catch (_) { /* */ }
-    _memCreds = null;
-  }
-
-  var _memCreds = null;
+  // ========== 历史记录 ==========
 
   var HIST_KEY = 'se_cmd_history';
   var MAX_HIST = 30;
   var _histIdx = -1;
   var _histSaved = '';
   var _histNav = false;
-
-  function getCredentials() {
-    if (_memCreds) return _memCreds;
-    return loadCredentials();
-  }
 
   function pushHistory(cmd) {
     var hist = getHistory();
@@ -77,85 +36,6 @@ var CmdExec = (function () {
     try { localStorage.removeItem(HIST_KEY); } catch (_) {}
     _histIdx = -1;
     _histSaved = '';
-  }
-
-  function hasCredentials() {
-    return getCredentials() !== null;
-  }
-
-  // ========== 桥接通信（含运行时降级）==========
-
-  // 桥接降级状态（运行时检测到桥接挂了就切到 CF Function）
-  var _bridgeDown = false;
-
-  function callBridge(method, path, body) {
-    var headers = {};
-    if (body) headers['Content-Type'] = 'application/json';
-    // 远程桥接不需要额外 Token（认证由 steamId + gamePassword 完成）
-
-    var opts = { method: method, headers: headers };
-    if (body) opts.body = JSON.stringify(body);
-
-    return fetch(_bridgeUrl + path, opts)
-      .then(function (r) {
-        if (!r.ok) throw new Error('BRIDGE_HTTP_' + r.status);
-        // 远程桥接恢复在线
-        if (_bridgeDown && _bridgeUrl) {
-          _bridgeDown = false;
-          updateBridgeLabel(true);
-        }
-        return r.json();
-      })
-      .catch(function (err) {
-        // HTTP 错误码直接抛出（桥接在线但业务逻辑失败）
-        if (err.message && err.message.indexOf('BRIDGE_HTTP_') === 0) throw err;
-
-        // 网络错误 + 当前使用远程桥接 → 降级到同域 CF Function 重试
-        if (_bridgeUrl && _bridgeUrl.indexOf('localhost') === -1) {
-          if (!_bridgeDown) {
-            _bridgeDown = true;
-            updateBridgeLabel(false);
-            console.warn('桥接服务不可用，降级到 CF Function');
-          }
-          // 用相对路径重试，Token 仅本地需要
-          var fbOpts = { method: method, headers: {} };
-          if (body) { fbOpts.headers['Content-Type'] = 'application/json'; fbOpts.body = JSON.stringify(body); }
-          return fetch(path, fbOpts)
-            .then(function (r) {
-              if (!r.ok) throw new Error('BRIDGE_HTTP_' + r.status);
-              return r.json();
-            })
-            .catch(function () {
-              throw new Error('BRIDGE_DOWN');
-            });
-        }
-
-        throw new Error('BRIDGE_DOWN');
-      });
-  }
-
-  function verifyCredentials(steamId, password) {
-    return callBridge('POST', '/api/command/verify', {
-      steamId: steamId,
-      gamePassword: password,
-    });
-  }
-
-  function executeCommand(commandText) {
-    var creds = getCredentials();
-    return callBridge('POST', '/api/command/execute', {
-      steamId: creds.steamId,
-      command: commandText,
-      gamePassword: creds.gamePassword,
-    });
-  }
-
-  function checkBridgeHealth() {
-    // 直接检测桥接，不走降级。无桥接时用 CF Function 同域路径检测
-    var url = _bridgeUrl ? _bridgeUrl + '/api/health' : '/api/health';
-    return fetch(url)
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .catch(function () { return null; });
   }
 
   // ========== 按钮可见性 ==========
@@ -191,39 +71,17 @@ var CmdExec = (function () {
 
   // ========== 执行处理 ==========
 
-  function loadCallTimes() {
-    try {
-      var raw = sessionStorage.getItem(CALL_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (_) { return []; }
-  }
-
-  function saveCallTimes(times) {
-    try { sessionStorage.setItem(CALL_KEY, JSON.stringify(times)); } catch (_) { /* */ }
-  }
-
-  function purgeCallTimes() {
-    var cutoff = Date.now() - 60000;
-    var times = loadCallTimes().filter(function (t) { return t > cutoff; });
-    saveCallTimes(times);
-    return times;
-  }
-
-  function isRateLimited() {
-    return purgeCallTimes().length >= RATE_LIMIT;
-  }
-
   function handleExecute() {
     var val = _q ? _q.value.trim() : '';
     if (!val || !canExecute(val)) return;
     if (val.charCodeAt(0) === 0xFF01) val = '!' + val.slice(1);
 
-    if (!hasCredentials()) {
+    if (!SeBridge.hasCredentials()) {
       showLoginModal();
       return;
     }
 
-    if (isRateLimited()) {
+    if (SeBridge.isRateLimited()) {
       showToast('error', '每分钟调用次数已用完，请稍后再试');
       return;
     }
@@ -233,19 +91,19 @@ var CmdExec = (function () {
     btn.disabled = true;
     btn.classList.add('executing');
 
-    executeCommand(val)
+    SeBridge.executeCommand(val)
       .then(function (result) {
         btn.disabled = false;
         btn.classList.remove('executing');
         updateExecButton();
 
         if (result.code === 200) {
-          trackCall();
+          SeBridge.trackCall();
           pushHistory(val);
           showToast('success', '指令已发送，请在游戏内查看结果');
         } else if (result.code === 401) {
           showToast('error', '账号或密码错误，请重新登录');
-          clearCredentials();
+          SeBridge.clearCredentials();
           updateCredLabel();
           updateRateGauge();
           showLoginModal();
@@ -260,7 +118,9 @@ var CmdExec = (function () {
         btn.classList.remove('executing');
         updateExecButton();
 
-        if (err.message === 'BRIDGE_DOWN') {
+        if (err.message === 'NOT_LOGGED_IN') {
+          showLoginModal();
+        } else if (err.message === 'BRIDGE_DOWN') {
           showToast('error', '连接服务未启动，请先运行 start-local.bat');
         } else {
           showToast('error', '请求失败: ' + err.message);
@@ -302,7 +162,7 @@ var CmdExec = (function () {
     var modal = document.getElementById('login-modal');
     if (!modal) return;
 
-    var creds = getCredentials();
+    var creds = SeBridge.getCredentials();
     document.getElementById('login-steamid').value = creds ? creds.steamId : '';
     document.getElementById('login-password').value = creds ? creds.gamePassword : '';
     document.getElementById('login-error').classList.add('hide');
@@ -322,9 +182,15 @@ var CmdExec = (function () {
   function updateClearBtn() {
     var btn = document.getElementById('login-clear');
     if (!btn) return;
-    if (loadCredentials()) {
-      btn.classList.remove('hide');
-    } else {
+    // 仅当有 localStorage 持久化凭据时才显示清除按钮
+    try {
+      var raw = localStorage.getItem('se_credentials');
+      if (raw && JSON.parse(raw).steamId) {
+        btn.classList.remove('hide');
+      } else {
+        btn.classList.add('hide');
+      }
+    } catch (_) {
       btn.classList.add('hide');
     }
   }
@@ -351,20 +217,26 @@ var CmdExec = (function () {
     submitBtn.disabled = true;
     submitBtn.textContent = '正在验证...';
 
-    verifyCredentials(steamId, password)
+    SeBridge.verifyCredentials(steamId, password)
       .then(function (result) {
         submitBtn.disabled = false;
         submitBtn.textContent = '确认';
 
         if (result.code === 200) {
-          var ok = saveCredentials(steamId, password, remember);
-          if (!ok) return;
+          var ok = SeBridge.saveCredentials(steamId, password, remember);
+          if (!ok) {
+            showToast('warning', '当前浏览器不支持缓存，登录仅本次有效');
+            // 仍然允许登录（凭据在内存中）
+          }
 
           hideLoginModal();
           showToast('success', '登录成功');
           updateCredLabel();
           updateRateGauge();
           pollHealth();
+
+          // 异步同步用户到 D1（不阻塞 UI）
+          SeBridge.syncUser().catch(function () {});
 
           if (_pendingExecute) {
             _pendingExecute = false;
@@ -395,7 +267,7 @@ var CmdExec = (function () {
     if (!dot || !text) return;
     if (online === true) {
       dot.className = 'conn-dot online';
-      if (_bridgeUrl && _bridgeUrl.indexOf('localhost') === -1) {
+      if (SeBridge.bridgeUrl && SeBridge.bridgeUrl.indexOf('localhost') === -1) {
         text.textContent = '服务在线(桥接)';
       } else {
         text.textContent = '服务在线(云)';
@@ -412,8 +284,7 @@ var CmdExec = (function () {
   function updateCredLabel() {
     var el = document.getElementById('cred-indicator');
     if (!el) return;
-    var creds = getCredentials();
-    if (creds) {
+    if (SeBridge.hasCredentials()) {
       el.textContent = '已登录';
       el.classList.add('has-creds');
     } else {
@@ -422,25 +293,17 @@ var CmdExec = (function () {
     }
   }
 
-  function trackCall() {
-    var times = loadCallTimes();
-    times.push(Date.now());
-    saveCallTimes(times);
-    updateRateGauge();
-  }
-
   function updateRateGauge() {
     var el = document.getElementById('rate-gauge');
     if (!el) return;
-    if (!hasCredentials()) {
+    if (!SeBridge.hasCredentials()) {
       el.classList.add('hide');
       return;
     }
 
-    var times = purgeCallTimes();
-    var used = times.length;
-    var remain = Math.max(0, RATE_LIMIT - used);
-    var pct = (remain / RATE_LIMIT) * 100;
+    var remain = SeBridge.getRemainingCalls();
+    var limit = SeBridge.getRateLimit();
+    var pct = (remain / limit) * 100;
 
     var fill = document.getElementById('gauge-fill');
     var text = document.getElementById('rate-text');
@@ -448,13 +311,13 @@ var CmdExec = (function () {
       fill.style.width = pct + '%';
       fill.className = 'gauge-fill' + (pct <= 20 ? ' low' : pct <= 50 ? ' mid' : '');
     }
-    if (text) text.textContent = remain + '/' + RATE_LIMIT;
+    if (text) text.textContent = remain + '/' + limit;
 
     el.classList.remove('hide');
   }
 
   function pollHealth() {
-    checkBridgeHealth().then(function (result) {
+    SeBridge.checkBridgeHealth().then(function (result) {
       updateBridgeLabel(result !== null ? result.code === 200 : false);
     });
   }
@@ -468,7 +331,14 @@ var CmdExec = (function () {
 
   function init(ctx) {
     _q = ctx.qInput;
-    _bridgeUrl = ctx.bridgeUrl || 'http://localhost:3001';
+
+    // 初始化 SeBridge（桥接地址）
+    SeBridge.init({
+      bridgeUrl: ctx.remoteBridgeUrl || '',
+      onStatusChange: function (st) {
+        updateBridgeLabel(st.bridgeOnline);
+      },
+    });
 
     _q.addEventListener('input', function () { updateExecButton(); });
 
@@ -519,7 +389,7 @@ var CmdExec = (function () {
     var execBtn = document.getElementById('exec-btn');
     if (execBtn) {
       execBtn.addEventListener('click', function () {
-        if (!hasCredentials()) {
+        if (!SeBridge.hasCredentials()) {
           _pendingExecute = true;
           showLoginModal();
         } else {
@@ -544,7 +414,7 @@ var CmdExec = (function () {
     var loginClear = document.getElementById('login-clear');
     if (loginClear) {
       loginClear.addEventListener('click', function () {
-        clearCredentials();
+        SeBridge.clearCredentials();
         updateClearBtn();
         updateCredLabel();
         updateRateGauge();
@@ -575,16 +445,6 @@ var CmdExec = (function () {
       });
     }
 
-    // 桥接地址：本地→localhost，远程配置了 bridgeUrl→国内桥接，否则→同域 CF Function
-    _bridgeUrl = ctx.remoteBridgeUrl || '';
-
-    // HTTPS 页面不能直连 HTTP 桥接（Mixed Content），自动降级 CF Function
-    // 部署 cloudflared tunnel 后改为 HTTPS 即可恢复直连
-    if (_bridgeUrl && _bridgeUrl.indexOf('http://') === 0 && location.protocol === 'https:') {
-      console.warn('桥接地址为 HTTP，HTTPS 页面无法直连，已降级到 CF Function');
-      _bridgeUrl = '';
-    }
-
     updateCredLabel();
     updateRateGauge();
 
@@ -597,7 +457,6 @@ var CmdExec = (function () {
 
   return {
     init: init,
-    getCredentials: getCredentials,
     canExecute: canExecute,
     getHistory: getHistory,
     pushHistory: pushHistory,

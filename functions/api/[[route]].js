@@ -17,6 +17,22 @@ const DEFAULT_PORT = 1;
 const DEFAULT_AUTH_KEY = 'change-me';
 const TIMEOUT_MS = 10000;
 
+// ---- D1 用户表初始化 ----
+
+let userTableReady = false;
+async function ensureUserTable(db) {
+  if (userTableReady) return;
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS users (
+      steam_id    TEXT PRIMARY KEY,
+      attrs       TEXT DEFAULT '{}',
+      login_at    TEXT,
+      created_at  TEXT DEFAULT (datetime('now'))
+    )
+  `).run();
+  userTableReady = true;
+}
+
 function getConfig(env) {
   return {
     host: env.SE_HOST || DEFAULT_HOST,
@@ -118,6 +134,60 @@ function normalizePath(pathname) {
   return pathname.replace(/\/$/, '') || '/api';
 }
 
+/**
+ * /api/user/sync — 验证游戏密码 + 记录/更新用户
+ * 入参: { steamId, gamePassword }
+ * 返回: { code, msg, data: { steamId, loginAt, attrs } }
+ */
+async function handleUserSync(body, env, cfg) {
+  if (!body.steamId || !body.gamePassword) {
+    return Response.json({ code: 400, msg: '缺少 steamId 或 gamePassword' }, { status: 400 });
+  }
+  if (cfg.blacklist.has(String(body.steamId))) {
+    return Response.json({ code: 401, msg: '验证失败' }, { status: 401 });
+  }
+
+  // 通过 SE 服务器验证密码
+  const result = await tcpRequest(cfg.host, cfg.port, cfg.authKey, body.steamId, '!银行 余额', body.gamePassword);
+
+  if (result.code !== 200) {
+    return Response.json(result);
+  }
+
+  // 验证通过 → 写入 D1
+  try {
+    await ensureUserTable(env.LOG_DB);
+    const now = new Date().toISOString();
+    const defaultAttrs = JSON.stringify({ rateLimit: 20 });
+
+    // 先尝试 INSERT（新用户），冲突则只更新 login_at（保留已有 attrs）
+    const result = await env.LOG_DB.prepare(`
+      INSERT INTO users (steam_id, attrs, login_at, created_at)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(steam_id) DO UPDATE SET login_at = excluded.login_at
+    `).bind(String(body.steamId), defaultAttrs, now, now).run();
+
+    // 读取更新后的记录
+    const row = await env.LOG_DB.prepare(
+      'SELECT steam_id, attrs, login_at, created_at FROM users WHERE steam_id = ?'
+    ).bind(String(body.steamId)).first();
+
+    return Response.json({
+      code: 200,
+      msg: 'ok',
+      data: {
+        steamId: row.steam_id,
+        loginAt: row.login_at,
+        attrs: JSON.parse(row.attrs || '{}'),
+      },
+    });
+  } catch (e) {
+    console.error('user/sync D1 write failed:', e?.message);
+    // D1 写入失败不影响登录，仍然返回成功
+    return Response.json({ code: 200, msg: 'ok（用户记录未保存）', data: { steamId: String(body.steamId) } });
+  }
+}
+
 export async function onRequestGet({ request }) {
   const path = normalizePath(new URL(request.url).pathname);
 
@@ -157,6 +227,10 @@ export async function onRequestPost({ request, env }) {
     }
     const result = await tcpRequest(cfg.host, cfg.port, cfg.authKey, body.steamId, body.command, body.gamePassword);
     return Response.json(result);
+  }
+
+  if (path === '/api/user/sync') {
+    return handleUserSync(body, env, cfg);
   }
 
   return Response.json({ code: 404, msg: '未知接口' }, { status: 404 });
