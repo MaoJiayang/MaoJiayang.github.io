@@ -193,13 +193,22 @@ var Trade = (function () {
     renderMarket();
     var cmd = marketMode === 'all' ? '!市场 列表' : '!市场 我的订单';
     exec(cmd, null).then(function (d) {
-      var data = Array.isArray(d) ? d : (d && d.bills ? d.bills : []);
-      cacheMarket(data);
+      cacheMarket(d);
       renderMarket();
-    }).catch(function () { cacheMarket([]); renderMarket(); }).finally(function () { marketLoading = false; });
+    }).catch(function () { cacheMarket(null); renderMarket(); }).finally(function () { marketLoading = false; });
   }
 
   var marketDataCache = null;
+
+  /** 解析 !市场 列表 返回的 { acquireOrders, sellOrders } 结构 */
+  function parseOrders(d) {
+    if (!d) return [];
+    if (Array.isArray(d)) return d;
+    var result = [];
+    if (d.acquireOrders) result = result.concat(d.acquireOrders);
+    if (d.sellOrders) result = result.concat(d.sellOrders);
+    return result;
+  }
 
   function cacheMarket(data) {
     marketDataCache = data;
@@ -234,13 +243,13 @@ var Trade = (function () {
       return;
     }
 
-    var filtered = marketDataCache.filter(function (bill) {
+    var orders = parseOrders(marketDataCache);
+    var filtered = orders.filter(function (bill) {
       if (!search) return true;
       return bill.itemName.toLowerCase().indexOf(search) !== -1
         || (bill.ownerDisplayName && bill.ownerDisplayName.toLowerCase().indexOf(search) !== -1);
     });
 
-    // 分组：全部模式按 itemName 聚类，我的模式直接列
     if (filtered.length === 0) {
       container.innerHTML = '<div class="tr-empty">' + (search ? '没有匹配的订单' : '暂无订单') + '</div>';
       return;
@@ -248,7 +257,7 @@ var Trade = (function () {
 
     var html = '';
     filtered.forEach(function (bill) {
-      var isSell = bill.orderType === 'Order';
+      var isSell = bill.orderType === 1;    // 0=收单, 1=卖单
       var tagClass = isSell ? 'sell' : 'buy';
       var tagText = isSell ? '卖' : '收';
       html += '<div class="tr-order-card ' + (isSell ? 'tr-order-sell' : 'tr-order-buy') + '">'
@@ -279,34 +288,27 @@ var Trade = (function () {
   }
 
   function publishOrder(modeForQ) {
-    var searchEl = document.getElementById('tr-market-search');
-    // 取搜索关键词作为物品名，或者弹空值让用户输入
-    // 这里改用 QSheet 的 openCard 方式：让用户从仓库点击，但 MVP 先简化为：弹 QSheet 并允许切换卖单/收单
-    var defaultName = (searchEl && searchEl.value.trim()) || '';
-    UI.openQSheet(modeForQ === 'sell' ? 'sell' : 'buy', defaultName, {
-      stock: 0,
-      extraField: { label: '单价 SC', value: 100, suffix: 'SC', step: 10, max: 999999 },
-      onConfirm: function (m, qty, price) {
-        var name = document.getElementById('qs-item').textContent; // QSheet 里显示的物品名
-        if (!name) { UI.showToast('error', '请输入物品名'); return; }
-        var cmd = modeForQ === 'sell'
-          ? '!市场 发布卖单 ' + name + ' ' + qty + ' ' + price
-          : '!市场 发布收单 ' + name + ' ' + qty + ' ' + price;
-        var label = (modeForQ === 'sell' ? '卖单已发布：' : '收单已发布：') + name;
-        exec(cmd, label).then(function () {
-          Warehouse.markStale();
-          loadMarket();
-        }).catch(function () {});
-      }
+    // 进入仓库选择模式：用户点击物品后弹出 QSheet
+    Warehouse.enterSelectionMode(modeForQ, function (itemName) {
+      Warehouse.exitSelectionMode();
+      UI.switchTab('trade');
+      // 打开 QSheet 填数量和单价
+      UI.openQSheet(modeForQ, itemName, {
+        stock: 0,
+        extraField: { label: '单价 SC', value: 100, suffix: 'SC', step: 10, max: 999999 },
+        onConfirm: function (m, qty, price) {
+          var cmd = modeForQ === 'sell'
+            ? '!市场 发布卖单 ' + itemName + ' ' + qty + ' ' + price
+            : '!市场 发布收单 ' + itemName + ' ' + qty + ' ' + price;
+          var label = (modeForQ === 'sell' ? '卖单已发布：' : '收单已发布：') + itemName;
+          exec(cmd, label).then(function () {
+            Warehouse.markStale();
+            loadMarket();
+          }).catch(function () {});
+        }
+      });
     });
-    // 允许用户在 QSheet 中修改物品名
-    var qsItem = document.getElementById('qs-item');
-    qsItem.contentEditable = 'true';
-    qsItem.style.borderBottom = '1px dashed var(--text-muted)';
-    qsItem.style.outline = 'none';
-    qsItem.style.padding = '2px 4px';
-    qsItem.focus();
-    qsItem.addEventListener('blur', function () { qsItem.contentEditable = 'false'; }, { once: true });
+    UI.switchTab('warehouse');
   }
 
   // ========== Tab 激活 ==========

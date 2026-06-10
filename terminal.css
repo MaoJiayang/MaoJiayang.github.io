@@ -212,6 +212,17 @@ body{
 .wh-num-sfx.num-m{color:var(--gold-200)}
 .wh-num-sfx.num-b{color:var(--color-arcane)}
 .wh-empty{padding:32px;text-align:center;color:var(--text-muted);font-size:13px}
+.wh-select-banner{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:10px 14px;margin-bottom:10px;border-radius:6px;
+  background:var(--jade-600);color:var(--jade-50);font-size:13px;font-weight:600;
+}
+.wh-select-banner button{
+  padding:5px 14px;border-radius:4px;border:1px solid var(--jade-200);
+  background:transparent;color:var(--jade-100);cursor:pointer;font-size:12px;
+  font-family:inherit;white-space:nowrap;
+}
+.wh-select-banner button:hover{background:rgba(255,255,255,.1)}
 
 /* ========== 交易面板 ========== */
 .tr-subtabs{display:flex;gap:0;margin-bottom:14px;border-bottom:1px solid var(--bg-hover)}

@@ -234,7 +234,8 @@ var UI = (function () {
     _extraTapStep = 10;
 
     var depositing = mode === 'deposit';
-    var maxWithdraw = depositing ? Infinity : qsheetStock;
+    // 市场模式（有 extraField）无数量上限；仓库模式按存量限制
+    var maxWithdraw = qsheetExtra ? Infinity : (depositing ? Infinity : qsheetStock);
     if (qsheetQty > maxWithdraw) qsheetQty = maxWithdraw;
     if (qsheetQty < 1) qsheetQty = 1;
     document.getElementById('qs-item').textContent = itemName;

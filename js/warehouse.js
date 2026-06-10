@@ -12,6 +12,10 @@ var Warehouse = (function () {
   var warehouseCompactNum = false;
   var PREFS_KEY = 'wh_prefs';
 
+  // 选择模式（供交易面板复用仓库选物品）
+  var selectionMode = null;         // 'sell' | 'buy' | null
+  var selectionCallback = null;     // function(itemName)
+
   function loadPrefs() {
     try {
       var raw = localStorage.getItem(PREFS_KEY);
@@ -211,6 +215,7 @@ var Warehouse = (function () {
     } else if (totalVisible === 0 && !hasOwnedItems) {
       emptyEl.innerHTML = '暂无物品数据<br><span style="font-size:11px;opacity:.6">点击「刷新」获取库存</span>';
     }
+    renderBanner();
   }
 
   // ========== 分类交互 ==========
@@ -255,9 +260,39 @@ var Warehouse = (function () {
   // ========== 物品操作 ==========
 
   function openCard(card, itemName, stock) {
+    // 选择模式：回调给交易模块，不弹存入/取出
+    if (selectionMode && selectionCallback) {
+      selectionCallback(itemName);
+      return;
+    }
     UI.openQSheet('deposit', itemName, stock, function(cmd, label){
       executeAndRefresh(cmd, label);
     });
+  }
+
+  function enterSelectionMode(mode, callback) {
+    selectionMode = mode;
+    selectionCallback = callback;
+    renderBanner();
+  }
+
+  function exitSelectionMode() {
+    selectionMode = null;
+    selectionCallback = null;
+    renderBanner();
+  }
+
+  function renderBanner() {
+    var el = document.getElementById('wh-select-banner');
+    if (!el) return;
+    if (selectionMode) {
+      el.style.display = '';
+      el.innerHTML = '<span>' + (selectionMode === 'sell' ? '点击物品选择要出售的商品' : '点击物品选择要收购的商品') + '</span>'
+        + '<button onclick="Warehouse.exitSelectionMode()">取消</button>';
+      el.className = 'wh-select-banner show';
+    } else {
+      el.style.display = 'none';
+    }
   }
 
   function saveAll(cat) {
@@ -329,5 +364,7 @@ var Warehouse = (function () {
     onTabActivated: onTabActivated,
     markStale: markStale,
     getIcon: getIcon,
+    enterSelectionMode: enterSelectionMode,
+    exitSelectionMode: exitSelectionMode,
   };
 })();
