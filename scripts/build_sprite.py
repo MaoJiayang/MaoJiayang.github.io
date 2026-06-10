@@ -35,7 +35,11 @@ def main():
     for name, rel_path in sources.items():
         if name.startswith('===') or name.startswith('_') or not rel_path:
             continue
-        src = os.path.join(GAME_ICONS, rel_path)
+        # 绝对路径（模组）直接使用，相对路径拼接 GAME_ICONS
+        if os.path.isabs(rel_path):
+            src = rel_path
+        else:
+            src = os.path.join(GAME_ICONS, rel_path)
         if os.path.exists(src):
             items.append((name, src))
         else:
