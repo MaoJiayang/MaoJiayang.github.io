@@ -140,8 +140,11 @@
 // ========== 伊卡洛斯虚空终端 — 入口 ==========
 SeBridge.init({ bridgeUrl: '' });
 
-// 版本哈希
-document.getElementById('logo-hash').textContent = '38aebcd';
+// 版本哈希从 version.json 自动提取
+fetch('/version.json?t=' + Date.now())
+  .then(function(r){ return r.ok ? r.json() : null; })
+  .then(function(d){ if (d && d.v) document.getElementById('logo-hash').textContent = d.v.slice(0, 7); })
+  .catch(function(){});
 
 // 初始化模块
 UI.init();
