@@ -18,43 +18,7 @@ var Trade = (function () {
   // ========== 通用执行 ==========
 
   function exec(cmd, okLabel) {
-    if (SeBridge.isRateLimited()) {
-      UI.showToast('error', 'API 调用次数已用完');
-      return Promise.reject('RATE_LIMITED');
-    }
-    return SeBridge.executeCommand(cmd).then(function (r) {
-      SeBridge.trackCall();
-      UI.updateGauge();
-      if (r.code === 200) {
-        if (okLabel) UI.showToast('success', r.msg || okLabel);
-        return r.data;
-      }
-      // 服务器要求重复输入确认（匹配所有确认类响应）
-      if (r.msg && /(?:重复输入|再次输入).*(?:确认|指令)/.test(r.msg)) {
-        return new Promise(function (resolve, reject) {
-          UI.showConfirmDialog(r.msg, function () {
-            if (SeBridge.isRateLimited()) {
-              UI.showToast('error', 'API 调用次数已用完');
-              reject('RATE_LIMITED');
-              return;
-            }
-            SeBridge.executeCommand(cmd).then(function (r2) {
-              SeBridge.trackCall();
-              UI.updateGauge();
-              if (r2.code === 200) {
-                if (okLabel) UI.showToast('success', r2.msg || okLabel);
-                resolve(r2.data);
-              } else {
-                UI.showToast('error', r2.msg || '操作失败');
-                reject(r2.msg);
-              }
-            }).catch(reject);
-          });
-        });
-      }
-      UI.showToast('error', r.msg || '指令执行失败');
-      return Promise.reject(r.msg);
-    });
+    return UI.executeWithConfirm(cmd, okLabel);
   }
 
   // ========== 图标 ==========
@@ -387,6 +351,7 @@ var Trade = (function () {
 
   function onTabActivated() {
     if (!SeBridge.hasCredentials()) return;
+    Warehouse.ensureData();  // 静默加载库存，避免商店 QSheet 显示库存为 0
     if (!bankInfo) loadBankInfo();
     if (!shopBuyData) loadShop();
   }

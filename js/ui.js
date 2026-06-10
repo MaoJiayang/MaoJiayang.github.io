@@ -562,6 +562,53 @@ var UI = (function () {
     }
   }
 
+  // ========== 统一指令执行（含二次确认） ==========
+
+  /**
+   * 执行一条指令，自动处理二次确认弹窗。船厂/船坞等后续面板共用此入口。
+   * @param {string} cmd - 完整指令文本
+   * @param {string|null} okLabel - 成功时的 Toast 文案（null 表示静默）
+   * @returns {Promise} resolve(r.data) | reject('RATE_LIMITED' | msg)
+   */
+  function executeWithConfirm(cmd, okLabel) {
+    if (SeBridge.isRateLimited()) {
+      UI.showToast('error', 'API 调用次数已用完');
+      return Promise.reject('RATE_LIMITED');
+    }
+    return SeBridge.executeCommand(cmd).then(function (r) {
+      SeBridge.trackCall();
+      UI.updateGauge();
+      if (r.msg && /(?:重复输入|再次输入).*(?:确认|指令)/.test(r.msg)) {
+        return new Promise(function (resolve, reject) {
+          UI.showConfirmDialog(r.msg, function () {
+            if (SeBridge.isRateLimited()) {
+              UI.showToast('error', 'API 调用次数已用完');
+              reject('RATE_LIMITED');
+              return;
+            }
+            SeBridge.executeCommand(cmd).then(function (r2) {
+              SeBridge.trackCall();
+              UI.updateGauge();
+              if (r2.code === 200) {
+                if (okLabel) UI.showToast('success', r2.msg || okLabel);
+                resolve(r2.data);
+              } else {
+                UI.showToast('error', r2.msg || '操作失败');
+                reject(r2.msg);
+              }
+            }).catch(reject);
+          });
+        });
+      }
+      if (r.code === 200) {
+        if (okLabel) UI.showToast('success', r.msg || okLabel);
+        return r.data;
+      }
+      UI.showToast('error', r.msg || '指令执行失败');
+      return Promise.reject(r.msg);
+    });
+  }
+
   // ========== 初始化 ==========
 
   // ========== 登录流程 ==========
@@ -662,6 +709,7 @@ var UI = (function () {
     confirmDisconnect: confirmDisconnect,
     showConfirmDialog: showConfirmDialog,
     hideConfirmDialog: hideConfirmDialog,
+    executeWithConfirm: executeWithConfirm,
     // Login
     handleLogin: handleLogin,
     showLoginGuide: showLoginGuide,

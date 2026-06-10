@@ -83,6 +83,24 @@ var Warehouse = (function () {
 
   function hasData() { return warehouseData !== null; }
 
+  /** 静默加载仓库数据（不弹 Toast），供交易面板等外部模块使用 */
+  function ensureData() {
+    if (warehouseData || warehouseLoading) return;
+    if (!SeBridge.hasCredentials()) return;
+    warehouseLoading = true;
+    SeBridge.executeCommand('!仓库 列表').then(function(r){
+      warehouseLoading = false;
+      if (r.code === 200 && r.data) {
+        warehouseData = { items: r.data.items || {}, steamId: r.data.steamId };
+        SeBridge.trackCall();
+        UI.updateGauge();
+        render();
+      }
+    }).catch(function(){
+      warehouseLoading = false;
+    });
+  }
+
   // ========== 渲染 ==========
 
   function getItemCategory(name) {
@@ -311,35 +329,13 @@ var Warehouse = (function () {
 
   function executeAndRefresh(cmd, label) {
     if (!SeBridge.hasCredentials()) { UI.showLoginGuide(); return; }
-    if (SeBridge.isRateLimited()) { UI.showToast('error', '调用次数已用完，请稍后再试'); return; }
-    SeBridge.executeCommand(cmd).then(function(r){
-      SeBridge.trackCall();
-      UI.updateGauge();
-      if (r.code === 200) {
-        // 服务器要求重复输入确认（重力环境存入/取出等）
-        if (r.msg && /(?:重复输入|再次输入).*(?:确认|指令)/.test(r.msg)) {
-          UI.showConfirmDialog(r.msg, function () {
-            if (SeBridge.isRateLimited()) { UI.showToast('error', 'API 调用次数已用完'); return; }
-            SeBridge.executeCommand(cmd).then(function (r2) {
-              SeBridge.trackCall();
-              UI.updateGauge();
-              if (r2.code === 200) {
-                UI.showToast('success', r2.msg || '「' + label + '」已完成');
-                setTimeout(load, 1500);
-              } else {
-                UI.showToast('error', r2.msg || '操作失败');
-              }
-            }).catch(function () { UI.showToast('error', '网络错误'); });
-          });
-          return;
-        }
-        UI.showToast('success', r.msg || '「' + label + '」指令已发送');
-        setTimeout(load, 1500);
-      } else {
-        UI.showToast('error', r.msg || '指令执行失败');
-      }
-    }).catch(function(){
-      UI.showToast('error', '网络错误');
+    UI.executeWithConfirm(cmd, null).then(function () {
+      UI.showToast('success', '「' + label + '」已完成');
+      setTimeout(load, 1500);
+    }).catch(function (err) {
+      // executeWithConfirm 已处理限流/确认弹窗/错误 Toast
+      if (err === 'RATE_LIMITED') return;
+      setTimeout(load, 1500);
     });
   }
 
@@ -375,6 +371,7 @@ var Warehouse = (function () {
   return {
     init: init,
     load: load,
+    ensureData: ensureData,
     hasData: hasData,
     render: render,
     toggle: toggle,
