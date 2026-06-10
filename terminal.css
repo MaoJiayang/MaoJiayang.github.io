@@ -456,6 +456,8 @@ body{
 .ha-refresh:hover{color:var(--jade-200)}
 #ha-name-toggle{font-size:11px;padding:2px 8px;border-radius:3px;background:var(--bg-card);color:var(--text-muted);border:1px solid var(--bg-hover);cursor:pointer;font-family:inherit;flex-shrink:0}
 #ha-name-toggle:hover{color:var(--text-primary);background:var(--bg-hover)}
+#ha-sort-btn{font-size:12px;padding:2px 8px;border-radius:3px;background:var(--bg-card);color:var(--text-muted);border:1px solid var(--bg-hover);cursor:pointer;font-family:inherit;position:absolute;right:44px;top:0;line-height:32px}
+#ha-sort-btn:hover{color:var(--text-primary);background:var(--bg-hover)}
 
 /* 船坞列表行 */
 .ha-grid-row{display:flex;align-items:center;padding:8px 10px;background:var(--bg-card);border-radius:4px;margin-bottom:4px;gap:8px}

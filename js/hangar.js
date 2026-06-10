@@ -11,6 +11,7 @@ var Hangar = (function () {
   var worldGrids = null;        // GridVO[]
   var loading = false;
   var showFullName = false;     // 名称显示切换
+  var _worldSortIdx = 0;        // 世界网格排序索引：0=名称↑,1=名称↓,2=PCU↑...7=价值↓
 
   // ========== 通用执行 ==========
 
@@ -254,7 +255,7 @@ var Hangar = (function () {
     }
 
     var html = '';
-    filtered.forEach(function (g) {
+    applyWorldSort(filtered).forEach(function (g) {
       var dn = g.displayName || '未命名';
       var label = showName(dn);
       html += '<div class="ha-world-row">'
@@ -285,6 +286,50 @@ var Hangar = (function () {
 
   // ========== 初始化 ==========
 
+  // ========== 世界网格排序 ==========
+
+  var SORT_KEYS = [
+    { key: 'name', label: '名称' },
+    { key: 'pcu',  label: 'PCU' },
+    { key: 'blocks', label: '方块' },
+    { key: 'price', label: '价值' },
+  ];
+
+  function cycleWorldSort() {
+    _worldSortIdx = (_worldSortIdx + 1) % (SORT_KEYS.length * 2);
+    updateSortBtn();
+    renderWorld();
+  }
+
+  function updateSortBtn() {
+    var btn = document.getElementById('ha-sort-btn');
+    if (!btn) return;
+    var asc = _worldSortIdx % 2 === 0;
+    var entry = SORT_KEYS[Math.floor(_worldSortIdx / 2)];
+    btn.textContent = entry.label + ' ' + (asc ? '↑' : '↓');
+  }
+
+  function applyWorldSort(list) {
+    if (!list || !list.length) return list;
+    var asc = _worldSortIdx % 2 === 0;
+    var key = SORT_KEYS[Math.floor(_worldSortIdx / 2)].key;
+    return list.slice().sort(function (a, b) {
+      var va, vb;
+      switch (key) {
+        case 'name': va = (a.displayName || '').toLowerCase(); vb = (b.displayName || '').toLowerCase(); break;
+        case 'pcu':  va = a.pcu || 0; vb = b.pcu || 0; break;
+        case 'blocks': va = a.blocksCount || 0; vb = b.blocksCount || 0; break;
+        case 'price': va = a.price || 0; vb = b.price || 0; break;
+        default: return 0;
+      }
+      if (va < vb) return asc ? -1 : 1;
+      if (va > vb) return asc ? 1 : -1;
+      return 0;
+    });
+  }
+
+  // ========== 初始化 ==========
+
   function init() {
     initSubTabs();
 
@@ -298,9 +343,15 @@ var Hangar = (function () {
     var worldSearch = document.getElementById('ha-world-search');
     if (worldSearch) worldSearch.addEventListener('input', function () { renderWorld(); });
 
+    // 排序按钮
+    var sortBtn = document.getElementById('ha-sort-btn');
+    if (sortBtn) sortBtn.addEventListener('click', cycleWorldSort);
+
     // 保存按钮
     var saveBtn = document.getElementById('ha-save');
     if (saveBtn) saveBtn.addEventListener('click', saveShip);
+
+    updateSortBtn();
   }
 
   // ========== 工具函数 ==========
