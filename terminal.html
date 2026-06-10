@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>伊卡洛斯虚空终端</title>
+<link rel="stylesheet" href="icons/sprite.css">
 <style>
 /* ========== 须弥风格变量 ========== */
 :root {
@@ -161,11 +162,11 @@ body{
   padding:10px 0 10px 22px;border-bottom:1px solid var(--bg-deep);
   font-size:13px;
 }
-.wh-item-icon{width:28px;height:28px;border-radius:4px;flex-shrink:0;object-fit:contain;background:var(--bg-deep)}
+.wh-item-icon{width:32px;height:32px;border-radius:4px;flex-shrink:0;image-rendering:auto}
 .wh-item-icon-fallback{
-  width:28px;height:28px;border-radius:4px;flex-shrink:0;
+  width:32px;height:32px;border-radius:4px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
-  font-size:14px;font-weight:700;color:var(--jade-50);
+  font-size:16px;font-weight:700;color:var(--jade-50);
 }
 .wh-item-name{flex:1;min-width:0;color:var(--text-primary)}
 .wh-item-amt{font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);white-space:nowrap}
@@ -746,8 +747,8 @@ function renderItemIcon(itemName) {
   var color = catColors[cat] || catColors['其他'];
   var initial = itemName.charAt(0);
   if (iconFile) {
-    return '<img class="wh-item-icon" src="icons/' + iconFile + '.webp" alt="' + escAttr(itemName) + '" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
-      + '<span class="wh-item-icon-fallback" style="display:none;background:' + color + '">' + initial + '</span>';
+    // 用 sprite: si 类提供基础尺寸+背景图, si-{name} 提供定位
+    return '<span class="wh-item-icon si si-' + iconFile + '" title="' + escAttr(itemName) + '"></span>';
   }
   return '<span class="wh-item-icon-fallback" style="background:' + color + '">' + initial + '</span>';
 }
