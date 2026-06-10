@@ -1,62 +1,75 @@
 #!/usr/bin/env python
 """
-将 icons/*.webp 合并为 CSS Sprite 大图 + 生成定位 CSS。
+一步生成 CSS Sprite：从 SE 游戏 DDS 图标 → sprite.webp + sprite.css
 
-输出: icons/sprite.webp + icons/sprite.css
+依赖: Pillow (pip install Pillow)
+配置: icon_sources.json（中文名→游戏文件相对路径）
+输入: SE 游戏图标目录 (Content/Textures/GUI/Icons/)
+输出: icons/sprite.webp + icons/sprite.css + icons/mapping.json
+
 用法: python scripts/build_sprite.py
 """
 
 import os, json, math
 from PIL import Image
 
-ICON_DIR = r'd:\githubPage\icons'
-CELL = 32        # 每个图标格子（显示尺寸）
+# ---- 配置 ----
+GAME_ICONS = r"D:\SteamLibrary\steamapps\common\SpaceEngineers\Content\Textures\GUI\Icons"
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJ_DIR = os.path.dirname(SCRIPT_DIR)
+ICON_DIR = os.path.join(PROJ_DIR, 'icons')
+MAP_FILE = os.path.join(SCRIPT_DIR, 'icon_sources.json')
+
+CELL = 32        # 每个图标格子像素
 COLS = 16        # 每行列数
-QUALITY = 85
+QUALITY = 85     # WebP 质量
 
 def main():
-    mapping_file = os.path.join(ICON_DIR, 'mapping.json')
-    with open(mapping_file, 'r', encoding='utf-8') as f:
-        name_map = json.load(f)
+    # 1. 加载映射
+    with open(MAP_FILE, 'r', encoding='utf-8') as f:
+        sources = json.load(f)
 
-    # 收集唯一图标文件名（已排序，保证一致性）
-    unique = sorted(set(name_map.values()))
-    n = len(unique)
+    # 2. 收集图标列表（跳过注释行）
+    items = []  # [(中文名, DDS路径), ...]
+    for name, rel_path in sources.items():
+        if name.startswith('===') or name.startswith('_') or not rel_path:
+            continue
+        src = os.path.join(GAME_ICONS, rel_path)
+        if os.path.exists(src):
+            items.append((name, src))
+        else:
+            print(f"  MISS: {name} → {rel_path}")
+
+    unique_srcs = sorted(set(src for _, src in items))
+    n = len(unique_srcs)
     rows = math.ceil(n / COLS)
 
-    # 创建 sprite 画布
+    # 3. 构建 DDS路径 → (col, row) 索引
+    src_to_pos = {}
+    for i, src in enumerate(unique_srcs):
+        src_to_pos[src] = (i % COLS, i // COLS)
+
+    # 4. 拼合 sprite
     canvas = Image.new('RGBA', (COLS * CELL, rows * CELL), (0, 0, 0, 0))
 
-    # 图标 → 网格位置的映射
-    positions = {}  # icon_name → (col, row)
-
-    for i, icon_name in enumerate(unique):
-        col = i % COLS
-        row = i // COLS
-        positions[icon_name] = (col, row)
-
-        webp_path = os.path.join(ICON_DIR, icon_name + '.webp')
-        if not os.path.exists(webp_path):
-            print(f"  MISS: {icon_name}.webp")
-            continue
-
-        img = Image.open(webp_path).convert('RGBA')
-        # 缩放到 CELLxCELL 以内，居中放置
+    for src, (col, row) in src_to_pos.items():
+        img = Image.open(src).convert('RGBA')
         img.thumbnail((CELL, CELL), Image.LANCZOS)
         x = col * CELL + (CELL - img.width) // 2
         y = row * CELL + (CELL - img.height) // 2
         canvas.paste(img, (x, y), img)
 
+    os.makedirs(ICON_DIR, exist_ok=True)
+
     # 保存 sprite
     sprite_path = os.path.join(ICON_DIR, 'sprite.webp')
     canvas.save(sprite_path, 'WEBP', quality=QUALITY)
     size_kb = os.path.getsize(sprite_path) / 1024
-    print(f"Sprite: {sprite_path} ({canvas.width}x{canvas.height}, {size_kb:.0f}KB)")
+    print(f"Sprite: {canvas.width}x{canvas.height}, {size_kb:.0f}KB")
 
-    # 生成 CSS
-    css_lines = [
-        '/* 虚空终端 — 物品图标 CSS Sprite */',
-        '/* 自动生成，请勿手动编辑 */',
+    # 5. 生成 CSS
+    css = [
+        '/* 虚空终端 — 物品图标 CSS Sprite（自动生成） */',
         '',
         '.si {',
         f'  width: {CELL}px; height: {CELL}px;',
@@ -68,21 +81,28 @@ def main():
         '}',
         '',
     ]
-
-    for icon_name in sorted(positions.keys()):
-        col, row = positions[icon_name]
-        css_lines.append(f'.si-{icon_name} {{ background-position: -{col * CELL}px -{row * CELL}px; }}')
-
-    # 生成映射对应的 CSS class（中文名 → 图标 class）
-    css_lines.append('')
-    css_lines.append('/* 中文名 → 图标定位映射 */')
+    for src, (col, row) in src_to_pos.items():
+        # 用 DDS 文件名（不含扩展名）作为 CSS 类名
+        class_name = os.path.splitext(os.path.basename(src))[0]
+        css.append(f'.si-{class_name} {{ background-position: -{col * CELL}px -{row * CELL}px; }}')
 
     css_path = os.path.join(ICON_DIR, 'sprite.css')
     with open(css_path, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(css_lines) + '\n')
+        f.write('\n'.join(css) + '\n')
 
-    print(f"CSS: {css_path} ({len(unique)} 个图标类)")
-    print(f"请求优化: {len(unique)} → 1")
+    # 6. 生成中文名→CSS类名 映射
+    mapping = {}
+    for name, src in items:
+        icon_name = os.path.splitext(os.path.basename(src))[0]
+        mapping[name] = icon_name
+
+    map_path = os.path.join(ICON_DIR, 'mapping.json')
+    with open(map_path, 'w', encoding='utf-8') as f:
+        json.dump(mapping, f, ensure_ascii=False, indent=2)
+
+    print(f"CSS: {css_path} ({n} 个图标类)")
+    print(f"映射: {len(mapping)} 条")
+    print(f"请求: {n} 个文件 → 1 个 sprite")
 
 if __name__ == '__main__':
     main()
