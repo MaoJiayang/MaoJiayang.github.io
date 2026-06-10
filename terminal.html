@@ -161,6 +161,12 @@ body{
   padding:10px 0 10px 22px;border-bottom:1px solid var(--bg-deep);
   font-size:13px;
 }
+.wh-item-icon{width:28px;height:28px;border-radius:4px;flex-shrink:0;object-fit:contain;background:var(--bg-deep)}
+.wh-item-icon-fallback{
+  width:28px;height:28px;border-radius:4px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:700;color:var(--jade-50);
+}
 .wh-item-name{flex:1;min-width:0;color:var(--text-primary)}
 .wh-item-amt{font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);white-space:nowrap}
 .wh-item-acts{display:flex;gap:4px;flex-shrink:0}
@@ -394,6 +400,23 @@ body{
 
 <script src="se-bridge.js"></script>
 <script>
+// ========== 图标映射 ==========
+var iconMap = {};    // ChineseName → iconFilename
+var catColors = {    // 分类色（用于无图标回退）
+  '矿石': '#7A4D00',   // 暗金
+  '矿锭': '#C48A0A',   // 金
+  '零件': '#1B6B4A',   // 翠绿
+  '弹药': '#1A3E7A',   // 深蓝
+  '工具': '#2E6BC4',   // 蓝
+  '消耗品': '#B07AE0', // 紫
+  '其他': '#253748'     // 灰
+};
+
+fetch('icons/mapping.json')
+  .then(function(r){ return r.json() })
+  .then(function(m){ iconMap = m; })
+  .catch(function(){ console.warn('图标映射加载失败'); });
+
 // ========== 物品分类加载 ==========
 var itemCategories = {};
 fetch('items_catalog.json')
@@ -619,7 +642,9 @@ function renderWarehouse() {
     html += '<div class="wh-cat-body open">';
     groups[cat].forEach(function(item){
       var amt = typeof item.amount === 'number' ? item.amount.toLocaleString(undefined, {maximumFractionDigits:1}) : item.amount;
+      var iconHtml = renderItemIcon(item.name);
       html += '<div class="wh-item">'
+        + iconHtml
         + '<span class="wh-item-name">' + escHtml(item.name) + '</span>'
         + '<span class="wh-item-amt">' + escHtml(String(amt)) + '</span>'
         + '<span class="wh-item-acts">'
@@ -715,6 +740,18 @@ function hideToast() {
 }
 
 // ========== 工具函数 ==========
+function renderItemIcon(itemName) {
+  var iconFile = iconMap[itemName];
+  var cat = getItemCategory(itemName);
+  var color = catColors[cat] || catColors['其他'];
+  var initial = itemName.charAt(0);
+  if (iconFile) {
+    return '<img class="wh-item-icon" src="icons/' + iconFile + '.webp" alt="' + escAttr(itemName) + '" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
+      + '<span class="wh-item-icon-fallback" style="display:none;background:' + color + '">' + initial + '</span>';
+  }
+  return '<span class="wh-item-icon-fallback" style="background:' + color + '">' + initial + '</span>';
+}
+
 function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function escAttr(s) { return String(s).replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
 
