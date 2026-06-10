@@ -184,7 +184,7 @@ var Trade = (function () {
         var label = shopMode === 'buy' ? '已购买 ' + name : '已出售 ' + name;
         exec(cmd, label).then(function () {
           loadBankInfo();
-          Warehouse.markStale();
+          Warehouse.markStale(); Warehouse.ensureData();
         }).catch(function () {});
       }
     });
@@ -247,7 +247,7 @@ var Trade = (function () {
           : '!市场 自动出售 ' + name + ' ' + qty + ' ' + p;
         var label = (isSell ? '自动购买 ' : '自动出售 ') + name;
         exec(cmd, label).then(function () {
-          Warehouse.markStale();
+          Warehouse.markStale(); Warehouse.ensureData();
           loadMarket();
         }).catch(function () {});
       }
@@ -338,7 +338,7 @@ var Trade = (function () {
             : '!市场 发布收单 ' + itemName + ' ' + qty + ' ' + price;
           var label = (modeForQ === 'sell' ? '卖单已发布：' : '收单已发布：') + itemName;
           exec(cmd, label).then(function () {
-            Warehouse.markStale();
+            Warehouse.markStale(); Warehouse.ensureData();
             loadMarket();
           }).catch(function () {});
         }
