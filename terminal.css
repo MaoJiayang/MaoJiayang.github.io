@@ -234,16 +234,15 @@ body{
 .tr-subtab.active{color:var(--jade-200);border-bottom-color:var(--jade-200)}
 .tr-subtab:hover{color:var(--text-primary)}
 .tr-section{position:relative}
-.tr-balance{
-  font-size:13px;font-family:var(--font-mono);color:var(--text-secondary);
-  padding:8px 12px;background:var(--bg-card);border-radius:4px;margin-bottom:12px;
-  display:flex;align-items:center;gap:10px;
+.tr-info-row{display:flex;gap:8px;margin-bottom:12px}
+.tr-info-box{
+  flex:1;padding:8px 10px;background:var(--bg-card);border:1px solid var(--bg-hover);
+  border-radius:6px;text-align:center;display:flex;flex-direction:column;gap:2px;
 }
-.tr-balance strong{color:var(--jade-200)}
-.tr-vip{
-  font-size:10px;padding:2px 6px;border-radius:3px;
-  background:var(--gold-400);color:var(--bg-void);font-family:var(--font-sans);
-}
+.tr-info-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em}
+.tr-info-val{font-size:15px;font-family:var(--font-mono);font-weight:600;color:var(--text-primary)}
+.tr-info-box.good .tr-info-val{color:var(--jade-200)}
+.tr-info-box.warn .tr-info-val{color:var(--color-warn)}
 .tr-modebar{display:flex;gap:0;margin-bottom:10px;border-radius:4px;overflow:hidden;border:1px solid var(--bg-hover)}
 .tr-shop-mode,.tr-market-mode{
   flex:1;padding:7px 0;font-size:12px;font-weight:600;text-align:center;

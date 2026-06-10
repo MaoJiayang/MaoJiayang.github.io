@@ -26,7 +26,7 @@ var Trade = (function () {
       SeBridge.trackCall();
       UI.updateGauge();
       if (r.code === 200) {
-        UI.showToast('success', r.msg || okLabel || '操作成功');
+        if (okLabel) UI.showToast('success', r.msg || okLabel);
         return r.data;
       }
       // 服务器要求重复输入确认（匹配所有确认类响应）
@@ -42,7 +42,7 @@ var Trade = (function () {
               SeBridge.trackCall();
               UI.updateGauge();
               if (r2.code === 200) {
-                UI.showToast('success', r2.msg || okLabel || '操作成功');
+                if (okLabel) UI.showToast('success', r2.msg || okLabel);
                 resolve(r2.data);
               } else {
                 UI.showToast('error', r2.msg || '操作失败');
@@ -93,13 +93,21 @@ var Trade = (function () {
 
   // ========== 服营商店 ==========
 
+  function loadBankInfo() {
+    return exec('!银行 余额', null).then(function (d) {
+      bankInfo = d;
+      renderInfo();
+      return d;
+    }).catch(function () {});
+  }
+
   function loadShop() {
     if (shopLoading) return;
     shopLoading = true;
     renderShop();
 
     // 并行加载余额 + 买入列表（默认模式）
-    var p1 = exec('!银行 余额', null).then(function (d) { bankInfo = d; renderShop(); }).catch(function () {});
+    var p1 = loadBankInfo().then(function () { renderShop(); });
     var p2 = exec('!采购 列表', null).then(function (d) {
       shopBuyData = Array.isArray(d) ? d : (d && d.items ? d.items : []);
       renderShop();
@@ -139,24 +147,24 @@ var Trade = (function () {
     document.getElementById('tr-shop-search').addEventListener('input', function () { renderShop(); });
   }
 
+  function renderInfo() {
+    var row = document.getElementById('trade-info');
+    if (!row) return;
+    if (bankInfo) {
+      row.style.display = '';
+      document.getElementById('ti-balance').querySelector('.tr-info-val').textContent = formatNum(bankInfo.balance) + ' SC';
+      document.getElementById('ti-overdraft').querySelector('.tr-info-val').textContent = bankInfo.overdraftLimit > 0 ? formatNum(bankInfo.overdraftLimit) + ' SC' : '无';
+      document.getElementById('ti-vip').querySelector('.tr-info-val').textContent = bankInfo.vipDays > 0 ? bankInfo.vipDays + ' 天' : '—';
+    } else {
+      row.style.display = 'none';
+    }
+  }
+
   function renderShop() {
     var container = document.getElementById('trade-shop-list');
     if (!container) return;
 
-    // 余额行
-    var balEl = document.getElementById('trade-balance');
-    if (balEl) {
-      if (bankInfo) {
-        balEl.innerHTML = '💰 余额 <strong>' + formatNum(bankInfo.balance) + ' SC</strong>';
-        if (bankInfo.vipDays > 0) balEl.innerHTML += ' <span class="tr-vip">精英 ' + bankInfo.vipDays + ' 天</span>';
-        balEl.style.display = '';
-      } else if (shopLoading) {
-        balEl.innerHTML = '💰 余额 <span style="opacity:.5">加载中…</span>';
-        balEl.style.display = '';
-      } else {
-        balEl.style.display = 'none';
-      }
-    }
+    renderInfo();
 
     var data = shopMode === 'buy' ? shopBuyData : shopSellData;
     var search = (document.getElementById('tr-shop-search').value || '').toLowerCase().trim();
@@ -202,7 +210,7 @@ var Trade = (function () {
           : '!收购 提交 ' + name + ' ' + qty;
         var label = shopMode === 'buy' ? '已购买 ' + name : '已出售 ' + name;
         exec(cmd, label).then(function () {
-          exec('!银行 余额', null).then(function (d) { bankInfo = d; renderShop(); }).catch(function () {});
+          loadBankInfo();
           Warehouse.markStale();
         }).catch(function () {});
       }
@@ -370,9 +378,8 @@ var Trade = (function () {
 
   function onTabActivated() {
     if (!SeBridge.hasCredentials()) return;
-    if (!bankInfo) {
-      loadShop();
-    }
+    if (!bankInfo) loadBankInfo();
+    if (!shopBuyData) loadShop();
   }
 
   // ========== 初始化 ==========

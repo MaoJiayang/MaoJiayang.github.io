@@ -77,6 +77,12 @@
 
   <!-- 交易面板 -->
   <div class="tab-panel" id="panel-trade">
+    <div class="tr-info-row" id="trade-info" style="display:none">
+      <div class="tr-info-box" id="ti-balance"><span class="tr-info-label">余额</span><span class="tr-info-val">—</span></div>
+      <div class="tr-info-box" id="ti-overdraft"><span class="tr-info-label">透支</span><span class="tr-info-val">—</span></div>
+      <div class="tr-info-box" id="ti-vip"><span class="tr-info-label">精英</span><span class="tr-info-val">—</span></div>
+    </div>
+
     <div class="tr-subtabs">
       <button class="tr-subtab active" data-trade-tab="shop">服营商店</button>
       <button class="tr-subtab" data-trade-tab="market">玩家市场</button>
@@ -85,7 +91,6 @@
 
     <!-- 服营商店 -->
     <div class="tr-section" id="trade-shop">
-      <div class="tr-balance" id="trade-balance" style="display:none"></div>
       <div class="tr-modebar">
         <button class="tr-shop-mode active" data-shop-mode="buy">买入</button>
         <button class="tr-shop-mode" data-shop-mode="sell">卖出</button>
