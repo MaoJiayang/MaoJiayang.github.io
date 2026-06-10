@@ -152,9 +152,18 @@ var Trade = (function () {
     if (!row) return;
     if (bankInfo) {
       row.style.display = '';
-      document.getElementById('ti-balance').querySelector('.tr-info-val').textContent = formatNum(bankInfo.balance) + ' SC';
-      document.getElementById('ti-overdraft').querySelector('.tr-info-val').textContent = bankInfo.overdraftLimit > 0 ? formatNum(bankInfo.overdraftLimit) + ' SC' : '无';
-      document.getElementById('ti-vip').querySelector('.tr-info-val').textContent = bankInfo.vipDays > 0 ? bankInfo.vipDays + ' 天' : '—';
+
+      var balBox = document.getElementById('ti-balance');
+      balBox.querySelector('.tr-info-val').innerHTML = formatNum(bankInfo.balance) + ' SC';
+      balBox.className = 'tr-info-box' + (bankInfo.balance > 0 ? ' good' : '');
+
+      var odBox = document.getElementById('ti-overdraft');
+      odBox.querySelector('.tr-info-val').innerHTML = bankInfo.overdraftLimit > 0 ? formatNum(bankInfo.overdraftLimit) + ' SC' : '无';
+      odBox.className = 'tr-info-box' + (bankInfo.overdraftLimit > 0 ? ' good' : '');
+
+      var vipBox = document.getElementById('ti-vip');
+      vipBox.querySelector('.tr-info-val').innerHTML = bankInfo.vipDays > 0 ? bankInfo.vipDays + ' 天' : '—';
+      vipBox.className = 'tr-info-box' + (bankInfo.vipDays > 0 ? ' good' : '');
     } else {
       row.style.display = 'none';
     }
