@@ -324,7 +324,7 @@ var Warehouse = (function () {
               SeBridge.trackCall();
               UI.updateGauge();
               if (r2.code === 200) {
-                UI.showToast('success', '「' + label + '」已完成');
+                UI.showToast('success', r2.msg || '「' + label + '」已完成');
                 setTimeout(load, 1500);
               } else {
                 UI.showToast('error', r2.msg || '操作失败');
@@ -333,7 +333,7 @@ var Warehouse = (function () {
           });
           return;
         }
-        UI.showToast('success', '「' + label + '」指令已发送');
+        UI.showToast('success', r.msg || '「' + label + '」指令已发送');
         setTimeout(load, 1500);
       } else {
         UI.showToast('error', r.msg || '指令执行失败');

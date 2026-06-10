@@ -26,7 +26,7 @@ var Trade = (function () {
       SeBridge.trackCall();
       UI.updateGauge();
       if (r.code === 200) {
-        if (okLabel) UI.showToast('success', okLabel);
+        UI.showToast('success', r.msg || okLabel || '操作成功');
         return r.data;
       }
       // 服务器要求重复输入确认（匹配所有确认类响应）
@@ -42,7 +42,7 @@ var Trade = (function () {
               SeBridge.trackCall();
               UI.updateGauge();
               if (r2.code === 200) {
-                if (okLabel) UI.showToast('success', okLabel);
+                UI.showToast('success', r2.msg || okLabel || '操作成功');
                 resolve(r2.data);
               } else {
                 UI.showToast('error', r2.msg || '操作失败');
