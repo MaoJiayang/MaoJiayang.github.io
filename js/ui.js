@@ -476,7 +476,7 @@ var UI = (function () {
       tapState.count = 0;
     }
     tapState.last = now;
-    var step = getMagStep(currentVal) * Math.pow(2, Math.min(tapState.count, 10));
+    var step = getMagStep(currentVal) * (tapState.count + 1);
     clearTimeout(tapState.timer);
     tapState.timer = setTimeout(function(){ tapState.count = 0; tapState.last = 0; }, 600);
     return step;
