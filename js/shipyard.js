@@ -127,7 +127,7 @@ var Shipyard = (function () {
 
       html += '<div class="sy-line-card' + (busy ? '' : ' sy-idle') + '">'
         + '<div class="sy-line-header">'
-        + '<span class="sy-line-title">流水线 ' + (al.index || '?') + ' · Lv.' + (al.level || 1) + '</span>'
+        + '<span class="sy-line-title">流水线 ' + (al.index != null ? al.index : '?') + '</span>'
         + '<span class="sy-line-status ' + statusCls + '">' + statusLabel + '</span>'
         + '</div>';
 

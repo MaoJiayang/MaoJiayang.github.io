@@ -452,8 +452,8 @@ body{
 .ha-subtab.active{color:var(--jade-200);border-bottom-color:var(--jade-200)}
 .ha-subtab:hover{color:var(--text-primary)}
 .ha-section{position:relative}
-.ha-refresh{cursor:pointer;font-size:20px;color:var(--text-muted);position:absolute;top:0;right:0;line-height:36px;width:36px;text-align:center}
-.ha-refresh:hover{color:var(--jade-200)}
+.ha-refresh,.sy-refresh{cursor:pointer;font-size:20px;color:var(--text-muted);position:absolute;top:0;right:0;line-height:36px;width:36px;text-align:center}
+.ha-refresh:hover,.sy-refresh:hover{color:var(--jade-200)}
 #ha-name-toggle{font-size:11px;padding:2px 8px;border-radius:3px;background:var(--bg-card);color:var(--text-muted);border:1px solid var(--bg-hover);cursor:pointer;font-family:inherit;flex-shrink:0}
 #ha-name-toggle:hover{color:var(--text-primary);background:var(--bg-hover)}
 #ha-sort-btn{font-size:12px;padding:2px 8px;border-radius:3px;background:var(--bg-card);color:var(--text-muted);border:1px solid var(--bg-hover);cursor:pointer;font-family:inherit;position:absolute;right:44px;top:0;line-height:32px}
