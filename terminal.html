@@ -167,7 +167,7 @@ body{
 .wh-cat-h .cat-spacer{flex:1}
 .wh-cat-count{font-size:11px;color:var(--text-muted);margin-left:4px}
 .wh-cat-save{
-  font-size:11px;padding:4px 10px;min-height:32px;min-width:44px;
+  font-size:12px;padding:5px 12px;min-height:34px;min-width:48px;
   border-radius:4px;border:1px solid var(--bg-hover);
   background:var(--bg-card);color:var(--jade-200);cursor:pointer;
   font-family:inherit;white-space:nowrap;transition:all .15s;
@@ -176,28 +176,27 @@ body{
 .wh-cat-save:hover{background:var(--bg-hover);border-color:var(--jade-400)}
 .wh-cat-body{display:none}
 .wh-cat-body.open{display:block}
-.wh-item{
-  display:flex;align-items:center;gap:8px;
-  padding:10px 0 10px 22px;border-bottom:1px solid var(--bg-deep);
-  font-size:13px;
+/* 网格布局 */
+.wh-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;padding:4px 0}
+@media(min-width:480px){.wh-grid{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:768px){.wh-grid{grid-template-columns:repeat(4,1fr)}}
+.wh-card{
+  background:var(--bg-card);border:1px solid var(--bg-hover);border-radius:6px;
+  padding:10px 8px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;
+  cursor:pointer;transition:all .15s;user-select:none;
+  -webkit-tap-highlight-color:transparent;
 }
-.wh-item-icon{width:32px;height:32px;border-radius:4px;flex-shrink:0;image-rendering:auto}
-.wh-item-icon-fallback{
-  width:32px;height:32px;border-radius:4px;flex-shrink:0;
+.wh-card:hover,.wh-card:active{background:var(--bg-hover);border-color:var(--jade-400)}
+.wh-card.zero{opacity:.45}
+.wh-card.zero .wh-card-amt{color:var(--text-disabled)}
+.wh-card-icon{width:36px;height:36px;border-radius:4px;flex-shrink:0}
+.wh-card-icon-fb{
+  width:36px;height:36px;border-radius:4px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
   font-size:16px;font-weight:700;color:var(--jade-50);
 }
-.wh-item-name{flex:1;min-width:0;color:var(--text-primary)}
-.wh-item-amt{font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);white-space:nowrap}
-.wh-item-acts{display:flex;gap:4px;flex-shrink:0}
-.wh-item-acts button{
-  font-size:11px;padding:3px 8px;border-radius:3px;border:1px solid var(--bg-hover);
-  background:var(--bg-card);color:var(--text-secondary);cursor:pointer;
-  font-family:inherit;transition:all .15s;
-}
-.wh-item-acts button:hover{background:var(--bg-hover);color:var(--text-primary)}
-.wh-item-acts .btn-deposit:hover{border-color:var(--jade-400);color:var(--jade-200)}
-.wh-item-acts .btn-withdraw:hover{border-color:var(--color-warn);color:var(--color-warn)}
+.wh-card-name{font-size:11px;color:var(--text-secondary);text-align:center;line-height:1.3}
+.wh-card-amt{font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--text-primary)}
 .wh-quick{
   display:flex;flex-wrap:wrap;gap:6px;margin-top:16px;
   padding-top:14px;border-top:1px solid var(--bg-hover);
@@ -224,32 +223,43 @@ body{
   transform:translateY(100%);transition:transform .25s cubic-bezier(.2,.8,.2,1);
 }
 #qsheet-overlay.show #qsheet{transform:translateY(0)}
-#qsheet .qs-title{font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:14px}
-#qsheet .qs-item-name{font-size:13px;color:var(--jade-200);margin-bottom:12px}
-#qsheet .qs-row{display:flex;align-items:center;gap:10px;margin-bottom:16px}
-#qsheet .qs-row input{
-  flex:1;padding:10px 12px;font-size:16px;text-align:center;
-  border:1px solid var(--bg-hover);border-radius:4px;
-  background:var(--bg-deep);color:var(--text-primary);
-  font-family:var(--font-mono);outline:none;
-}
-#qsheet .qs-row input:focus{border-color:var(--jade-400)}
-#qsheet .qs-row button{
-  width:40px;height:40px;font-size:20px;border-radius:50%;
+#qsheet .qs-hd{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+#qsheet .qs-hd .qs-title{font-size:16px;font-weight:600;color:var(--text-primary);flex:1}
+#qsheet .qs-hd .qs-amt-sm{font-size:13px;color:var(--text-muted);font-family:var(--font-mono)}
+#qsheet .qs-hd .qs-switch{
+  font-size:11px;padding:3px 8px;border-radius:12px;
   border:1px solid var(--bg-hover);background:var(--bg-card);
-  color:var(--text-primary);cursor:pointer;font-family:inherit;
-  transition:all .15s;display:flex;align-items:center;justify-content:center;
+  color:var(--text-secondary);cursor:pointer;font-family:inherit;
+  transition:all .15s;
 }
-#qsheet .qs-row button:hover{background:var(--bg-hover)}
-#qsheet .qs-actions{display:flex;gap:8px}
+#qsheet .qs-hd .qs-switch:hover{color:var(--jade-200);border-color:var(--jade-400)}
+#qsheet .qs-display{text-align:center;margin-bottom:6px}
+#qsheet .qs-display .qs-num{
+  font-family:var(--font-mono);font-size:40px;font-weight:700;
+  color:var(--jade-200);line-height:1.2;
+}
+#qsheet .qs-display .qs-name{font-size:13px;color:var(--text-secondary)}
+#qsheet .qs-btns{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:20px}
+#qsheet .qs-btns button{
+  width:48px;height:48px;border-radius:10px;border:1px solid var(--bg-hover);
+  background:var(--bg-card);color:var(--text-primary);cursor:pointer;
+  font-family:var(--font-mono);font-size:17px;font-weight:600;
+  transition:all .12s;display:flex;align-items:center;justify-content:center;
+  -webkit-tap-highlight-color:transparent;
+}
+#qsheet .qs-btns button:active{background:var(--bg-hover);transform:scale(.94)}
+#qsheet .qs-btns .qs-sub{color:var(--color-warn)}
+#qsheet .qs-btns .qs-add{color:var(--jade-200)}
+#qsheet .qs-btns .qs-fast{font-size:20px;letter-spacing:-0.04em}
+#qsheet .qs-actions{display:flex;gap:10px}
 #qsheet .qs-actions button{
-  flex:1;padding:10px;font-size:14px;font-weight:600;
-  border-radius:4px;border:none;cursor:pointer;font-family:inherit;
+  flex:1;padding:12px;font-size:14px;font-weight:600;
+  border-radius:6px;border:none;cursor:pointer;font-family:inherit;
 }
 #qsheet .qs-confirm{background:var(--jade-200);color:var(--bg-void)}
-#qsheet .qs-confirm:hover{background:var(--jade-400)}
+#qsheet .qs-confirm:active{background:var(--jade-400)}
 #qsheet .qs-cancel{background:var(--bg-card);color:var(--text-secondary);border:1px solid var(--bg-hover)!important}
-#qsheet .qs-cancel:hover{background:var(--bg-hover)}
+#qsheet .qs-cancel:active{background:var(--bg-hover)}
 
 /* ========== Toast ========== */
 #toast{
@@ -422,14 +432,20 @@ body{
 <!-- 数量输入 Bottom Sheet -->
 <div id="qsheet-overlay">
   <div id="qsheet">
-    <div class="qs-title" id="qs-title">存入物品</div>
-    <div class="qs-item-name" id="qs-item"></div>
-    <div class="qs-row">
-      <button onclick="adjustQty(-10)">−10</button>
-      <button onclick="adjustQty(-1)">−</button>
-      <input id="qs-qty" type="number" value="100" min="1" onchange="clampQty()">
-      <button onclick="adjustQty(1)">+</button>
-      <button onclick="adjustQty(10)">+10</button>
+    <div class="qs-hd">
+      <span class="qs-title" id="qs-title">存入</span>
+      <button class="qs-switch" id="qs-switch" onclick="toggleQSheetMode()">切换取/存</button>
+      <span class="qs-amt-sm" id="qs-stock"></span>
+    </div>
+    <div class="qs-display">
+      <div class="qs-num" id="qs-num">100</div>
+      <div class="qs-name" id="qs-item"></div>
+    </div>
+    <div class="qs-btns">
+      <button class="qs-sub qs-fast" id="qs-minus-fast" title="快速减少">−−</button>
+      <button class="qs-sub" id="qs-minus" title="减少">−</button>
+      <button class="qs-add" id="qs-plus" title="增加">+</button>
+      <button class="qs-add qs-fast" id="qs-plus-fast" title="快速增加">++</button>
     </div>
     <div class="qs-actions">
       <button class="qs-cancel" onclick="closeQSheet()">取消</button>
@@ -491,8 +507,14 @@ function getItemCategory(name) {
 var currentTab = 'warehouse';
 var warehouseData = null;       // { items: { name: amount }, steamId }
 var warehouseLoading = false;
+var warehouseOpenCat = null;    // 记住展开的分类，null=展开第一个
 var qsheetMode = 'deposit';     // 'deposit' | 'withdraw'
 var qsheetItem = '';
+var qsheetStock = 0;           // 仓库中该物品的当前数量
+var qsheetQty = 100;
+var _tapCount = 0;
+var _tapTimer = null;
+var _tapStep = 10;             // ++ 当前步长
 var toastTimer = null;
 
 // ========== 初始化 ==========
@@ -681,98 +703,181 @@ function renderWarehouse() {
   var emptyEl = document.getElementById('wh-empty');
   var search = (document.getElementById('wh-search').value || '').toLowerCase().trim();
 
-  if (!warehouseData || !warehouseData.items || Object.keys(warehouseData.items).length === 0) {
-    container.innerHTML = '';
-    emptyEl.style.display = 'block';
-    return;
-  }
-
-  // 按分类分组
+  // 合并仓库数据与物品目录 → 展示所有可操作物品
+  var whItems = (warehouseData && warehouseData.items) ? warehouseData.items : {};
+  var catOrder = ['矿石','矿锭','零件','弹药','工具','消耗品','其他'];
   var groups = {};
-  Object.keys(warehouseData.items).forEach(function(name){
-    if (search && name.toLowerCase().indexOf(search) === -1) return;
-    var cat = getItemCategory(name);
-    if (!groups[cat]) groups[cat] = [];
-    groups[cat].push({ name: name, amount: warehouseData.items[name] });
+
+  catOrder.forEach(function(cat){
+    var catalog = itemCategories[cat];
+    if (!catalog || catalog.length === 0) return;
+    var items = [];
+    catalog.forEach(function(name){
+      if (search && name.toLowerCase().indexOf(search) === -1) return;
+      var amount = whItems.hasOwnProperty(name) ? whItems[name] : 0;
+      items.push({ name: name, amount: amount });
+    });
+    if (items.length === 0) return;
+    items.sort(function(a,b){ return a.name.localeCompare(b.name); });
+    groups[cat] = items;
   });
 
-  // 排序分类：矿石 > 矿锭 > 零件 > 弹药 > 工具 > 消耗品 > 其他
-  var catOrder = ['矿石','矿锭','零件','弹药','工具','消耗品','其他'];
+  // 如仓库中有物品未被目录覆盖，归入「其他」
+  var covered = {};
+  catOrder.forEach(function(cat){ (groups[cat]||[]).forEach(function(i){ covered[i.name] = true; }); });
+  var uncat = [];
+  Object.keys(whItems).forEach(function(name){
+    if (!covered[name] && (!search || name.toLowerCase().indexOf(search) !== -1)) {
+      uncat.push({ name: name, amount: whItems[name] });
+    }
+  });
+  if (uncat.length > 0) {
+    uncat.sort(function(a,b){ return a.name.localeCompare(b.name); });
+    if (!groups['其他']) groups['其他'] = [];
+    groups['其他'] = groups['其他'].concat(uncat);
+  }
 
+  var totalVisible = 0;
+  var hasAny = Object.keys(whItems).length > 0;
   var html = '';
+  var openCat = warehouseOpenCat || (catOrder.find(function(c){ return groups[c] && groups[c].length > 0; }) || catOrder[0]);
+
   catOrder.forEach(function(cat){
-    if (!groups[cat] || groups[cat].length === 0) return;
-    groups[cat].sort(function(a,b){ return a.name.localeCompare(b.name); });
+    var items = groups[cat];
+    if (!items || items.length === 0) return;
+    totalVisible += items.length;
+    var isOpen = cat === openCat;
     html += '<div class="wh-cat">';
-    html += '<div class="wh-cat-h">'
-      + '<span onclick="toggleCategory(this.parentElement)" style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">'
-      + '<span class="arrow open">▸</span>' + cat
-      + '<span class="wh-cat-count">' + groups[cat].length + ' 种</span></span>'
+    html += '<div class="wh-cat-h" onclick="toggleCategory(this)">'
+      + '<span class="arrow' + (isOpen ? ' open' : '') + '">▸</span>'
+      + '<span class="wh-cat-label">' + cat + '</span>'
+      + '<span class="wh-cat-count">' + items.length + ' 种</span>'
+      + '<span class="cat-spacer"></span>'
       + '<button class="wh-cat-save" onclick="event.stopPropagation();saveAllForCat(\'' + cat + '\')">全部存入</button>'
       + '</div>';
-    html += '<div class="wh-cat-body open">';
-    groups[cat].forEach(function(item){
+    html += '<div class="wh-cat-body' + (isOpen ? ' open' : '') + '"><div class="wh-grid">';
+    items.forEach(function(item){
       var amt = typeof item.amount === 'number' ? item.amount.toLocaleString(undefined, {maximumFractionDigits:1}) : item.amount;
-      var iconHtml = renderItemIcon(item.name);
-      html += '<div class="wh-item">'
+      var iconHtml = renderCardIcon(item.name);
+      var zeroClass = item.amount === 0 ? ' zero' : '';
+      html += '<div class="wh-card' + zeroClass + '" onclick="openQSheetWithCard(this,\'' + escAttr(item.name) + '\',' + item.amount + ')">'
         + iconHtml
-        + '<span class="wh-item-name">' + escHtml(item.name) + '</span>'
-        + '<span class="wh-item-amt">' + escHtml(String(amt)) + '</span>'
-        + '<span class="wh-item-acts">'
-        + '<button class="btn-deposit" onclick="openQSheet(\'deposit\',\'' + escAttr(item.name) + '\')">+存</button>'
-        + '<button class="btn-withdraw" onclick="openQSheet(\'withdraw\',\'' + escAttr(item.name) + '\')">-取</button>'
-        + '</span></div>';
+        + '<span class="wh-card-name">' + escHtml(item.name) + '</span>'
+        + '<span class="wh-card-amt">' + escHtml(String(amt)) + '</span>'
+        + '</div>';
     });
-    html += '</div></div>';
+    html += '</div></div></div>';
+    first = false;
   });
 
   container.innerHTML = html;
-  emptyEl.style.display = html ? 'none' : 'block';
+  emptyEl.style.display = totalVisible === 0 ? 'block' : 'none';
+  if (totalVisible === 0 && hasAny) {
+    emptyEl.innerHTML = '没有匹配的物品';
+  } else if (totalVisible === 0 && !hasAny) {
+    emptyEl.innerHTML = '暂无物品数据<br><span style="font-size:11px;opacity:.6">输入 !仓库 列表 指令获取库存</span>';
+  }
 }
 
 function toggleCategory(el) {
+  var catEl = el.parentElement; // .wh-cat
+  var catName = catEl.querySelector('.wh-cat-label').textContent;
   var arrow = el.querySelector('.arrow');
-  var body = el.nextElementSibling;
-  arrow.classList.toggle('open');
-  body.classList.toggle('open');
+  var body = catEl.querySelector('.wh-cat-body');
+  var wasOpen = arrow.classList.contains('open');
+
+  // 手风琴：关闭所有，再根据情况打开当前
+  document.querySelectorAll('.wh-cat-h').forEach(function(h){
+    h.querySelector('.arrow').classList.remove('open');
+    var b = h.parentElement.querySelector('.wh-cat-body');
+    if (b) b.classList.remove('open');
+  });
+
+  if (!wasOpen) {
+    arrow.classList.add('open');
+    if (body) body.classList.add('open');
+    warehouseOpenCat = catName;
+  } else {
+    warehouseOpenCat = null;  // 关闭后不展开任何分类
+  }
 }
 
 // ========== 数量输入面板 ==========
-function openQSheet(mode, itemName) {
+function openQSheet(mode, itemName, stock) {
   qsheetMode = mode;
   qsheetItem = itemName;
-  document.getElementById('qs-title').textContent = mode === 'deposit' ? '存入物品' : '取出物品';
+  qsheetStock = stock || 0;
+  qsheetQty = 100;
+  _tapCount = 0;
+  _tapStep = 10;
+  var depositing = mode === 'deposit';
+  var maxWithdraw = depositing ? Infinity : qsheetStock;
+  if (qsheetQty > maxWithdraw) qsheetQty = maxWithdraw;
+  if (qsheetQty < 1) qsheetQty = 1;
+  document.getElementById('qs-title').textContent = depositing ? '存入' : '取出';
   document.getElementById('qs-item').textContent = itemName;
-  document.getElementById('qs-qty').value = 100;
-  document.getElementById('qs-confirm').textContent = mode === 'deposit' ? '确认存入' : '确认取出';
+  document.getElementById('qs-stock').textContent = depositing ? '库存 ' + qsheetStock.toLocaleString() : '可取 ' + qsheetStock.toLocaleString();
+  document.getElementById('qs-switch').textContent = depositing ? '切换取' : '切换存';
+  document.getElementById('qs-num').textContent = qsheetQty.toLocaleString();
+  document.getElementById('qs-confirm').textContent = depositing ? '确认存入 ' + qsheetQty.toLocaleString() : '确认取出 ' + qsheetQty.toLocaleString();
   document.getElementById('qsheet-overlay').classList.add('show');
-  document.getElementById('qs-qty').focus();
+  document.getElementById('qs-switch').style.display = qsheetStock === 0 ? 'none' : '';
+  updateQSheetBtns();
 }
 
 function closeQSheet() {
   document.getElementById('qsheet-overlay').classList.remove('show');
+  clearTimeout(_tapTimer);
+}
+
+function updateQSheetDisplay() {
+  document.getElementById('qs-num').textContent = qsheetQty.toLocaleString();
+  document.getElementById('qs-confirm').textContent = (qsheetMode === 'deposit' ? '确认存入 ' : '确认取出 ') + qsheetQty.toLocaleString();
+  updateQSheetBtns();
+}
+
+function updateQSheetBtns() {
+  var maxWithdraw = qsheetMode === 'deposit' ? Infinity : qsheetStock;
+  document.getElementById('qs-minus').disabled = qsheetQty <= 1;
+  document.getElementById('qs-minus-fast').disabled = qsheetQty <= 1;
+  document.getElementById('qs-plus').disabled = qsheetQty >= maxWithdraw;
+  document.getElementById('qs-plus-fast').disabled = qsheetQty >= maxWithdraw;
 }
 
 function adjustQty(delta) {
-  var input = document.getElementById('qs-qty');
-  var v = parseInt(input.value) || 0;
-  input.value = Math.max(1, v + delta);
+  var maxWithdraw = qsheetMode === 'deposit' ? Infinity : qsheetStock;
+  qsheetQty = Math.max(1, Math.min(maxWithdraw, qsheetQty + delta));
+  updateQSheetDisplay();
 }
 
-function clampQty() {
-  var input = document.getElementById('qs-qty');
-  if (parseInt(input.value) < 1) input.value = 1;
+function fastAdjust(deltaDir) {
+  var now = Date.now();
+  if (_tapTimer && now - _tapTimer < 600) {
+    _tapCount++;
+    _tapStep = Math.min(1000, 10 * Math.pow(2, _tapCount));
+  } else {
+    _tapCount = 0;
+    _tapStep = 10;
+  }
+  clearTimeout(_tapTimer);
+  _tapTimer = setTimeout(function(){ _tapCount = 0; _tapStep = 10; }, 600);
+  adjustQty(deltaDir * _tapStep);
 }
 
 function confirmQSheet() {
-  var qty = parseInt(document.getElementById('qs-qty').value) || 100;
-  if (qty < 1) qty = 1;
+  if (qsheetQty < 1) qsheetQty = 1;
   var cmd = qsheetMode === 'deposit'
-    ? '!仓库 存入 ' + qsheetItem + ' ' + qty
-    : '!仓库 取出 ' + qsheetItem + ' ' + qty;
+    ? '!仓库 存入 ' + qsheetItem + ' ' + qsheetQty
+    : '!仓库 取出 ' + qsheetItem + ' ' + qsheetQty;
   closeQSheet();
   executeAndRefresh(cmd, qsheetMode === 'deposit' ? '存入' : '取出');
 }
+
+// 按钮绑定
+document.getElementById('qs-minus').addEventListener('click', function(){ adjustQty(-1); });
+document.getElementById('qs-plus').addEventListener('click', function(){ adjustQty(1); });
+document.getElementById('qs-minus-fast').addEventListener('click', function(){ fastAdjust(-1); });
+document.getElementById('qs-plus-fast').addEventListener('click', function(){ fastAdjust(1); });
 
 function quickAction(action) {
   var cmd = '!仓库 ' + action;
@@ -820,16 +925,34 @@ function hideToast() {
 }
 
 // ========== 工具函数 ==========
-function renderItemIcon(itemName) {
+function renderCardIcon(itemName) {
   var iconFile = iconMap[itemName];
   var cat = getItemCategory(itemName);
   var color = catColors[cat] || catColors['其他'];
   var initial = itemName.charAt(0);
   if (iconFile) {
-    // 用 sprite: si 类提供基础尺寸+背景图, si-{name} 提供定位
-    return '<span class="wh-item-icon si si-' + iconFile + '" title="' + escAttr(itemName) + '"></span>';
+    return '<span class="wh-card-icon si si-' + iconFile + '" title="' + escAttr(itemName) + '"></span>';
   }
-  return '<span class="wh-item-icon-fallback" style="background:' + color + '">' + initial + '</span>';
+  return '<span class="wh-card-icon-fb" style="background:' + color + '">' + initial + '</span>';
+}
+
+function openQSheetWithCard(card, itemName, stock) {
+  openQSheet('deposit', itemName, stock);
+}
+
+function toggleQSheetMode() {
+  var newMode = qsheetMode === 'deposit' ? 'withdraw' : 'deposit';
+  if (newMode === 'withdraw' && qsheetStock === 0) return;  // 库存0不能取
+  qsheetMode = newMode;
+  qsheetQty = 100;
+  var maxWithdraw = qsheetMode === 'deposit' ? Infinity : qsheetStock;
+  if (qsheetQty > maxWithdraw) qsheetQty = maxWithdraw;
+  if (qsheetQty < 1) qsheetQty = 1;
+  _tapCount = 0; _tapStep = 10;
+  document.getElementById('qs-title').textContent = qsheetMode === 'deposit' ? '存入' : '取出';
+  document.getElementById('qs-stock').textContent = qsheetMode === 'deposit' ? '库存 ' + qsheetStock.toLocaleString() : '可取 ' + qsheetStock.toLocaleString();
+  document.getElementById('qs-switch').textContent = qsheetMode === 'deposit' ? '切换取' : '切换存';
+  updateQSheetDisplay();
 }
 
 function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
