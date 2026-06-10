@@ -406,7 +406,7 @@ var UI = (function () {
 
   function adjustExtra(delta) {
     if (_lockExtra) return;
-    var step = getMagStep(qsheetExtraVal);
+    var step = getDirStep(qsheetExtraVal, delta);
     if (Math.abs(delta) < step) delta = delta > 0 ? step : -step;
     var min = qsheetExtra && qsheetExtra.min != null ? qsheetExtra.min : 0;
     var max = qsheetExtra && qsheetExtra.max ? qsheetExtra.max : 999999;
@@ -416,7 +416,7 @@ var UI = (function () {
 
   function fastAdjustExtra(deltaDir) {
     if (_lockExtra) return;
-    var step = fastStep(qsheetExtraVal, _extraTap);
+    var step = fastStep(qsheetExtraVal, deltaDir, _extraTap);
     adjustExtra(deltaDir * step);
   }
 
@@ -447,11 +447,12 @@ var UI = (function () {
     document.getElementById('qs-qty').readOnly = false;
     var depositing = qsheetMode === 'deposit';
     var maxWithdraw = (qsheetExtra) ? Infinity : (depositing ? Infinity : qsheetStock);
-    var step = getMagStep(qsheetQty);
-    document.getElementById('qs-minus').disabled = qsheetQty - step < 1;
-    document.getElementById('qs-minus-fast').disabled = qsheetQty - step < 1;
-    document.getElementById('qs-plus').disabled = qsheetQty + step > maxWithdraw;
-    document.getElementById('qs-plus-fast').disabled = qsheetQty + step > maxWithdraw;
+    var stepDown = getDirStep(qsheetQty, -1);
+    var stepUp = getDirStep(qsheetQty, 1);
+    document.getElementById('qs-minus').disabled = qsheetQty <= 1;
+    document.getElementById('qs-minus-fast').disabled = qsheetQty <= 1;
+    document.getElementById('qs-plus').disabled = qsheetQty + stepUp > maxWithdraw;
+    document.getElementById('qs-plus-fast').disabled = qsheetQty + stepUp > maxWithdraw;
   }
 
   function fitFontSize(input) {
@@ -478,15 +479,21 @@ var UI = (function () {
 
   function adjustQty(delta) {
     if (_lockQty > 0) return;
-    var step = getMagStep(qsheetQty);
+    var step = getDirStep(qsheetQty, delta);
     if (Math.abs(delta) < step) delta = delta > 0 ? step : -step;
     var maxWithdraw = qsheetExtra ? Infinity : (qsheetMode === 'deposit' ? Infinity : qsheetStock);
     qsheetQty = Math.max(1, Math.min(maxWithdraw, qsheetQty + delta));
     updateQSheetDisplay();
   }
 
-  /** 通用快速步进：tapState = { count, last, timer }，每次调用更新并返回步长 */
-  function fastStep(currentVal, tapState) {
+  /** 通用步长：上行用当前量级，下行用低一级量级（允许跨边界） */
+  function getDirStep(val, dir) {
+    if (dir < 0) val = Math.max(0, val - 1);
+    return getMagStep(val);
+  }
+
+  /** 通用快速步进：tapState = { count, last, timer }，dir >0 上行 <0 下行 */
+  function fastStep(currentVal, dir, tapState) {
     var now = Date.now();
     if (tapState.last && now - tapState.last < 600) {
       tapState.count++;
@@ -494,7 +501,7 @@ var UI = (function () {
       tapState.count = 0;
     }
     tapState.last = now;
-    var step = getMagStep(currentVal) * (tapState.count + 1);
+    var step = getDirStep(currentVal, dir) * (tapState.count + 1);
     clearTimeout(tapState.timer);
     tapState.timer = setTimeout(function(){ tapState.count = 0; tapState.last = 0; }, 600);
     return step;
@@ -505,7 +512,7 @@ var UI = (function () {
 
   function fastAdjust(deltaDir) {
     if (_lockQty > 0) return;
-    var step = fastStep(qsheetQty, _qtyTap);
+    var step = fastStep(qsheetQty, deltaDir, _qtyTap);
     adjustQty(deltaDir * step);
   }
 
