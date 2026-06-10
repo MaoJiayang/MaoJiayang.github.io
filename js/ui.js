@@ -216,8 +216,9 @@ var UI = (function () {
   // extraField 扩展（市场订单单价等）
   var qsheetExtra = null;       // { label, value, suffix, step, max }
   var qsheetExtraVal = 0;
-  var _lockQty = 0;     // >0 表示数量锁定
-  var _lockExtra = false; // 单价锁定
+  var _lockQty = 0;            // >0 表示数量锁定
+  var _lockExtra = false;      // 单价锁定
+  var _noCap = false;          // 数量无上限（服营商店买入等）
 
   /**
    * openQSheet(mode, itemName, stock, onConfirm)        ← 仓库用法（向后兼容）
@@ -227,7 +228,8 @@ var UI = (function () {
   function openQSheet(mode, itemName, stockOrOptions, onConfirm) {
     qsheetMode = mode;
     qsheetItem = itemName;
-    _qtyTap.count = 0;
+    _qtyTap.count = 0; _qtyTap.last = 0;
+    _extraTap.count = 0; _extraTap.last = 0;
 
     // 判断 overload：第三个参数是对象则为 options 模式
     var isOptions = typeof stockOrOptions === 'object' && stockOrOptions !== null;
@@ -236,15 +238,14 @@ var UI = (function () {
     qsheetStock = options.stock || 0;
     _lockQty = options.lockQty || 0;
     _lockExtra = options.lockExtra === true;
+    _noCap = options.noCap === true;
     qsheetQty = _lockQty > 0 ? _lockQty : 100;
     _qsheetOnConfirm = options.onConfirm || null;
     qsheetExtra = options.extraField || null;
     qsheetExtraVal = qsheetExtra ? qsheetExtra.value : 0;
     var depositing = mode === 'deposit';
     // 锁定数量（不可拆分）或以存量/无限量限制
-    var maxWithdraw = _lockQty > 0 ? _lockQty
-      : (qsheetExtra || options.noCap) ? Infinity
-      : (depositing ? Infinity : qsheetStock);
+    var maxWithdraw = getMaxWithdraw();
     if (qsheetQty > maxWithdraw) qsheetQty = maxWithdraw;
     if (qsheetQty < 1) qsheetQty = 1;
     document.getElementById('qs-item').textContent = itemName;
@@ -299,7 +300,7 @@ var UI = (function () {
 
   function parseCompact(s) {
     s = String(s).trim().toUpperCase();
-    var m = s.match(/^([\d.]+)\s*([KM B])?$/i);
+    var m = s.match(/^([\d.]+)\s*([KMB])?$/i);
     if (!m) return NaN;
     var v = parseFloat(m[1]);
     var u = (m[2] || '').replace(/\s/g, '');
@@ -315,6 +316,14 @@ var UI = (function () {
     if (v >= 1e6) return 1e6;
     if (v >= 1e3) return 1e3;
     return 1;
+  }
+
+  /** 当前 QSheet 数量上限（统一入口，避免各处重复计算时遗漏 noCap） */
+  function getMaxWithdraw() {
+    if (_lockQty > 0) return _lockQty;
+    if (_noCap || qsheetExtra) return Infinity;
+    if (qsheetMode === 'deposit') return Infinity;
+    return qsheetStock;
   }
 
   // ========== 显示更新 ==========
@@ -445,8 +454,7 @@ var UI = (function () {
       return;
     }
     document.getElementById('qs-qty').readOnly = false;
-    var depositing = qsheetMode === 'deposit';
-    var maxWithdraw = (qsheetExtra) ? Infinity : (depositing ? Infinity : qsheetStock);
+    var maxWithdraw = getMaxWithdraw();
     var stepDown = getDirStep(qsheetQty, -1);
     var stepUp = getDirStep(qsheetQty, 1);
     document.getElementById('qs-minus').disabled = qsheetQty <= 1;
@@ -471,8 +479,7 @@ var UI = (function () {
     fitFontSize(input);
     var v = parseCompact(input.value);
     if (isNaN(v) || v < 1) v = 1;
-    var maxWithdraw = qsheetExtra ? Infinity : (qsheetMode === 'deposit' ? Infinity : qsheetStock);
-    qsheetQty = Math.max(1, Math.min(maxWithdraw, v));
+    qsheetQty = Math.max(1, Math.min(getMaxWithdraw(), v));
     _qtyTap.count = 0;
     updateQSheetDisplay();
   }
@@ -481,8 +488,7 @@ var UI = (function () {
     if (_lockQty > 0) return;
     var step = getDirStep(qsheetQty, delta);
     if (Math.abs(delta) < step) delta = delta > 0 ? step : -step;
-    var maxWithdraw = qsheetExtra ? Infinity : (qsheetMode === 'deposit' ? Infinity : qsheetStock);
-    qsheetQty = Math.max(1, Math.min(maxWithdraw, qsheetQty + delta));
+    qsheetQty = Math.max(1, Math.min(getMaxWithdraw(), qsheetQty + delta));
     updateQSheetDisplay();
   }
 
