@@ -118,7 +118,7 @@ async function tcpRequest(host, port, authKey, steamId, command, password) {
     command,
     gamePassword: password,
     forcePlayerOnline: false,
-    dontSendToGameScreen: false,
+    dontSendToGameScreen: true,
   });
 
   const requestJson = JSON.stringify({

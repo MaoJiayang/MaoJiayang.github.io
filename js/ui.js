@@ -517,12 +517,15 @@ var UI = (function () {
 
   function confirmQSheet() {
     if (qsheetQty < 1) qsheetQty = 1;
-    if (qsheetExtra && qsheetExtraVal < 1) qsheetExtraVal = 1;
+    // 保存状态——closeQSheet 会清空 qsheetExtra
+    var extra = qsheetExtra;
+    var extraVal = qsheetExtraVal;
+    if (extra && extraVal < (extra.min != null ? extra.min : 0)) extraVal = (extra.min != null ? extra.min : 0);
     closeQSheet();
     if (_qsheetOnConfirm) {
-      if (qsheetExtra) {
-        // 市场订单发布：传 mode + qty + extraVal
-        _qsheetOnConfirm(qsheetMode, qsheetQty, qsheetExtraVal);
+      if (extra) {
+        // 市场：传 mode + qty + extraVal
+        _qsheetOnConfirm(qsheetMode, qsheetQty, extraVal);
       } else if (qsheetMode === 'buy' || qsheetMode === 'sell') {
         // 商店买入/卖出：传 mode + qty
         _qsheetOnConfirm(qsheetMode, qsheetQty);
