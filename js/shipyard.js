@@ -72,10 +72,18 @@ var Shipyard = (function () {
     });
   }
 
-  function refresh() {
-    queueData = null;
-    templateData = null;
-    loadAll();
+  function refreshQueue() {
+    exec('!船厂 列表', null).then(function (d) {
+      queueData = d || { assemblyLines: [], pendingMissions: [] };
+      renderQueue();
+    }).catch(function () {});
+  }
+
+  function refreshTemplates() {
+    exec('!模板 列表', null).then(function (d) {
+      templateData = d || { quotaUsed: 0, quotaTotal: 0, templates: [] };
+      renderTemplates();
+    }).catch(function () {});
   }
 
   // ========== 时间格式化 ==========
@@ -108,7 +116,7 @@ var Shipyard = (function () {
     var container = document.getElementById('sy-queue');
     if (!container) return;
 
-    if (!queueData || loading) {
+    if (!queueData && loading) {
       container.innerHTML = '<div class="tr-empty">加载中…</div>';
       return;
     }
@@ -178,7 +186,7 @@ var Shipyard = (function () {
     var container = document.getElementById('sy-templates');
     if (!container) return;
 
-    if (!templateData || loading) {
+    if (!templateData && loading) {
       container.innerHTML = '<div class="tr-empty">加载中…</div>';
       return;
     }
@@ -211,21 +219,21 @@ var Shipyard = (function () {
   /** 从模板建造 */
   function build(templateName) {
     exec('!船厂 建造 ' + templateName, '已下单建造 ' + templateName).then(function () {
-      refresh();
+      refreshQueue();
     }).catch(function () {});
   }
 
   /** 从投影建造 */
   function buildProjection() {
     exec('!船厂 建造投影', '已下单从投影建造').then(function () {
-      refresh();
+      refreshQueue();
     }).catch(function () {});
   }
 
   /** 回收飞船 */
   function recycle() {
     exec('!船厂 回收', '回收已提交').then(function () {
-      refresh();
+      refreshQueue();
     }).catch(function () {});
   }
 
@@ -236,7 +244,7 @@ var Shipyard = (function () {
     document.getElementById('dc-confirm-btn').onclick = function () {
       UI.closeDcDialog();
       exec('!船厂 取消 ' + index, '已取消任务 #' + index).then(function () {
-        refresh();
+        refreshQueue();
       }).catch(function () {});
     };
     document.getElementById('dc-overlay').classList.add('show');
@@ -248,7 +256,7 @@ var Shipyard = (function () {
     if (!name || !name.trim()) return;
     name = name.trim();
     exec('!模板 保存 ' + name, '模板「' + name + '」已保存').then(function () {
-      refresh();
+      refreshTemplates();
     }).catch(function () {});
   }
 
@@ -258,7 +266,7 @@ var Shipyard = (function () {
     if (!name || !name.trim()) return;
     name = name.trim();
     exec('!模板 从投影创建 ' + name, '模板「' + name + '」已创建').then(function () {
-      refresh();
+      refreshTemplates();
     }).catch(function () {});
   }
 
@@ -269,7 +277,7 @@ var Shipyard = (function () {
     document.getElementById('dc-confirm-btn').onclick = function () {
       UI.closeDcDialog();
       exec('!模板 删除 ' + name, '模板「' + name + '」已删除').then(function () {
-        refresh();
+        refreshTemplates();
       }).catch(function () {});
     };
     document.getElementById('dc-overlay').classList.add('show');

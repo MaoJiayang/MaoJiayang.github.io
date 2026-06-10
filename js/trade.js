@@ -142,8 +142,12 @@ var Trade = (function () {
     var data = shopMode === 'buy' ? shopBuyData : shopSellData;
     var search = (document.getElementById('tr-shop-search').value || '').toLowerCase().trim();
 
-    if (!data) {
+    if (!data && shopLoading) {
       container.innerHTML = '<div class="tr-empty">加载中…</div>';
+      return;
+    }
+    if (!data) {
+      container.innerHTML = '<div class="tr-empty">' + (shopMode === 'buy' ? '暂无商品' : '暂无商品') + '</div>';
       return;
     }
 
@@ -269,8 +273,12 @@ var Trade = (function () {
 
     var search = (document.getElementById('tr-market-search').value || '').toLowerCase().trim();
 
-    if (!marketDataCache) {
+    if (!marketDataCache && marketLoading) {
       container.innerHTML = '<div class="tr-empty">加载中…</div>';
+      return;
+    }
+    if (!marketDataCache) {
+      container.innerHTML = '<div class="tr-empty">暂无订单</div>';
       return;
     }
 
