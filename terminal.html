@@ -128,17 +128,17 @@
 
 	    <!-- 建造队列 -->
 	    <div class="sy-section" id="shipyard-queue">
-	      <span class="sy-refresh" onclick="Shipyard.loadAll()" title="刷新">↻</span>
 	      <div id="sy-queue"></div>
 	      <div class="tr-actions">
 	        <button class="tr-act-btn" id="sy-build-proj">+ 从投影建造</button>
 	        <button class="tr-act-btn" id="sy-recycle">♻ 回收飞船</button>
+	        <span class="spacer"></span>
+	        <button class="tr-act-btn" onclick="Shipyard.loadAll()">↻ 刷新</button>
 	      </div>
 	    </div>
 
 	    <!-- 模板 -->
 	    <div class="sy-section" id="shipyard-templates" style="display:none">
-	      <span class="sy-refresh" onclick="Shipyard.loadAll()" title="刷新">↻</span>
 	      <div id="sy-templates"></div>
 	      <div class="tr-actions">
 	        <button class="tr-act-btn" id="sy-save-tpl">+ 保存模板</button>

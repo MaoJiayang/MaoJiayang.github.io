@@ -452,33 +452,35 @@ body{
 .ha-subtab.active{color:var(--jade-200);border-bottom-color:var(--jade-200)}
 .ha-subtab:hover{color:var(--text-primary)}
 .ha-section{position:relative}
-.ha-refresh,.sy-refresh{cursor:pointer;font-size:20px;color:var(--text-muted);position:absolute;top:0;right:0;line-height:36px;width:36px;text-align:center}
-.ha-refresh:hover,.sy-refresh:hover{color:var(--jade-200)}
+.ha-refresh{cursor:pointer;font-size:20px;color:var(--text-muted);position:absolute;top:0;right:0;line-height:36px;width:36px;text-align:center}
+.ha-refresh:hover{color:var(--jade-200)}
+.sy-refresh-inline{cursor:pointer;font-size:16px;color:var(--text-muted);margin-left:4px;vertical-align:-2px}
+.sy-refresh-inline:hover{color:var(--jade-200)}
 #ha-name-toggle{font-size:11px;padding:2px 8px;border-radius:3px;background:var(--bg-card);color:var(--text-muted);border:1px solid var(--bg-hover);cursor:pointer;font-family:inherit;flex-shrink:0}
 #ha-name-toggle:hover{color:var(--text-primary);background:var(--bg-hover)}
 #ha-sort-btn{font-size:12px;padding:2px 8px;border-radius:3px;background:var(--bg-card);color:var(--text-muted);border:1px solid var(--bg-hover);cursor:pointer;font-family:inherit;position:absolute;right:44px;top:0;line-height:32px}
 #ha-sort-btn:hover{color:var(--text-primary);background:var(--bg-hover)}
 
 /* 船坞列表行 */
-.ha-grid-row{display:flex;align-items:center;padding:8px 10px;background:var(--bg-card);border-radius:4px;margin-bottom:4px;gap:8px}
+.ha-grid-row{display:flex;align-items:center;padding:10px 12px;background:var(--bg-card);border-radius:4px;margin-bottom:6px;gap:10px}
 .ha-grid-row:hover{background:var(--bg-hover)}
 .ha-grid-icon{font-size:18px;flex-shrink:0}
 .ha-grid-info{flex:1;min-width:0;display:flex;align-items:center;gap:6px}
 .ha-grid-name{font-size:14px;font-weight:500;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ha-grid-badge{font-size:10px;padding:1px 6px;border-radius:3px;background:var(--color-warn);color:var(--bg-void);flex-shrink:0}
 .ha-row-actions{display:flex;gap:4px;flex-shrink:0}
-.ha-act-btn{font-size:12px;padding:3px 8px;border-radius:3px;background:var(--bg-hover);color:var(--text-secondary);border:1px solid transparent;cursor:pointer;font-family:inherit;white-space:nowrap}
+.ha-act-btn{font-size:13px;padding:10px 14px;border-radius:4px;background:var(--bg-hover);color:var(--text-secondary);border:1px solid transparent;cursor:pointer;font-family:inherit;white-space:nowrap;min-height:44px}
 .ha-act-btn:hover{background:var(--jade-400);color:var(--bg-void);border-color:var(--jade-400)}
 .ha-act-danger{color:var(--color-error)}
 .ha-act-danger:hover{background:var(--color-error);color:#fff;border-color:var(--color-error)}
 
 /* 世界网格列表行 */
-.ha-world-row{display:flex;align-items:center;padding:8px 10px;background:var(--bg-card);border-radius:4px;margin-bottom:4px;gap:8px}
+.ha-world-row{display:flex;align-items:center;padding:10px 12px;background:var(--bg-card);border-radius:4px;margin-bottom:6px;gap:10px}
 .ha-world-row:hover{background:var(--bg-hover)}
 .ha-world-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .ha-world-name{font-size:14px;font-weight:500;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ha-world-meta{font-size:11px;color:var(--text-muted)}
-.ha-world-save{font-size:12px;padding:4px 10px;border-radius:3px;background:var(--jade-200);color:var(--bg-void);border:none;cursor:pointer;font-family:inherit;font-weight:600;white-space:nowrap;flex-shrink:0}
+.ha-world-save{font-size:13px;padding:10px 14px;border-radius:4px;background:var(--jade-200);color:var(--bg-void);border:none;cursor:pointer;font-family:inherit;font-weight:600;white-space:nowrap;flex-shrink:0;min-height:44px}
 .ha-world-save:hover{opacity:.85}
 
 /* ========== 船厂面板 ========== */
@@ -507,17 +509,18 @@ body{
 .sy-progress-text{font-size:11px;color:var(--text-muted);white-space:nowrap;min-width:90px;text-align:right}
 
 /* 排队任务 */
-.sy-pending-row{display:flex;align-items:center;padding:8px 10px;background:var(--bg-card);border-radius:4px;margin-bottom:4px;gap:8px}
+.sy-pending-row{display:flex;align-items:center;padding:10px 12px;background:var(--bg-card);border-radius:4px;margin-bottom:6px;gap:10px}
 .sy-pending-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .sy-mission-msg{font-size:11px;color:var(--color-warn)}
 
 /* 模板 */
 .sy-quota{font-size:12px;color:var(--text-muted);margin-bottom:10px}
 .sy-quota strong{color:var(--text-primary)}
-.sy-template-row{display:flex;align-items:center;padding:8px 10px;background:var(--bg-card);border-radius:4px;margin-bottom:4px;gap:8px}
+.sy-template-row{display:flex;align-items:center;padding:10px 12px;background:var(--bg-card);border-radius:4px;margin-bottom:8px;gap:10px}
 .sy-template-row:hover{background:var(--bg-hover)}
-.sy-template-name{flex:1;font-size:14px;font-weight:500;color:var(--text-primary)}
-.sy-template-actions{display:flex;gap:4px;flex-shrink:0}
+.sy-template-name{flex:1;font-size:14px;font-weight:500;color:var(--text-primary);line-height:44px}
+.sy-template-actions{display:flex;gap:6px;flex-shrink:0}
+.sy-template-actions .ha-act-btn{min-width:56px;text-align:center}
 
 /* 自动建造 */
 .sy-autobuild{padding:20px 0;text-align:center}

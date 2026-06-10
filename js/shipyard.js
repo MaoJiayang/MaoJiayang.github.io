@@ -187,7 +187,7 @@ var Shipyard = (function () {
     var used = templateData.quotaUsed || 0;
     var total = templateData.quotaTotal || 0;
 
-    var html = '<div class="sy-quota">已用 <strong>' + used + '</strong> / ' + total + ' 个模板</div>';
+    var html = '<div class="sy-quota">已用 <strong>' + used + '</strong> / ' + total + ' 个模板 <span class="sy-refresh-inline" onclick="Shipyard.loadAll()" title="刷新">↻</span></div>';
 
     if (templates.length === 0) {
       html += '<div class="tr-empty">暂无模板</div>';
