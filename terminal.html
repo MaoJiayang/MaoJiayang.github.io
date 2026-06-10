@@ -155,9 +155,11 @@ body{
   transition:border-color .2s;
 }
 .wh-search:focus{border-color:var(--jade-400)}
-.wh-toolbar{display:flex;align-items:center;justify-content:flex-end;margin-bottom:8px}
-.wh-toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);cursor:pointer;user-select:none}
-.wh-toggle input[type=checkbox]{accent-color:var(--jade-200)}
+.wh-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12px;color:var(--text-muted);user-select:none}
+.wh-bar .spacer{flex:1}
+.wh-bar button{font-size:11px;padding:4px 10px;min-height:30px;border-radius:4px;border:1px solid var(--bg-hover);background:var(--bg-card);color:var(--text-secondary);cursor:pointer;font-family:inherit;transition:all .15s}
+.wh-bar button:hover{background:var(--bg-hover);color:var(--text-primary)}
+.wh-bar button.active{border-color:var(--jade-400);color:var(--jade-200);background:var(--bg-panel)}
 .wh-cat{margin-bottom:12px}
 .wh-cat-h{
   display:flex;align-items:center;gap:8px;padding:8px 0;
@@ -168,6 +170,7 @@ body{
 .wh-cat-h .arrow{display:inline-block;font-size:11px;transition:transform .2s;color:var(--text-muted);width:14px;text-align:center}
 .wh-cat-h .arrow.open{transform:rotate(90deg)}
 .wh-cat-h .cat-spacer{flex:1}
+.wh-cat-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
 .wh-cat-count{font-size:11px;color:var(--text-muted);margin-left:4px}
 .wh-cat-save{
   font-size:12px;padding:5px 12px;min-height:34px;min-width:48px;
@@ -200,16 +203,6 @@ body{
 }
 .wh-card-name{font-size:11px;color:var(--text-secondary);text-align:center;line-height:1.3}
 .wh-card-amt{font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--text-primary)}
-.wh-quick{
-  display:flex;flex-wrap:wrap;gap:6px;margin-top:16px;
-  padding-top:14px;border-top:1px solid var(--bg-hover);
-}
-.wh-quick button{
-  font-size:12px;padding:7px 14px;border-radius:4px;border:1px solid var(--bg-hover);
-  background:var(--bg-panel);color:var(--text-secondary);cursor:pointer;
-  font-family:inherit;transition:all .15s;
-}
-.wh-quick button:hover{background:var(--bg-hover);color:var(--text-primary);border-color:var(--jade-400)}
 .wh-empty{padding:32px;text-align:center;color:var(--text-muted);font-size:13px}
 
 /* ========== 数量输入 Bottom Sheet ========== */
@@ -226,34 +219,36 @@ body{
   transform:translateY(100%);transition:transform .25s cubic-bezier(.2,.8,.2,1);
 }
 #qsheet-overlay.show #qsheet{transform:translateY(0)}
-#qsheet .qs-hd{display:flex;align-items:center;gap:8px;margin-bottom:16px}
-#qsheet .qs-hd .qs-title{font-size:16px;font-weight:600;color:var(--text-primary);flex:1}
-#qsheet .qs-hd .qs-amt-sm{font-size:13px;color:var(--text-muted);font-family:var(--font-mono)}
-#qsheet .qs-hd .qs-switch{
-  font-size:11px;padding:3px 8px;border-radius:12px;
-  border:1px solid var(--bg-hover);background:var(--bg-card);
-  color:var(--text-secondary);cursor:pointer;font-family:inherit;
-  transition:all .15s;
+#qsheet .qs-tabs{display:flex;gap:0;margin-bottom:16px;border-radius:6px;overflow:hidden;border:1px solid var(--bg-hover)}
+#qsheet .qs-tab{
+  flex:1;padding:8px;font-size:13px;font-weight:600;text-align:center;
+  background:var(--bg-card);color:var(--text-muted);border:none;cursor:pointer;
+  font-family:inherit;transition:all .15s;
 }
-#qsheet .qs-hd .qs-switch:hover{color:var(--jade-200);border-color:var(--jade-400)}
-#qsheet .qs-display{text-align:center;margin-bottom:6px}
-#qsheet .qs-display .qs-num{
-  font-family:var(--font-mono);font-size:40px;font-weight:700;
-  color:var(--jade-200);line-height:1.2;
-}
-#qsheet .qs-display .qs-name{font-size:13px;color:var(--text-secondary)}
-#qsheet .qs-btns{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:20px}
+#qsheet .qs-tab.active{background:var(--jade-200);color:var(--bg-void)}
+#qsheet .qs-tab:disabled{opacity:.35;cursor:not-allowed}
+#qsheet .qs-display{text-align:center;margin-bottom:14px}
+#qsheet .qs-display .qs-name{font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:2px}
+#qsheet .qs-display .qs-stock{font-size:12px;color:var(--text-muted);font-family:var(--font-mono)}
+#qsheet .qs-btns{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:20px}
 #qsheet .qs-btns button{
-  width:48px;height:48px;border-radius:10px;border:1px solid var(--bg-hover);
+  width:44px;height:44px;border-radius:8px;border:1px solid var(--bg-hover);
   background:var(--bg-card);color:var(--text-primary);cursor:pointer;
-  font-family:var(--font-mono);font-size:17px;font-weight:600;
+  font-family:var(--font-mono);font-size:16px;font-weight:600;
   transition:all .12s;display:flex;align-items:center;justify-content:center;
   -webkit-tap-highlight-color:transparent;
 }
 #qsheet .qs-btns button:active{background:var(--bg-hover);transform:scale(.94)}
 #qsheet .qs-btns .qs-sub{color:var(--color-warn)}
 #qsheet .qs-btns .qs-add{color:var(--jade-200)}
-#qsheet .qs-btns .qs-fast{font-size:20px;letter-spacing:-0.04em}
+#qsheet .qs-btns .qs-fast{font-size:18px;letter-spacing:-0.06em}
+#qsheet .qs-btns input{
+  width:90px;padding:10px 4px;font-size:18px;text-align:center;
+  border:1px solid var(--bg-hover);border-radius:6px;
+  background:var(--bg-deep);color:var(--text-primary);
+  font-family:var(--font-mono);font-weight:600;outline:none;
+}
+#qsheet .qs-btns input:focus{border-color:var(--jade-400)}
 #qsheet .qs-actions{display:flex;gap:10px}
 #qsheet .qs-actions button{
   flex:1;padding:12px;font-size:14px;font-weight:600;
@@ -404,18 +399,12 @@ body{
   <!-- 仓库面板 -->
   <div class="tab-panel" id="panel-warehouse">
     <input class="wh-search" id="wh-search" type="text" placeholder="搜索物品…" oninput="renderWarehouse()">
-    <div class="wh-toolbar" id="wh-toolbar" style="display:none">
-      <label class="wh-toggle"><input id="wh-showall" type="checkbox" onchange="toggleShowAll(this.checked)"><span>显示全部物品</span></label>
-    </div>
     <div id="wh-categories"></div>
     <div class="wh-empty" id="wh-empty" style="display:none">没有匹配的物品</div>
-    <div class="wh-quick">
-      <button onclick="quickAction('存入全部')">存入全部</button>
-      <button onclick="quickAction('存入全部 矿石')">存入矿石</button>
-      <button onclick="quickAction('存入全部 矿锭')">存入矿锭</button>
-      <button onclick="quickAction('存入全部 零件')">存入零件</button>
-      <button onclick="quickAction('存入全部 弹药')">存入弹药</button>
-      <button onclick="quickAction('存入全部 手持物')">存入手持物</button>
+    <div class="wh-bar" id="wh-bar" style="display:none">
+      <button id="wh-refresh" onclick="loadWarehouse()" title="刷新库存">刷新</button>
+      <span class="spacer"></span>
+      <button id="wh-showall-btn" onclick="toggleShowAll()">显示未拥有</button>
     </div>
   </div>
 
@@ -438,18 +427,18 @@ body{
 <!-- 数量输入 Bottom Sheet -->
 <div id="qsheet-overlay">
   <div id="qsheet">
-    <div class="qs-hd">
-      <span class="qs-title" id="qs-title">存入</span>
-      <button class="qs-switch" id="qs-switch" onclick="toggleQSheetMode()">切换取/存</button>
-      <span class="qs-amt-sm" id="qs-stock"></span>
+    <div class="qs-tabs" id="qs-tabs">
+      <button class="qs-tab active" id="qs-tab-deposit" onclick="switchQSheetMode('deposit')">存入</button>
+      <button class="qs-tab" id="qs-tab-withdraw" onclick="switchQSheetMode('withdraw')">取出</button>
     </div>
     <div class="qs-display">
-      <div class="qs-num" id="qs-num">100</div>
       <div class="qs-name" id="qs-item"></div>
+      <span class="qs-stock" id="qs-stock"></span>
     </div>
     <div class="qs-btns">
       <button class="qs-sub qs-fast" id="qs-minus-fast" title="快速减少">−−</button>
       <button class="qs-sub" id="qs-minus" title="减少">−</button>
+      <input id="qs-qty" type="number" value="100" min="1" oninput="onQtyInput()">
       <button class="qs-add" id="qs-plus" title="增加">+</button>
       <button class="qs-add qs-fast" id="qs-plus-fast" title="快速增加">++</button>
     </div>
@@ -520,6 +509,7 @@ var qsheetItem = '';
 var qsheetStock = 0;           // 仓库中该物品的当前数量
 var qsheetQty = 100;
 var _tapCount = 0;
+var _lastTapTime = 0;
 var _tapTimer = null;
 var _tapStep = 10;             // ++ 当前步长
 var toastTimer = null;
@@ -679,6 +669,36 @@ document.querySelectorAll('#tabbar .tab').forEach(function(t){
   t.addEventListener('click', function(){ switchTab(t.dataset.tab); });
 });
 
+// ========== 移动端左右滑动切换 Tab ==========
+var TAB_ORDER = ['warehouse','trade','shipyard','hangar','settings'];
+(function(){
+  var startX = 0, startY = 0, swiping = false;
+  var main = document.getElementById('main');
+
+  main.addEventListener('touchstart', function(e){
+    // 弹窗内不处理
+    if (e.target.closest('#qsheet-overlay') || e.target.closest('#dc-overlay')) return;
+    // 可滚动元素内不处理（让用户正常滚动面板）
+    if (e.target.closest('.wh-grid') || e.target.closest('.wh-cat-body') ||
+        e.target.closest('.sem-card-body') || e.target.closest('.ac-card-body') ||
+        e.target.closest('.hist-card-body')) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    swiping = true;
+  }, { passive: true });
+
+  main.addEventListener('touchend', function(e){
+    if (!swiping) return;
+    swiping = false;
+    var dx = (e.changedTouches[0] || e.touches[0]).clientX - startX;
+    var dy = (e.changedTouches[0] || e.touches[0]).clientY - startY;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return;  // 距离不够或纵向为主
+    var idx = TAB_ORDER.indexOf(currentTab);
+    if (dx < 0 && idx < TAB_ORDER.length - 1) switchTab(TAB_ORDER[idx + 1]);
+    else if (dx > 0 && idx > 0) switchTab(TAB_ORDER[idx - 1]);
+  });
+})();
+
 // ========== 仓库数据 ==========
 function loadWarehouse() {
   if (warehouseLoading) return;
@@ -716,9 +736,14 @@ function renderWarehouse() {
   var groups = {};
   var hasOwnedItems = Object.keys(whItems).length > 0;
 
-  // 显示/隐藏工具栏
-  var toolbar = document.getElementById('wh-toolbar');
-  if (toolbar) toolbar.style.display = hasOwnedItems ? '' : 'none';
+  // 显示/隐藏底部栏
+  var bar = document.getElementById('wh-bar');
+  if (bar) bar.style.display = hasOwnedItems ? '' : 'none';
+  var showAllBtn = document.getElementById('wh-showall-btn');
+  if (showAllBtn) {
+    showAllBtn.textContent = warehouseShowAll ? '隐藏未拥有' : '显示未拥有';
+    showAllBtn.classList.toggle('active', warehouseShowAll);
+  }
 
   catOrder.forEach(function(cat){
     var catalog = itemCategories[cat];
@@ -763,6 +788,7 @@ function renderWarehouse() {
     html += '<div class="wh-cat">';
     html += '<div class="wh-cat-h" onclick="toggleCategory(this)">'
       + '<span class="arrow' + (isOpen ? ' open' : '') + '">▸</span>'
+      + '<span class="wh-cat-dot" style="background:' + (catColors[cat] || catColors['其他']) + '"></span>'
       + '<span class="wh-cat-label">' + cat + '</span>'
       + '<span class="wh-cat-count">' + items.length + ' 种</span>'
       + '<span class="cat-spacer"></span>'
@@ -793,8 +819,8 @@ function renderWarehouse() {
 }
 
 function toggleShowAll(show) {
-  warehouseShowAll = show;
-  warehouseOpenCat = null;  // 切换视图时重置展开态
+  warehouseShowAll = typeof show === 'boolean' ? show : !warehouseShowAll;
+  warehouseOpenCat = null;
   renderWarehouse();
 }
 
@@ -833,14 +859,12 @@ function openQSheet(mode, itemName, stock) {
   var maxWithdraw = depositing ? Infinity : qsheetStock;
   if (qsheetQty > maxWithdraw) qsheetQty = maxWithdraw;
   if (qsheetQty < 1) qsheetQty = 1;
-  document.getElementById('qs-title').textContent = depositing ? '存入' : '取出';
   document.getElementById('qs-item').textContent = itemName;
-  document.getElementById('qs-stock').textContent = depositing ? '库存 ' + qsheetStock.toLocaleString() : '可取 ' + qsheetStock.toLocaleString();
-  document.getElementById('qs-switch').textContent = depositing ? '切换取' : '切换存';
-  document.getElementById('qs-num').textContent = qsheetQty.toLocaleString();
+  document.getElementById('qs-stock').textContent = '库存 ' + qsheetStock.toLocaleString();
+  document.getElementById('qs-qty').value = qsheetQty;
   document.getElementById('qs-confirm').textContent = depositing ? '确认存入 ' + qsheetQty.toLocaleString() : '确认取出 ' + qsheetQty.toLocaleString();
   document.getElementById('qsheet-overlay').classList.add('show');
-  document.getElementById('qs-switch').style.display = qsheetStock === 0 ? 'none' : '';
+  updateQSheetTabs();
   updateQSheetBtns();
 }
 
@@ -850,9 +874,40 @@ function closeQSheet() {
 }
 
 function updateQSheetDisplay() {
-  document.getElementById('qs-num').textContent = qsheetQty.toLocaleString();
+  document.getElementById('qs-qty').value = qsheetQty;
   document.getElementById('qs-confirm').textContent = (qsheetMode === 'deposit' ? '确认存入 ' : '确认取出 ') + qsheetQty.toLocaleString();
   updateQSheetBtns();
+}
+
+function updateQSheetTabs() {
+  var tabDep = document.getElementById('qs-tab-deposit');
+  var tabWdr = document.getElementById('qs-tab-withdraw');
+  tabDep.classList.toggle('active', qsheetMode === 'deposit');
+  tabWdr.classList.toggle('active', qsheetMode === 'withdraw');
+  tabWdr.disabled = qsheetStock === 0;
+}
+
+function onQtyInput() {
+  var input = document.getElementById('qs-qty');
+  var v = parseInt(input.value) || 1;
+  var maxWithdraw = qsheetMode === 'deposit' ? Infinity : qsheetStock;
+  qsheetQty = Math.max(1, Math.min(maxWithdraw, v));
+  input.value = qsheetQty;
+  document.getElementById('qs-confirm').textContent = (qsheetMode === 'deposit' ? '确认存入 ' : '确认取出 ') + qsheetQty.toLocaleString();
+  _tapCount = 0; _tapStep = 10;
+}
+
+function switchQSheetMode(mode) {
+  if (mode === qsheetMode) return;
+  if (mode === 'withdraw' && qsheetStock === 0) return;
+  qsheetMode = mode;
+  qsheetQty = 100;
+  var maxWithdraw = mode === 'deposit' ? Infinity : qsheetStock;
+  if (qsheetQty > maxWithdraw) qsheetQty = maxWithdraw;
+  if (qsheetQty < 1) qsheetQty = 1;
+  _tapCount = 0; _tapStep = 10;
+  updateQSheetTabs();
+  updateQSheetDisplay();
 }
 
 function updateQSheetBtns() {
@@ -871,15 +926,16 @@ function adjustQty(delta) {
 
 function fastAdjust(deltaDir) {
   var now = Date.now();
-  if (_tapTimer && now - _tapTimer < 600) {
+  if (_lastTapTime && now - _lastTapTime < 600) {
     _tapCount++;
     _tapStep = Math.min(1000, 10 * Math.pow(2, _tapCount));
   } else {
     _tapCount = 0;
     _tapStep = 10;
   }
+  _lastTapTime = now;
   clearTimeout(_tapTimer);
-  _tapTimer = setTimeout(function(){ _tapCount = 0; _tapStep = 10; }, 600);
+  _tapTimer = setTimeout(function(){ _tapCount = 0; _tapStep = 10; _lastTapTime = 0; }, 600);
   adjustQty(deltaDir * _tapStep);
 }
 
@@ -959,20 +1015,6 @@ function openQSheetWithCard(card, itemName, stock) {
   openQSheet('deposit', itemName, stock);
 }
 
-function toggleQSheetMode() {
-  var newMode = qsheetMode === 'deposit' ? 'withdraw' : 'deposit';
-  if (newMode === 'withdraw' && qsheetStock === 0) return;  // 库存0不能取
-  qsheetMode = newMode;
-  qsheetQty = 100;
-  var maxWithdraw = qsheetMode === 'deposit' ? Infinity : qsheetStock;
-  if (qsheetQty > maxWithdraw) qsheetQty = maxWithdraw;
-  if (qsheetQty < 1) qsheetQty = 1;
-  _tapCount = 0; _tapStep = 10;
-  document.getElementById('qs-title').textContent = qsheetMode === 'deposit' ? '存入' : '取出';
-  document.getElementById('qs-stock').textContent = qsheetMode === 'deposit' ? '库存 ' + qsheetStock.toLocaleString() : '可取 ' + qsheetStock.toLocaleString();
-  document.getElementById('qs-switch').textContent = qsheetMode === 'deposit' ? '切换取' : '切换存';
-  updateQSheetDisplay();
-}
 
 function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function escAttr(s) { return String(s).replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
