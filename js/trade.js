@@ -9,8 +9,7 @@ var Trade = (function () {
   var currentSubTab = 'shop';
   var shopMode = 'buy';         // 'buy' | 'sell'
   var marketMode = 'mk';        // 'mk' | 'orders'
-  var shopBuyData = null;       // ItemVO[]
-  var shopSellData = null;
+  var shopBuyData = null;       // ItemVO[]（仅买入列表）
   var bankInfo = null;
   var shopLoading = false;
   var marketLoading = false;
@@ -90,24 +89,34 @@ var Trade = (function () {
     Promise.all([p1, p2]).finally(function () { shopLoading = false; renderShop(); });
   }
 
-  function loadSellList() {
-    if (!shopSellData) {
-      exec('!收购 列表', null).then(function (d) {
-        shopSellData = Array.isArray(d) ? d : (d && d.items ? d.items : []);
-        renderShop();
-      }).catch(function () { shopSellData = []; renderShop(); });
-    } else { renderShop(); }
-  }
-
   function switchShopMode(mode) {
     if (mode === shopMode) return;
     shopMode = mode;
     document.querySelectorAll('.tr-shop-mode').forEach(function (el) {
       el.classList.toggle('active', el.dataset.shopMode === mode);
     });
-    if (mode === 'sell' && !shopSellData) loadSellList();
-    else if (mode === 'buy' && !shopBuyData) loadShop();
-    else renderShop();
+    if (mode === 'sell') {
+      // 卖出：跳转仓库选择模式
+      Warehouse.enterSelectionMode('sell', function (itemName) {
+        Warehouse.exitSelectionMode();
+        UI.switchTab('trade');
+        switchShopMode('buy');
+        var stock = Warehouse.getStock(itemName);
+        UI.openQSheet('sell', itemName, {
+          stock: stock,
+          onConfirm: function (m, qty) {
+            exec('!收购 提交 ' + itemName + ' ' + qty, '已出售 ' + itemName).then(function () {
+              loadBankInfo(); Warehouse.markStale(); Warehouse.ensureData();
+            }).catch(function () {});
+          }
+        });
+      });
+      UI.switchTab('warehouse');
+    } else if (mode === 'buy' && !shopBuyData) {
+      loadShop();
+    } else {
+      renderShop();
+    }
   }
 
   function initShop() {
@@ -138,32 +147,40 @@ var Trade = (function () {
     var container = document.getElementById('trade-shop-list');
     if (!container) return;
     renderInfo();
-    var data = shopMode === 'buy' ? shopBuyData : shopSellData;
+
+    // 卖出模式：已跳转仓库，这里只显示提示
+    if (shopMode === 'sell') {
+      container.innerHTML = '<div class="tr-empty">点击仓库中的物品即可出售</div>';
+      return;
+    }
+
+    var data = shopBuyData;
     var search = (document.getElementById('tr-shop-search').value || '').toLowerCase().trim();
     if (!data && shopLoading) { container.innerHTML = '<div class="tr-empty">加载中…</div>'; return; }
-    if (!data) { container.innerHTML = '<div class="tr-empty">' + (shopMode === 'buy' ? '暂无商品' : '暂无商品') + '</div>'; return; }
+    if (!data) { container.innerHTML = '<div class="tr-empty">暂无商品</div>'; return; }
     var filtered = data.filter(function (item) { return !search || item.name.toLowerCase().indexOf(search) !== -1; });
-    if (filtered.length === 0) { container.innerHTML = '<div class="tr-empty">' + (search ? '没有匹配的物品' : (shopMode === 'buy' ? '暂无商品' : '暂无商品')) + '</div>'; return; }
-    var html = '';
+    if (filtered.length === 0) { container.innerHTML = '<div class="tr-empty">' + (search ? '没有匹配的物品' : '暂无商品') + '</div>'; return; }
+    var html = '<div class="wh-grid">';
     filtered.forEach(function (item) {
-      var priceStr = item.price != null ? UI.fmtNum(item.price) + ' SC' : '—';
-      html += '<div class="tr-shop-row" onclick="Trade.shopBuySell(\'' + escAttr(item.name) + '\')">'
-        + iconHtml(item.name) + '<span class="tr-shop-name">' + escHtml(item.name) + '</span>'
-        + '<span class="tr-shop-price">' + priceStr + '</span>'
-        + '<span class="tr-shop-btn">' + (shopMode === 'buy' ? '购买' : '出售') + '</span></div>';
+      var priceStr = item.price != null ? UI.fmtPrice(item.price) + ' SC' : '—';
+      html += '<div class="wh-card" onclick="Trade.shopBuySell(\'' + escAttr(item.name) + '\')">'
+        + iconHtml(item.name)
+        + '<span class="wh-card-name">' + escHtml(item.name) + '</span>'
+        + '<span class="wh-card-amt">' + priceStr + '</span>'
+        + '</div>';
     });
+    html += '</div>';
     container.innerHTML = html;
   }
 
   function shopBuySell(name) {
-    var isBuy = shopMode === 'buy';
     var stock = Warehouse.getStock(name);
-    UI.openQSheet(shopMode, name, {
-      stock: stock, noCap: isBuy,
+    UI.openQSheet('buy', name, {
+      stock: stock, noCap: true,
       onConfirm: function (m, qty) {
-        var cmd = shopMode === 'buy' ? '!采购 提交 ' + name + ' ' + qty : '!收购 提交 ' + name + ' ' + qty;
-        var label = shopMode === 'buy' ? '已购买 ' + name : '已出售 ' + name;
-        exec(cmd, label).then(function () { loadBankInfo(); Warehouse.markStale(); Warehouse.ensureData(); }).catch(function () {});
+        exec('!采购 提交 ' + name + ' ' + qty, '已购买 ' + name).then(function () {
+          loadBankInfo(); Warehouse.markStale(); Warehouse.ensureData();
+        }).catch(function () {});
       }
     });
   }
