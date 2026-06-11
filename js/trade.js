@@ -588,9 +588,9 @@ var Trade = (function () {
     document.getElementById('ts-total').textContent = '预估成交 ' + UI.fmtPrice(tsPrice * tsQty) + ' SC';
   }
 
-  /** 计算当前价格下可购买/出售的最大数量 */
+  /** 计算当前价格下可购买/出售的最大数量（无对手方订单时不设上限） */
   function calcMaxQtyForPrice(price, mode) {
-    if (!_tsOrders || !_tsOrders.length) return 0;
+    if (!_tsOrders || !_tsOrders.length) return 2147483647;
     var total = 0;
     for (var i = 0; i < _tsOrders.length; i++) {
       var o = _tsOrders[i];
