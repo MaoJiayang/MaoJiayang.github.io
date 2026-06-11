@@ -487,7 +487,7 @@ namespace BridgeServer
                 var innerJson = _json.Serialize(new Dictionary<string, object>
                 {
                     { "steamId", steamId },
-                    { "command", "!银行 余额" },
+                    { "command", "!info myinfo" },
                     { "gamePassword", password },
                     { "forcePlayerOnline", false },
                     { "dontSendToGameScreen", true },

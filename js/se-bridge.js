@@ -196,6 +196,12 @@ var SeBridge = (function () {
     return Math.max(0, RATE_LIMIT - purgeCallTimes().length);
   }
 
+  function getResetSeconds() {
+    var times = purgeCallTimes();
+    if (times.length === 0) return 0;
+    return Math.max(0, Math.ceil((times[0] + 60000 - Date.now()) / 1000));
+  }
+
   function getRateLimit() {
     return RATE_LIMIT;
   }
@@ -241,6 +247,7 @@ var SeBridge = (function () {
     isRateLimited: isRateLimited,
     trackCall: trackCall,
     getRemainingCalls: getRemainingCalls,
+    getResetSeconds: getResetSeconds,
     getRateLimit: getRateLimit,
 
     // 桥接状态（只读）

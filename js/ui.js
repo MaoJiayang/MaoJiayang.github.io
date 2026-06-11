@@ -153,6 +153,14 @@ var UI = (function () {
     document.getElementById('wh-bar').style.display = '';
     fireTabCallback(currentTab);
     showToast('success', '已连接至伊卡洛斯星服务器');
+
+    // 首次登录引导全屏
+    if (!localStorage.getItem('fs_guide_shown')) {
+      setTimeout(function () {
+        showToast('info', '⚙ 设置 → 全屏模式，沉浸体验虚空终端');
+      }, 3000);
+      localStorage.setItem('fs_guide_shown', '1');
+    }
   }
 
   // ========== Tab 系统 ==========
@@ -593,7 +601,7 @@ var UI = (function () {
    */
   function executeWithConfirm(cmd, okLabel) {
     if (SeBridge.isRateLimited()) {
-      UI.showToast('error', 'API 调用次数已用完');
+      UI.showToast('error', '指令调用已达上限，' + SeBridge.getResetSeconds() + ' 秒后恢复');
       return Promise.reject('RATE_LIMITED');
     }
     return SeBridge.executeCommand(cmd).then(function (r) {
@@ -603,7 +611,7 @@ var UI = (function () {
         return new Promise(function (resolve, reject) {
           UI.showConfirmDialog(r.msg, function () {
             if (SeBridge.isRateLimited()) {
-              UI.showToast('error', 'API 调用次数已用完');
+              UI.showToast('error', '指令调用已达上限，' + SeBridge.getResetSeconds() + ' 秒后恢复');
               reject('RATE_LIMITED');
               return;
             }

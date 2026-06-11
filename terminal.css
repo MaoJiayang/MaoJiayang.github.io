@@ -384,6 +384,7 @@ body{
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
 #toast.success{border-left:3px solid var(--color-success)}
 #toast.error{border-left:3px solid var(--color-error)}
+#toast.info{border-left:3px solid var(--blue-200)}
 #toast.warning{border-left:3px solid var(--color-warn)}
 #toast .t-close{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;flex-shrink:0}
 
@@ -616,8 +617,9 @@ body{
 .st-fs-row span{font-size:14px;color:var(--text-primary)}
 #st-fs-btn{font-size:13px;padding:6px 16px;border-radius:4px;background:var(--jade-200);color:var(--bg-void);border:none;cursor:pointer;font-family:inherit;font-weight:600}
 .st-disconnect{display:block;width:100%;padding:12px;font-size:14px;font-weight:600;background:var(--color-error);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;margin-top:16px}
-.st-donate{display:block;width:100%;padding:8px;font-size:14px;color:var(--text-muted);background:none;border:none;cursor:pointer;font-family:inherit;text-align:center;margin-top:8px}
-.st-donate:hover{color:var(--gold-200)}
+.st-donate-row{cursor:pointer}
+.st-donate-row:hover{background:var(--bg-hover)}
+.st-donate-row:hover .st-label{color:var(--gold-200)}
 
 /* 赞赏弹窗 */
 #donate-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}

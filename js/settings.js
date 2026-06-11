@@ -98,7 +98,7 @@ var Settings = (function () {
       statusEl.textContent = dot && dot.classList.contains('online') ? '● 在线' : dot && dot.classList.contains('offline') ? '● 离线' : '检测中';
     }
     var gaugeEl = document.getElementById('st-gauge');
-    if (gaugeEl) gaugeEl.textContent = SeBridge.getRemainingCalls() + ' / ' + SeBridge.getRateLimit();
+    if (gaugeEl) gaugeEl.textContent = SeBridge.getRemainingCalls() + ' / ' + SeBridge.getRateLimit() + ' 次/分钟';
   }
 
   // ========== 初始化 ==========

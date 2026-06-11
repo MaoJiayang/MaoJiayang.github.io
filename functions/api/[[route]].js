@@ -172,8 +172,8 @@ async function handleUserSync(body, env, cfg, request) {
   const banCheck = await checkBanned(body.steamId, env.LOG_DB);
   if (banCheck) return banCheck;
 
-  // 通过 SE 服务器验证密码
-  const result = await tcpRequest(cfg.host, cfg.port, cfg.authKey, body.steamId, '!银行 余额', body.gamePassword);
+  // 通过 SE 服务器验证密码（改用 myinfo 可获得玩家名称）
+  const result = await tcpRequest(cfg.host, cfg.port, cfg.authKey, body.steamId, '!info myinfo', body.gamePassword);
 
   if (result.code !== 200) {
     return Response.json(result);
@@ -185,13 +185,29 @@ async function handleUserSync(body, env, cfg, request) {
     const now = new Date().toISOString();
     const ip = request.headers.get('CF-Connecting-IP') || '';
     const defaultAttrs = JSON.stringify({ rateLimit: 20, banned: false });
+    const displayName = (result.data && result.data.displayName) || '';
 
     // 先尝试 INSERT（新用户），冲突则更新 login_at 和 known_ip（保留已有 attrs）
-    const result = await env.LOG_DB.prepare(`
+    const insertResult = await env.LOG_DB.prepare(`
       INSERT INTO users (steam_id, attrs, known_ip, login_at, created_at)
       VALUES (?, ?, ?, ?, ?)
       ON CONFLICT(steam_id) DO UPDATE SET login_at = excluded.login_at, known_ip = excluded.known_ip
     `).bind(String(body.steamId), defaultAttrs, ip, now, now).run();
+
+    // 读取当前 attrs，检查 displayName 是否需要更新
+    const currentRow = await env.LOG_DB.prepare(
+      'SELECT attrs FROM users WHERE steam_id = ?'
+    ).bind(String(body.steamId)).first();
+
+    if (currentRow && displayName) {
+      const attrs = JSON.parse(currentRow.attrs || '{}');
+      if (attrs.displayName !== displayName) {
+        attrs.displayName = displayName;
+        await env.LOG_DB.prepare(
+          'UPDATE users SET attrs = ? WHERE steam_id = ?'
+        ).bind(JSON.stringify(attrs), String(body.steamId)).run();
+      }
+    }
 
     // 读取更新后的记录
     const row = await env.LOG_DB.prepare(
@@ -243,7 +259,7 @@ export async function onRequestPost({ request, env }) {
     }
     const banCheck = await checkBanned(body.steamId, env.LOG_DB);
     if (banCheck) return banCheck;
-    const result = await tcpRequest(cfg.host, cfg.port, cfg.authKey, body.steamId, '!银行 余额', body.gamePassword);
+    const result = await tcpRequest(cfg.host, cfg.port, cfg.authKey, body.steamId, '!info myinfo', body.gamePassword);
     return Response.json(result);
   }
 
