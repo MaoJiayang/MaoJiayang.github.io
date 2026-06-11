@@ -431,7 +431,7 @@ var Trade = (function () {
     var range = (maxP - minP) / MAX_BUCKETS;
     var buckets = [];
     for (var i = 0; i < MAX_BUCKETS; i++) {
-      buckets.push({ label: fmtCompact(minP + i * range) + '~' + fmtCompact(minP + (i + 1) * range), count: 0, priceMin: minP + i * range, priceMax: minP + (i + 1) * range });
+      buckets.push({ label: fmtCompact(Math.round(minP + i * range)) + '~' + fmtCompact(Math.round(minP + (i + 1) * range)), count: 0, priceMin: minP + i * range, priceMax: minP + (i + 1) * range });
     }
     sorted.forEach(function (o) {
       var idx = Math.min(MAX_BUCKETS - 1, Math.floor((o.price - minP) / range));
@@ -577,7 +577,9 @@ var Trade = (function () {
     // 滑块已拖动部分填色
     var pct2 = tsMaxQty > 0 ? (slider.value / tsMaxQty) * 100 : 0;
     slider.style.background = 'linear-gradient(to right, var(--jade-200) 0%, var(--jade-200) ' + pct2 + '%, var(--bg-hover) ' + pct2 + '%)';
-    document.getElementById('ts-total').textContent = '预估成交 ' + fmtCompact(tsPrice * tsQty) + ' SC';
+    document.getElementById('ts-price').value = fmtPrice(tsPrice);
+    document.getElementById('ts-qty').value = fmtPrice(tsQty);
+    document.getElementById('ts-total').textContent = '预估成交 ' + fmtPrice(tsPrice * tsQty) + ' SC';
   }
 
   /** 计算当前价格下可购买/出售的最大数量 */
@@ -593,7 +595,8 @@ var Trade = (function () {
   }
 
   function onTsPriceInput() {
-    var v = parseInt(document.getElementById('ts-price').value, 10);
+    var raw = document.getElementById('ts-price').value.replace(/,/g, '');
+    var v = parseInt(raw, 10);
     if (isNaN(v) || v < 0) v = 0;
     tsPrice = v;
     tsMaxQty = calcMaxQtyForPrice(tsPrice, tsMode);
@@ -604,7 +607,8 @@ var Trade = (function () {
   }
 
   function onTsQtyInput() {
-    var v = parseInt(document.getElementById('ts-qty').value, 10);
+    var raw = document.getElementById('ts-qty').value.replace(/,/g, '');
+    var v = parseInt(raw, 10);
     if (isNaN(v) || v < 1) v = 1;
     if (v > tsMaxQty) v = tsMaxQty;
     tsQty = v;
@@ -680,6 +684,12 @@ var Trade = (function () {
     if (n >= 1e9) return (n / 1e9).toFixed(1).replace(/\.?0+$/, '') + 'B';
     if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.?0+$/, '') + 'M';
     if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.?0+$/, '') + 'k';
+    return Number(n).toLocaleString();
+  }
+
+  /** 价格专用：始终显示完整数字带逗号分隔（不用 KMB） */
+  function fmtPrice(n) {
+    if (n == null || isNaN(n)) return '0';
     return Number(n).toLocaleString();
   }
 
