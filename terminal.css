@@ -538,8 +538,14 @@ body{
 .mk-item-actions{display:flex;gap:6px;flex-shrink:0}
 .mk-buy-btn{font-size:13px;padding:8px 12px;border-radius:4px;background:var(--jade-200);color:var(--bg-void);border:none;cursor:pointer;font-family:inherit;font-weight:600;white-space:nowrap;min-height:40px}
 .mk-buy-btn:hover{opacity:.85}
-.mk-sell-btn{font-size:13px;padding:8px 12px;border-radius:4px;background:var(--color-error);color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:600;white-space:nowrap;min-height:40px}
+.mk-sell-btn{font-size:13px;padding:8px 12px;border-radius:4px;background:var(--gold-200);color:var(--bg-void);border:none;cursor:pointer;font-family:inherit;font-weight:600;white-space:nowrap;min-height:40px}
 .mk-sell-btn:hover{opacity:.85}
+
+/* 发布订单栏 */
+.mk-pub-bar{display:flex;align-items:center;padding:10px 12px;background:var(--bg-card);border-radius:6px;margin-bottom:12px;gap:10px}
+.mk-pub-label{font-size:13px;color:var(--text-muted);flex-shrink:0}
+.mk-pub-actions{display:flex;gap:6px;flex:1;justify-content:flex-end}
+.mk-pub-bar .tr-act-btn{margin:0}
 
 /* 订单折叠区 */
 .mk-orders-section{margin-top:12px}

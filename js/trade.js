@@ -330,9 +330,12 @@ var Trade = (function () {
     });
 
     // 顶部操作栏：发布按钮
-    var html = '<div class="tr-actions">'
-      + '<button class="tr-act-btn" onclick="Trade.publishOrder(\'sell\')">+ 发布卖单</button>'
-      + '<button class="tr-act-btn" onclick="Trade.publishOrder(\'buy\')">+ 发布收单</button>'
+    var html = '<div class="mk-pub-bar">'
+      + '<span class="mk-pub-label">发布新订单</span>'
+      + '<div class="mk-pub-actions">'
+      + '<button class="tr-act-btn" onclick="Trade.publishOrder(\'sell\')">卖单</button>'
+      + '<button class="tr-act-btn" onclick="Trade.publishOrder(\'buy\')">收单</button>'
+      + '</div>'
       + '</div>';
 
     if (filtered.length === 0) { html += '<div class="tr-empty">' + (search ? '没有匹配的订单' : '暂无订单') + '</div>'; container.innerHTML = html; return; }
