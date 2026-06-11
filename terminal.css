@@ -553,28 +553,30 @@ body::before{
 /* ========== TradeSheet ========== */
 #tradesheet-overlay{position:fixed;inset:0;z-index:260;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
 #tradesheet-overlay.show{opacity:1;pointer-events:auto}
-#tradesheet{background:var(--bg-panel);border-radius:12px 12px 0 0;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:20px 16px 24px}
+#tradesheet{background:var(--bg-panel);border-radius:12px 12px 0 0;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:20px 16px 24px}
 
 .ts-header{display:flex;align-items:baseline;gap:10px;margin-bottom:16px}
 .ts-title{font-size:16px;font-weight:600;color:var(--text-primary)}
 .ts-stock{font-size:12px;color:var(--text-muted)}
 
 /* 柱状图 */
-.ts-chart{margin-bottom:4px}
+.ts-chart{margin-bottom:0}
 .ts-chart-empty{display:flex;align-items:center;justify-content:center;height:130px;color:var(--text-muted);font-size:13px}
 .ts-chart-inner{display:flex;height:130px}
-.ts-yaxis{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;width:42px;flex-shrink:0;padding-right:6px;padding-bottom:2px}
+.ts-yaxis{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;width:44px;flex-shrink:0;padding-right:6px;padding-bottom:18px}
 .ts-yaxis span{font-size:10px;color:var(--text-muted);line-height:1}
-.ts-bars{display:flex;align-items:flex-end;gap:6px;flex:1;height:100%;padding-bottom:2px}
-.ts-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.ts-yunit{font-size:9px;color:var(--text-disabled);margin-top:2px}
+.ts-bars-wrap{flex:1;display:flex;flex-direction:column}
+.ts-bars{display:flex;align-items:flex-end;gap:8px;flex:1;height:100%}
+.ts-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;position:relative}
+/* 刻度竖线：每个 bar-col 左边缘画线（第一个不画） */
+.ts-bar-col+.ts-bar-col::before{content:'';position:absolute;left:-4px;top:0;bottom:18px;width:1px;background:var(--text-disabled);opacity:.4}
 .ts-bar{width:100%;max-width:40px;min-height:2px;border-radius:3px 3px 0 0;position:relative;transition:height .3s,background .3s}
-.ts-bar-label{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--jade-200);white-space:nowrap}
-
-/* X轴分区点（与柱图对齐，在间隙处显示分区值） */
-.ts-xaxis{display:flex;justify-content:space-between;padding-left:48px;margin-bottom:12px}
-.ts-xaxis span{font-size:9px;color:var(--text-muted);text-align:center;flex-shrink:0}
-.ts-xaxis span:first-child,.ts-xaxis span:last-child{min-width:0;overflow:visible}
-.ts-tick::before{content:'|';color:var(--text-disabled);font-size:8px}
+/* 柱下标签 */
+.ts-xlbl{font-size:9px;color:var(--text-muted);text-align:center;margin-top:3px;min-height:14px;white-space:nowrap}
+.ts-xlbl-cur{color:var(--jade-200);font-weight:700}
+/* 底部单位 */
+.ts-xunit{font-size:9px;color:var(--text-disabled);text-align:right;padding-right:2px;margin-bottom:8px}
 
 /* 输入行 */
 .ts-field{display:flex;align-items:center;gap:8px;margin-bottom:10px}

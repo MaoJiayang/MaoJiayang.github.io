@@ -283,7 +283,10 @@ var Trade = (function () {
     else renderMarket();
   }
 
-  function refreshMarket() { loadMarket(); }
+  function refreshMarket() {
+    if (marketMode === 'orders') loadMyOrders();
+    else loadMarket();
+  }
 
   function toggleOrdersCollapse() {
     _ordersCollapsed = !_ordersCollapsed;
@@ -424,7 +427,7 @@ var Trade = (function () {
       onConfirm: function (m, qty, p) {
         var cmd = isSell ? '!市场 自动购买 ' + name + ' ' + qty + ' ' + p : '!市场 自动出售 ' + name + ' ' + qty + ' ' + p;
         var label = (isSell ? '自动购买 ' : '自动出售 ') + name;
-        exec(cmd, label).then(function () { Warehouse.markStale(); Warehouse.ensureData(); loadMarket(); }).catch(function () {});
+        exec(cmd, label).then(function () { Warehouse.markStale(); Warehouse.ensureData(); refreshMarket(); }).catch(function () {});
       }
     });
   }
@@ -434,7 +437,7 @@ var Trade = (function () {
     document.getElementById('dc-confirm-btn').textContent = '撤销';
     document.getElementById('dc-confirm-btn').onclick = function () {
       UI.closeDcDialog();
-      exec('!市场 撤销订单 ' + orderId, '已撤销订单 #' + orderId).then(function () { loadMarket(); }).catch(function () {});
+      exec('!市场 撤销订单 ' + orderId, '已撤销订单 #' + orderId).then(function () { refreshMarket(); }).catch(function () {});
     };
     document.getElementById('dc-overlay').classList.add('show');
   }
@@ -456,7 +459,7 @@ var Trade = (function () {
       _tsOnConfirm = function () {
         var cmd = '!市场 发布' + (isSell ? '卖单 ' : '收单 ') + itemName + ' ' + tsQty + ' ' + tsPrice;
         var label = (isSell ? '卖单已发布：' : '收单已发布：') + itemName;
-        exec(cmd, label).then(function () { Warehouse.markStale(); Warehouse.ensureData(); loadMarket(); }).catch(function () {});
+        exec(cmd, label).then(function () { Warehouse.markStale(); Warehouse.ensureData(); refreshMarket(); }).catch(function () {});
       };
     });
     UI.switchTab('warehouse');
@@ -584,7 +587,7 @@ var Trade = (function () {
       var label = (mode === 'buy' ? '已购买 ' : '已出售 ') + itemName;
       exec(cmd, label).then(function () {
         Warehouse.markStale(); Warehouse.ensureData();
-        loadMarket();
+        refreshMarket();
       }).catch(function () {});
     };
 
@@ -615,49 +618,53 @@ var Trade = (function () {
       return;
     }
 
-    // Y轴刻度（3档：0, 50%, 100%）
+    var acc = computeAccum(tsBuckets, tsPrice, tsQty, tsMode === 'buy');
     var maxFmt = UI.fmtCompact(tsMaxBucket);
     var midFmt = UI.fmtCompact(Math.round(tsMaxBucket / 2));
+    var N = tsBuckets.length;
 
-    var acc = computeAccum(tsBuckets, tsPrice, tsQty, tsMode === 'buy');
     var html = '<div class="ts-chart-inner">';
 
-    // Y轴
+    // Y轴（左）
     html += '<div class="ts-yaxis">'
       + '<span>' + maxFmt + '</span>'
       + '<span>' + midFmt + '</span>'
       + '<span>0</span>'
+      + '<span class="ts-yunit">件数</span>'
       + '</div>';
 
-    // 柱状图区域 — 桶内线性渐变填充（从下往上）
-    html += '<div class="ts-bars">';
-    tsBuckets.forEach(function (b, i) {
+    // 柱状图 + 横轴标签（列布局：每列 bar + label）
+    html += '<div class="ts-bars-wrap"><div class="ts-bars">';
+    for (var i = 0; i < N; i++) {
+      var b = tsBuckets[i];
       var h = tsMaxBucket > 0 ? Math.round((b.count / tsMaxBucket) * 100) : 0;
       var fill = acc.fills[i];
       var bg = fill > 0
         ? 'linear-gradient(to top, var(--jade-200) ' + fill + '%, var(--bg-hover) ' + fill + '%)'
         : 'var(--bg-hover)';
+      var isCur = i === acc.currentIdx && acc.currentPrice > 0;
+      var isLast = i === N - 1;
+      var isFirst = i === 0;
+      // 标签：当前价（绿）> 末桶价 > 首桶省略
+      var lbl = '';
+      if (isCur) {
+        lbl = '<span class="ts-xlbl ts-xlbl-cur">' + UI.fmtCompact(acc.currentPrice) + ' SC</span>';
+      } else if (isLast) {
+        lbl = '<span class="ts-xlbl">' + UI.fmtCompact(b.priceMax) + ' SC</span>';
+      } else if (!isFirst) {
+        lbl = '<span class="ts-xlbl"></span>';  // 占位保对齐
+      }
       html += '<div class="ts-bar-col">'
         + '<div class="ts-bar" style="height:' + h + '%;background:' + bg + ';min-width:3px" title="' + b.label + ': ' + UI.fmtCompact(b.count) + ' 件"></div>'
+        + lbl
         + '</div>';
-    });
+    }
     html += '</div></div>';
 
-    // X轴：仅标首、尾、当前价
-    html += '<div class="ts-xaxis">';
-    html += '<span>' + UI.fmtCompact(tsBuckets[0].priceMin) + '</span>';
-    for (var j = 0; j < tsBuckets.length; j++) {
-      var isCur = j === acc.currentIdx;
-      var isLast = j === tsBuckets.length - 1;
-      if (isCur && acc.currentPrice > 0) {
-        html += '<span style="color:var(--jade-200);font-weight:700">' + UI.fmtCompact(acc.currentPrice) + '</span>';
-      } else if (isLast) {
-        html += '<span>' + UI.fmtCompact(tsBuckets[j].priceMax) + '</span>';
-      } else {
-        html += '<span class="ts-tick"></span>';
-      }
-    }
-    html += '</div>';
+    html += '</div>'; // .ts-chart-inner
+
+    // X轴单位
+    html += '<div class="ts-xunit">SC</div>';
 
     chart.innerHTML = html;
   }
@@ -758,6 +765,9 @@ var Trade = (function () {
     });
     document.getElementById('ts-price').addEventListener('input', onTsPriceInput);
     document.getElementById('ts-qty').addEventListener('input', onTsQtyInput);
+    // 手机输入法弹窗时自动滚到可见位置
+    document.getElementById('ts-price').addEventListener('focus', function () { var self = this; setTimeout(function(){ self.scrollIntoView({block:'center',behavior:'smooth'}); }, 300); });
+    document.getElementById('ts-qty').addEventListener('focus', function () { var self = this; setTimeout(function(){ self.scrollIntoView({block:'center',behavior:'smooth'}); }, 300); });
     document.getElementById('ts-slider').addEventListener('input', onTsSliderInput);
     document.getElementById('ts-price-sub').addEventListener('click', function () { adjustTsPrice(-1); });
     document.getElementById('ts-price-add').addEventListener('click', function () { adjustTsPrice(1); });
