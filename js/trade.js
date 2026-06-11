@@ -764,20 +764,21 @@ var Trade = (function () {
     });
     document.getElementById('ts-price').addEventListener('input', onTsPriceInput);
     document.getElementById('ts-qty').addEventListener('input', onTsQtyInput);
-    // 手机输入法弹窗时手动滚容器
-    var _tsFocusHandler = function () {
+    // 手机输入法弹窗时自动滚到可见位置（visualViewport 兼容全屏模式）
+    var _tsFocusScroll = function () {
       var self = this;
       setTimeout(function () {
         var sheet = document.getElementById('tradesheet');
+        var vv = window.visualViewport;
+        var visBottom = vv ? vv.height + vv.offsetTop : window.innerHeight;
         var ir = self.getBoundingClientRect();
-        var sr = sheet.getBoundingClientRect();
-        if (ir.bottom > sr.bottom - 10) {
-          sheet.scrollTop += ir.bottom - sr.bottom + 30;
+        if (ir.bottom > visBottom - 10) {
+          sheet.scrollTop += ir.bottom - visBottom + 30;
         }
       }, 400);
     };
-    document.getElementById('ts-price').addEventListener('focus', _tsFocusHandler);
-    document.getElementById('ts-qty').addEventListener('focus', _tsFocusHandler);
+    document.getElementById('ts-price').addEventListener('focus', _tsFocusScroll);
+    document.getElementById('ts-qty').addEventListener('focus', _tsFocusScroll);
     document.getElementById('ts-slider').addEventListener('input', onTsSliderInput);
     document.getElementById('ts-price-sub').addEventListener('click', function () { adjustTsPrice(-1); });
     document.getElementById('ts-price-add').addEventListener('click', function () { adjustTsPrice(1); });
