@@ -9,8 +9,10 @@ var Trade = (function () {
   var currentSubTab = 'shop';
   var shopMode = 'buy';         // 'buy' | 'sell'
   var marketMode = 'mk';        // 'mk' | 'orders'
-  var shopBuyData = null;       // ItemVO[]（仅买入列表）
+  var shopBuyData = null;       // ItemVO[]（买入列表）
+  var shopSellData = null;      // ItemVO[]（卖出/回收列表）
   var bankInfo = null;
+  var shopOpenCat = null;       // 商店当前展开的分类
   var shopLoading = false;
   var marketLoading = false;
   var marketDataCache = null;   // { acquireOrders, sellOrders } 原始数据
@@ -89,34 +91,24 @@ var Trade = (function () {
     Promise.all([p1, p2]).finally(function () { shopLoading = false; renderShop(); });
   }
 
+  function loadSellList() {
+    if (!shopSellData) {
+      exec('!收购 列表', null).then(function (d) {
+        shopSellData = Array.isArray(d) ? d : (d && d.items ? d.items : []);
+        renderShop();
+      }).catch(function () { shopSellData = []; renderShop(); });
+    } else { renderShop(); }
+  }
+
   function switchShopMode(mode) {
     if (mode === shopMode) return;
     shopMode = mode;
     document.querySelectorAll('.tr-shop-mode').forEach(function (el) {
       el.classList.toggle('active', el.dataset.shopMode === mode);
     });
-    if (mode === 'sell') {
-      // 卖出：跳转仓库选择模式
-      Warehouse.enterSelectionMode('sell', function (itemName) {
-        Warehouse.exitSelectionMode();
-        UI.switchTab('trade');
-        switchShopMode('buy');
-        var stock = Warehouse.getStock(itemName);
-        UI.openQSheet('sell', itemName, {
-          stock: stock,
-          onConfirm: function (m, qty) {
-            exec('!收购 提交 ' + itemName + ' ' + qty, '已出售 ' + itemName).then(function () {
-              loadBankInfo(); Warehouse.markStale(); Warehouse.ensureData();
-            }).catch(function () {});
-          }
-        });
-      });
-      UI.switchTab('warehouse');
-    } else if (mode === 'buy' && !shopBuyData) {
-      loadShop();
-    } else {
-      renderShop();
-    }
+    if (mode === 'sell' && !shopSellData) loadSellList();
+    else if (mode === 'buy' && !shopBuyData) loadShop();
+    else renderShop();
   }
 
   function initShop() {
@@ -143,44 +135,89 @@ var Trade = (function () {
     } else { row.style.display = 'none'; }
   }
 
+  function toggleShopCat(hdr) {
+    var body = hdr.nextElementSibling;
+    if (body) {
+      var isOpen = body.classList.toggle('open');
+      hdr.querySelector('.arrow').classList.toggle('open', isOpen);
+      shopOpenCat = isOpen ? hdr.parentElement.dataset.cat : null;
+    }
+  }
+
   function renderShop() {
     var container = document.getElementById('trade-shop-list');
     if (!container) return;
     renderInfo();
-
-    // 卖出模式：已跳转仓库，这里只显示提示
-    if (shopMode === 'sell') {
-      container.innerHTML = '<div class="tr-empty">点击仓库中的物品即可出售</div>';
-      return;
-    }
-
-    var data = shopBuyData;
+    var data = shopMode === 'buy' ? shopBuyData : shopSellData;
     var search = (document.getElementById('tr-shop-search').value || '').toLowerCase().trim();
     if (!data && shopLoading) { container.innerHTML = '<div class="tr-empty">加载中…</div>'; return; }
-    if (!data) { container.innerHTML = '<div class="tr-empty">暂无商品</div>'; return; }
-    var filtered = data.filter(function (item) { return !search || item.name.toLowerCase().indexOf(search) !== -1; });
-    if (filtered.length === 0) { container.innerHTML = '<div class="tr-empty">' + (search ? '没有匹配的物品' : '暂无商品') + '</div>'; return; }
-    var html = '<div class="wh-grid">';
-    filtered.forEach(function (item) {
-      var priceStr = item.price != null ? UI.fmtPrice(item.price) + ' SC' : '—';
-      html += '<div class="wh-card" onclick="Trade.shopBuySell(\'' + escAttr(item.name) + '\')">'
-        + iconHtml(item.name)
-        + '<span class="wh-card-name">' + escHtml(item.name) + '</span>'
-        + '<span class="wh-card-amt">' + priceStr + '</span>'
-        + '</div>';
+    if (!data || data.length === 0) { container.innerHTML = '<div class="tr-empty">暂无商品</div>'; return; }
+
+    // 按分类分组（复用仓库的分类体系）
+    var itemCategories = Warehouse.getItemCategories();
+    var catOrder = Warehouse.getCatOrder();
+    var groups = {};
+    catOrder.forEach(function (cat) { groups[cat] = []; });
+
+    data.forEach(function (item) {
+      var found = false;
+      for (var cat in itemCategories) {
+        if (itemCategories[cat].indexOf(item.name) !== -1) {
+          if (!search || item.name.toLowerCase().indexOf(search) !== -1) {
+            groups[cat].push(item);
+          }
+          found = true;
+          break;
+        }
+      }
+      if (!found && (!search || item.name.toLowerCase().indexOf(search) !== -1)) {
+        groups['其他'].push(item);
+      }
     });
-    html += '</div>';
+
+    var html = '';
+    var openCat = shopOpenCat || catOrder.find(function (c) { return groups[c] && groups[c].length > 0; }) || '零件';
+
+    catOrder.forEach(function (cat) {
+      var items = groups[cat];
+      if (!items || items.length === 0) return;
+      var isOpen = cat === openCat;
+      html += '<div class="wh-cat" data-cat="' + cat + '">'
+        + '<div class="wh-cat-h" onclick="Trade.toggleShopCat(this)">'
+        + '<span class="arrow' + (isOpen ? ' open' : '') + '">▸</span>'
+        + '<span class="wh-cat-dot" style="background:' + Warehouse.getCatColor(cat) + '"></span>'
+        + '<span class="wh-cat-label">' + cat + '</span>'
+        + '<span class="wh-cat-count">' + items.length + ' 种</span>'
+        + '</div>'
+        + '<div class="wh-cat-body' + (isOpen ? ' open' : '') + '"><div class="wh-grid">';
+      items.forEach(function (item) {
+        var priceStr = item.price != null ? UI.fmtPrice(item.price) + ' SC' : '—';
+        html += '<div class="wh-card" onclick="Trade.shopBuySell(\'' + escAttr(item.name) + '\')">'
+          + iconHtml(item.name)
+          + '<span class="wh-card-name">' + escHtml(item.name) + '</span>'
+          + '<span class="wh-card-amt">' + priceStr + '</span>'
+          + '</div>';
+      });
+      html += '</div></div></div>';
+    });
+
+    if (!html) { container.innerHTML = '<div class="tr-empty">' + (search ? '没有匹配的物品' : '暂无商品') + '</div>'; return; }
     container.innerHTML = html;
   }
 
   function shopBuySell(name) {
-    var stock = Warehouse.getStock(name);
-    UI.openQSheet('buy', name, {
-      stock: stock, noCap: true,
+    var isBuy = shopMode === 'buy';
+    var data = isBuy ? shopBuyData : shopSellData;
+    var item = data ? data.find(function (x) { return x.name === name; }) : null;
+    var price = item ? item.price : 0;
+    var stock = isBuy ? 0 : Warehouse.getStock(name);
+    UI.openQSheet(shopMode, name, {
+      stock: stock, noCap: isBuy, lockExtra: !isBuy,
+      extraField: isBuy ? null : { label: '回收单价', value: price, suffix: 'SC', step: 10, min: 0, max: 999999 },
       onConfirm: function (m, qty) {
-        exec('!采购 提交 ' + name + ' ' + qty, '已购买 ' + name).then(function () {
-          loadBankInfo(); Warehouse.markStale(); Warehouse.ensureData();
-        }).catch(function () {});
+        var cmd = isBuy ? '!采购 提交 ' + name + ' ' + qty : '!收购 提交 ' + name + ' ' + qty;
+        var label = (isBuy ? '已购买 ' : '已出售 ') + name;
+        exec(cmd, label).then(function () { loadBankInfo(); Warehouse.markStale(); Warehouse.ensureData(); }).catch(function () {});
       }
     });
   }
@@ -707,7 +744,7 @@ var Trade = (function () {
 
   return {
     init: init, onTabActivated: onTabActivated, switchSubTab: switchSubTab,
-    shopBuySell: shopBuySell, cancelOrder: cancelOrder, publishOrder: publishOrder,
+    shopBuySell: shopBuySell, toggleShopCat: toggleShopCat, cancelOrder: cancelOrder, publishOrder: publishOrder,
     refreshMarket: refreshMarket, quickTrade: quickTrade,
     openTradeSheet: openTradeSheet, closeTradeSheet: closeTradeSheet,
     confirmTradeSheet: confirmTradeSheet, toggleOrdersCollapse: toggleOrdersCollapse,
