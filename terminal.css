@@ -575,6 +575,7 @@ body::before{
 
 /* 柱状图 */
 .ts-chart{margin-bottom:4px}
+.ts-chart-empty{display:flex;align-items:center;justify-content:center;height:130px;color:var(--text-muted);font-size:13px}
 .ts-chart-inner{display:flex;height:130px}
 .ts-yaxis{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;width:42px;flex-shrink:0;padding-right:6px;padding-bottom:2px}
 .ts-yaxis span{font-size:10px;color:var(--text-muted);line-height:1}

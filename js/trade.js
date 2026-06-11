@@ -395,28 +395,19 @@ var Trade = (function () {
     Warehouse.enterSelectionMode(modeForQ, function (itemName) {
       Warehouse.exitSelectionMode();
       UI.switchTab('trade');
-      var mi = getMarketItem(itemName);
-      if (mi) {
-        // 有行情数据 → TradeSheet（出售/收购模式）
-        openTradeSheet(modeForQ, itemName);
-        // 替换确认回调：发布订单而非自动交易
-        _tsOnConfirm = function () {
-          var cmd = '!市场 发布' + (modeForQ === 'sell' ? '卖单 ' : '收单 ') + itemName + ' ' + tsQty + ' ' + tsPrice;
-          var label = (modeForQ === 'sell' ? '卖单已发布：' : '收单已发布：') + itemName;
-          exec(cmd, label).then(function () { Warehouse.markStale(); Warehouse.ensureData(); loadMarket(); }).catch(function () {});
-        };
-      } else {
-        // 无行情 → 回退旧 QSheet
-        UI.openQSheet(modeForQ, itemName, {
-          stock: 0,
-          extraField: { label: '单价 SC', value: 100, suffix: 'SC', step: 10, min: 0, max: 999999, confirmLabel: modeForQ === 'sell' ? '确认发布卖单' : '确认发布收单' },
-          onConfirm: function (m, qty, price) {
-            var cmd = modeForQ === 'sell' ? '!市场 发布卖单 ' + itemName + ' ' + qty + ' ' + price : '!市场 发布收单 ' + itemName + ' ' + qty + ' ' + price;
-            var label = (modeForQ === 'sell' ? '卖单已发布：' : '收单已发布：') + itemName;
-            exec(cmd, label).then(function () { Warehouse.markStale(); Warehouse.ensureData(); loadMarket(); }).catch(function () {});
-          }
-        });
-      }
+      // 统一走 TradeSheet（无行情时显示空图表，自由定价）
+      openTradeSheet(modeForQ, itemName);
+      // 覆盖 UI 文案：发布订单 vs 自动交易
+      var isSell = modeForQ === 'sell';
+      document.getElementById('ts-title').textContent = (isSell ? '发布卖单 ' : '发布收单 ') + itemName;
+      document.getElementById('ts-price-label').textContent = '单价';
+      document.getElementById('ts-confirm').textContent = isSell ? '确认发布卖单' : '确认发布收单';
+      // 替换确认回调：发布订单而非自动交易
+      _tsOnConfirm = function () {
+        var cmd = '!市场 发布' + (isSell ? '卖单 ' : '收单 ') + itemName + ' ' + tsQty + ' ' + tsPrice;
+        var label = (isSell ? '卖单已发布：' : '收单已发布：') + itemName;
+        exec(cmd, label).then(function () { Warehouse.markStale(); Warehouse.ensureData(); loadMarket(); }).catch(function () {});
+      };
     });
     UI.switchTab('warehouse');
   }
@@ -470,12 +461,13 @@ var Trade = (function () {
     return highlights;
   }
 
-  /** 打开 TradeSheet */
+  /** 打开 TradeSheet（交易 / 发布订单共用） */
   function openTradeSheet(mode, itemName) {
     var mi = getMarketItem(itemName);
-    if (!mi) { UI.showToast('error', '该物品暂无行情数据'); return; }
-    var orders = mode === 'buy' ? (mi.sellOrders || []) : (mi.buyOrders || []);
-    if (orders.length === 0) { UI.showToast('error', mode === 'buy' ? '该物品暂无卖单' : '该物品暂无收单'); return; }
+    var orders = [];
+    if (mi) {
+      orders = mode === 'buy' ? (mi.sellOrders || []) : (mi.buyOrders || []);
+    }
 
     tsMode = mode;
     tsItem = itemName;
@@ -484,9 +476,14 @@ var Trade = (function () {
     tsBuckets = bb.buckets;
     tsMaxBucket = bb.maxCount;
 
-    // 默认值
-    tsPrice = mode === 'buy' ? bb.minPrice : bb.maxPrice;
-    tsMaxQty = calcMaxQtyForPrice(tsPrice, mode);
+    // 默认值（无对手方订单时用兜底默认价 + 不设上限）
+    if (orders.length > 0) {
+      tsPrice = mode === 'buy' ? bb.minPrice : bb.maxPrice;
+      tsMaxQty = calcMaxQtyForPrice(tsPrice, mode);
+    } else {
+      tsPrice = 100;
+      tsMaxQty = 2147483647;  // 无对手方订单时仅做整型防御，不设实际上限
+    }
     tsQty = Math.min(100, tsMaxQty);
 
     document.getElementById('ts-title').textContent = (mode === 'buy' ? '购买 ' : '出售 ') + itemName;
@@ -529,6 +526,12 @@ var Trade = (function () {
   function renderChart() {
     var chart = document.getElementById('ts-chart');
     if (!chart) return;
+
+    // 无对手方订单 → 占位提示
+    if (tsBuckets.length === 0) {
+      chart.innerHTML = '<div class="ts-chart-empty">暂无行情参考，可自由定价</div>';
+      return;
+    }
 
     // Y轴刻度（3档：0, 50%, 100%）
     var maxFmt = fmtCompact(tsMaxBucket);
