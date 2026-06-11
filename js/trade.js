@@ -30,6 +30,7 @@ var Trade = (function () {
   var _tsOrders = [];           // 当前使用的订单列表（升序或降序）
   var _tsOnConfirm = null;
   var _tsVvHandler = null;      // visualViewport 键盘适配
+  var _tsWasFullscreen = false; // 打开前处于全屏 → 关闭后恢复
 
   // ========== 通用执行 ==========
 
@@ -595,7 +596,13 @@ var Trade = (function () {
     renderChart();
     updateTsDisplay();
 
-    // 移动端键盘适配：全屏模式下 position:fixed 不随键盘上移，需用 transform 顶卡片
+    // 全屏模式下 Android 键盘不触发视口变化（已知浏览器 bug）→ 暂时退出全屏
+    _tsWasFullscreen = !!document.fullscreenElement;
+    if (_tsWasFullscreen) {
+      document.exitFullscreen();
+    }
+
+    // iOS 键盘适配：position:fixed 不随键盘上移，用 visualViewport + transform
     if (window.visualViewport) {
       _tsVvHandler = function () {
         var kbH = window.innerHeight - window.visualViewport.height;
@@ -622,6 +629,13 @@ var Trade = (function () {
     }
     document.getElementById('tradesheet-overlay').classList.remove('show');
     _tsOnConfirm = null;
+    // 打开前若处于全屏 → 恢复
+    if (_tsWasFullscreen) {
+      _tsWasFullscreen = false;
+      setTimeout(function () {
+        document.documentElement.requestFullscreen().catch(function () {});
+      }, 400);
+    }
   }
 
   function confirmTradeSheet() {
