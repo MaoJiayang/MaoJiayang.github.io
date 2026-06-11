@@ -184,7 +184,7 @@ var UI = (function () {
     var startX = 0, startY = 0, swiping = false;
 
     container.addEventListener('touchstart', function(e){
-      if (e.target.closest('#qsheet-overlay') || e.target.closest('#dc-overlay')) return;
+      if (e.target.closest('#qsheet-overlay') || e.target.closest('#dc-overlay') || e.target.closest('#cf-overlay') || e.target.closest('#tradesheet-overlay')) return;
       if (e.target.closest('.wh-grid') || e.target.closest('.wh-cat-body') ||
           e.target.closest('.sem-card-body') || e.target.closest('.ac-card-body') ||
           e.target.closest('.hist-card-body')) return;

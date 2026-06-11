@@ -240,7 +240,7 @@ var Trade = (function () {
     var body = document.getElementById('mk-orders-body');
     var toggle = document.getElementById('mk-orders-toggle');
     if (body) body.style.display = _ordersCollapsed ? 'none' : 'block';
-    if (toggle) toggle.textContent = _ordersCollapsed ? '展开 ∨' : '收起 ∧';
+    if (toggle) toggle.textContent = _ordersCollapsed ? '展示所有订单 ∨' : '隐藏所有订单 ∧';
   }
 
   function renderMarket() {
@@ -297,7 +297,7 @@ var Trade = (function () {
 
     // 折叠的订单卡片区
     html += '<div class="mk-orders-section">'
-      + '<div class="mk-orders-h" id="mk-orders-toggle" onclick="Trade.toggleOrdersCollapse()">当前订单（展开 ∨）</div>'
+      + '<div class="mk-orders-h" id="mk-orders-toggle" onclick="Trade.toggleOrdersCollapse()">展示所有订单 ∨</div>'
       + '<div class="mk-orders-body" id="mk-orders-body" style="display:none">';
     if (marketDataCache) {
       var orders = parseOrders(marketDataCache);
@@ -387,11 +387,18 @@ var Trade = (function () {
     Warehouse.enterSelectionMode(modeForQ, function (itemName) {
       Warehouse.exitSelectionMode();
       UI.switchTab('trade');
-      // 如果有行情数据，使用 TradeSheet；否则回退 QSheet
       var mi = getMarketItem(itemName);
-      if (mi && modeForQ === 'sell') {
-        openTradeSheet('sell', itemName);
+      if (mi) {
+        // 有行情数据 → TradeSheet（出售/收购模式）
+        openTradeSheet(modeForQ, itemName);
+        // 替换确认回调：发布订单而非自动交易
+        _tsOnConfirm = function () {
+          var cmd = '!市场 发布' + (modeForQ === 'sell' ? '卖单 ' : '收单 ') + itemName + ' ' + tsQty + ' ' + tsPrice;
+          var label = (modeForQ === 'sell' ? '卖单已发布：' : '收单已发布：') + itemName;
+          exec(cmd, label).then(function () { Warehouse.markStale(); Warehouse.ensureData(); loadMarket(); }).catch(function () {});
+        };
       } else {
+        // 无行情 → 回退旧 QSheet
         UI.openQSheet(modeForQ, itemName, {
           stock: 0,
           extraField: { label: '单价 SC', value: 100, suffix: 'SC', step: 10, min: 0, max: 999999, confirmLabel: modeForQ === 'sell' ? '确认发布卖单' : '确认发布收单' },
@@ -471,11 +478,12 @@ var Trade = (function () {
 
     // 默认值
     tsPrice = mode === 'buy' ? bb.minPrice : bb.maxPrice;
-    tsQty = Math.min(100, bb.total);
-    tsMaxQty = mode === 'buy' ? bb.total : (Warehouse.getStock(itemName) || 0);
+    tsMaxQty = calcMaxQtyForPrice(tsPrice, mode);
+    tsQty = Math.min(100, tsMaxQty);
 
     document.getElementById('ts-title').textContent = (mode === 'buy' ? '购买 ' : '出售 ') + itemName;
     document.getElementById('ts-stock').textContent = '仓库: ' + fmtCompact(Warehouse.getStock(itemName) || 0);
+    document.getElementById('ts-price-label').textContent = mode === 'buy' ? '最高单价' : '最低单价';
     document.getElementById('ts-price').value = tsPrice;
     document.getElementById('ts-qty').value = tsQty;
     document.getElementById('ts-slider').max = tsMaxQty;
@@ -513,35 +521,79 @@ var Trade = (function () {
   function renderChart() {
     var chart = document.getElementById('ts-chart');
     if (!chart) return;
+
+    // Y轴刻度（3档：0, 50%, 100%）
+    var maxFmt = fmtCompact(tsMaxBucket);
+    var midFmt = fmtCompact(Math.round(tsMaxBucket / 2));
+
     var highlights = computeAccum(tsBuckets, tsPrice, tsQty, tsMode === 'buy');
-    var html = '';
+    var html = '<div class="ts-chart-inner">';
+
+    // Y轴
+    html += '<div class="ts-yaxis">'
+      + '<span>' + maxFmt + '</span>'
+      + '<span>' + midFmt + '</span>'
+      + '<span>0</span>'
+      + '</div>';
+
+    // 柱状图区域
+    html += '<div class="ts-bars">';
     tsBuckets.forEach(function (b, i) {
       var h = tsMaxBucket > 0 ? Math.round((b.count / tsMaxBucket) * 100) : 0;
       var hl = highlights[i];
       var bg = hl > 0 ? 'rgba(93,221,170,' + hl.toFixed(2) + ')' : 'var(--bg-hover)';
-      var label = hl > 0 && hl < 1 ? Math.round(hl * 100) + '%' : '';
+      var pctLabel = hl > 0 && hl < 1 ? Math.round(hl * 100) + '%' : '';
       html += '<div class="ts-bar-col">'
-        + '<div class="ts-bar" style="height:' + h + 'px;background:' + bg + '" title="' + b.label + ': ' + fmtCompact(b.count) + ' 件">'
-        + (label ? '<span class="ts-bar-label">' + label + '</span>' : '')
+        + '<div class="ts-bar" style="height:' + h + '%;background:' + bg + '" title="' + b.label + ': ' + fmtCompact(b.count) + ' 件">'
+        + (pctLabel ? '<span class="ts-bar-label">' + pctLabel + '</span>' : '')
         + '</div>'
-        + '<div class="ts-bar-text">' + b.label + '</div>'
         + '</div>';
     });
+    html += '</div></div>';
+
+    // X轴分区点（显示在柱与柱之间的间隙，justify-content: space-between 均匀分布）
+    html += '<div class="ts-xaxis">';
+    html += '<span>' + fmtCompact(tsBuckets[0].priceMin) + '</span>';
+    for (var j = 0; j < tsBuckets.length; j++) {
+      html += '<span>' + fmtCompact(tsBuckets[j].priceMax) + '</span>';
+    }
+    html += '</div>';
+
     chart.innerHTML = html;
   }
 
-  /** 更新显示：总价 + 滑块 + 输入框 */
+  /** 更新显示：总价 + 滑块填色 + 输入框 */
   function updateTsDisplay() {
     document.getElementById('ts-price').value = tsPrice;
     document.getElementById('ts-qty').value = tsQty;
-    document.getElementById('ts-slider').value = Math.min(tsQty, tsMaxQty);
+    var slider = document.getElementById('ts-slider');
+    slider.max = tsMaxQty;
+    slider.value = Math.min(tsQty, tsMaxQty);
+    // 滑块已拖动部分填色
+    var pct2 = tsMaxQty > 0 ? (slider.value / tsMaxQty) * 100 : 0;
+    slider.style.background = 'linear-gradient(to right, var(--jade-200) 0%, var(--jade-200) ' + pct2 + '%, var(--bg-hover) ' + pct2 + '%)';
     document.getElementById('ts-total').textContent = '预估成交 ' + fmtCompact(tsPrice * tsQty) + ' SC';
+  }
+
+  /** 计算当前价格下可购买/出售的最大数量 */
+  function calcMaxQtyForPrice(price, mode) {
+    if (!_tsOrders || !_tsOrders.length) return 0;
+    var total = 0;
+    for (var i = 0; i < _tsOrders.length; i++) {
+      var o = _tsOrders[i];
+      if (mode === 'buy' && o.price <= price) total += o.count;
+      else if (mode === 'sell' && o.price >= price) total += o.count;
+    }
+    return total;
   }
 
   function onTsPriceInput() {
     var v = parseInt(document.getElementById('ts-price').value, 10);
     if (isNaN(v) || v < 0) v = 0;
     tsPrice = v;
+    tsMaxQty = calcMaxQtyForPrice(tsPrice, tsMode);
+    if (tsQty > tsMaxQty) tsQty = tsMaxQty;
+    document.getElementById('ts-slider').max = tsMaxQty;
     renderChart();
     updateTsDisplay();
   }
@@ -558,6 +610,9 @@ var Trade = (function () {
   function adjustTsPrice(delta) {
     var step = tsPrice >= 1000 ? 100 : tsPrice >= 100 ? 10 : 1;
     tsPrice = Math.max(0, tsPrice + delta * step);
+    tsMaxQty = calcMaxQtyForPrice(tsPrice, tsMode);
+    if (tsQty > tsMaxQty) tsQty = tsMaxQty;
+    document.getElementById('ts-slider').max = tsMaxQty;
     renderChart();
     updateTsDisplay();
   }
