@@ -320,11 +320,30 @@ var UI = (function () {
 
   // ========== KMB 格式 & 步长 ==========
 
+  /** 纯文本 KMB（图表标签、输入框等不渲染 HTML 的场景） */
   function fmtCompact(n) {
-    if (n >= 1e9) return (n / 1e9).toFixed(2).replace(/\.?0+$/, '') + 'B';
-    if (n >= 1e6) return (n / 1e6).toFixed(2).replace(/\.?0+$/, '') + 'M';
-    if (n >= 1e3) return (n / 1e3).toFixed(2).replace(/\.?0+$/, '') + 'k';
-    return n.toLocaleString();
+    if (n == null || isNaN(n)) return '0';
+    if (n >= 1e9) return (n / 1e9).toFixed(1).replace(/\.?0+$/, '') + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.?0+$/, '') + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.?0+$/, '') + 'k';
+    return Number(n).toLocaleString();
+  }
+
+  /** HTML 彩色 KMB（物品数量、余额等展示区）。后缀 k=翠绿 M=金 B=紫 */
+  function fmtNum(n) {
+    if (n == null || isNaN(n)) return '0';
+    if (typeof n === 'object' && n.toString) n = parseFloat(n.toString());
+    if (isNaN(n)) return '0';
+    if (n >= 1e9) { var v = (n / 1e9).toFixed(2).replace(/\.?0+$/, ''); return v + '<span class="num-sfx num-b">B</span>'; }
+    if (n >= 1e6) { var v = (n / 1e6).toFixed(2).replace(/\.?0+$/, ''); return v + '<span class="num-sfx num-m">M</span>'; }
+    if (n >= 1e3) { var v = (n / 1e3).toFixed(2).replace(/\.?0+$/, ''); return v + '<span class="num-sfx num-k">k</span>'; }
+    return Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 });
+  }
+
+  /** 完整逗号分隔数字（价格专用，不用 KMB） */
+  function fmtPrice(n) {
+    if (n == null || isNaN(n)) return '0';
+    return Number(n).toLocaleString();
   }
 
   function parseCompact(s) {
@@ -762,6 +781,10 @@ var UI = (function () {
     onExtraFocus: onExtraFocus,
     onExtraBlur: onExtraBlur,
     switchQSheetMode: switchQSheetMode,
+    // KMB 格式
+    fmtCompact: fmtCompact,
+    fmtNum: fmtNum,
+    fmtPrice: fmtPrice,
     // Init
     init: init,
   };

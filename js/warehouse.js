@@ -130,14 +130,6 @@ var Warehouse = (function () {
     return '<span class="wh-card-icon-fb" style="background:' + color + '">' + initial + '</span>';
   }
 
-  function fmtNum(n, compact) {
-    if (!compact) return n.toLocaleString(undefined, { maximumFractionDigits: 1 });
-    if (n >= 1e9)      return (n / 1e9).toFixed(2).replace(/\.?0+$/, '');
-    if (n >= 1e6)      return (n / 1e6).toFixed(2).replace(/\.?0+$/, '');
-    if (n >= 1e3)      return (n / 1e3).toFixed(2).replace(/\.?0+$/, '');
-    return n.toLocaleString();
-  }
-
   function render() {
     var container = document.getElementById('wh-categories');
     var emptyEl = document.getElementById('wh-empty');
@@ -213,19 +205,13 @@ var Warehouse = (function () {
       items.forEach(function(item){
         var compact = warehouseCompactNum;
         var amtNum = typeof item.amount === 'number' ? item.amount : parseInt(item.amount) || 0;
-        var display = amtNum === 0 ? '0' : fmtNum(amtNum, compact);
-        var suffixHtml = '';
-        if (compact && amtNum >= 1000) {
-          var cls = amtNum >= 1e9 ? 'num-b' : amtNum >= 1e6 ? 'num-m' : 'num-k';
-          var sfx = cls === 'num-b' ? 'B' : cls === 'num-m' ? 'M' : 'k';
-          suffixHtml = '<span class="wh-num-sfx ' + cls + '">' + sfx + '</span>';
-        }
+        var display = amtNum === 0 ? '0' : (compact ? UI.fmtNum(amtNum) : UI.fmtPrice(amtNum));
         var iconHtml = renderCardIcon(item.name);
         var zeroClass = item.amount === 0 ? ' zero' : '';
         html += '<div class="wh-card' + zeroClass + '" onclick="Warehouse.openCard(this,\'' + escAttr(item.name) + '\',' + item.amount + ')">'
           + iconHtml
           + '<span class="wh-card-name">' + escHtml(item.name) + '</span>'
-          + '<span class="wh-card-amt">' + escHtml(display) + suffixHtml + '</span>'
+          + '<span class="wh-card-amt">' + display + '</span>'
           + '</div>';
       });
       html += '</div></div></div>';

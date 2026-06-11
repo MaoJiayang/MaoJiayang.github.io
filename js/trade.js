@@ -123,10 +123,10 @@ var Trade = (function () {
     if (bankInfo) {
       row.style.display = '';
       var balBox = document.getElementById('ti-balance');
-      balBox.querySelector('.tr-info-val').innerHTML = formatNum(bankInfo.balance) + ' SC';
+      balBox.querySelector('.tr-info-val').innerHTML = UI.fmtNum(bankInfo.balance) + ' SC';
       balBox.className = 'tr-info-box' + (bankInfo.balance > 0 ? ' good' : '');
       var odBox = document.getElementById('ti-overdraft');
-      odBox.querySelector('.tr-info-val').innerHTML = bankInfo.overdraftLimit > 0 ? formatNum(bankInfo.overdraftLimit) + ' SC' : '无';
+      odBox.querySelector('.tr-info-val').innerHTML = bankInfo.overdraftLimit > 0 ? UI.fmtNum(bankInfo.overdraftLimit) + ' SC' : '无';
       odBox.className = 'tr-info-box' + (bankInfo.overdraftLimit > 0 ? ' good' : '');
       var vipBox = document.getElementById('ti-vip');
       vipBox.querySelector('.tr-info-val').innerHTML = bankInfo.vipDays > 0 ? bankInfo.vipDays + ' 天' : '—';
@@ -146,7 +146,7 @@ var Trade = (function () {
     if (filtered.length === 0) { container.innerHTML = '<div class="tr-empty">' + (search ? '没有匹配的物品' : (shopMode === 'buy' ? '暂无商品' : '暂无商品')) + '</div>'; return; }
     var html = '';
     filtered.forEach(function (item) {
-      var priceStr = item.price != null ? formatNum(item.price) + ' SC' : '—';
+      var priceStr = item.price != null ? UI.fmtNum(item.price) + ' SC' : '—';
       html += '<div class="tr-shop-row" onclick="Trade.shopBuySell(\'' + escAttr(item.name) + '\')">'
         + iconHtml(item.name) + '<span class="tr-shop-name">' + escHtml(item.name) + '</span>'
         + '<span class="tr-shop-price">' + priceStr + '</span>'
@@ -278,8 +278,8 @@ var Trade = (function () {
     var html = '';
     names.forEach(function (name) {
       var m = marketItems[name];
-      var sellInfo = m.minSell < Infinity ? (fmtCompact(m.minSell) + '~' + fmtCompact(m.maxSell) + ' · ' + fmtCompact(m.totalSell) + ' 件') : '—';
-      var buyInfo = m.minBuy < Infinity ? (fmtCompact(m.minBuy) + '~' + fmtCompact(m.maxBuy) + ' · ' + fmtCompact(m.totalBuy) + ' 件') : '—';
+      var sellInfo = m.minSell < Infinity ? (UI.fmtCompact(m.minSell) + '~' + UI.fmtCompact(m.maxSell) + ' · ' + UI.fmtCompact(m.totalSell) + ' 件') : '—';
+      var buyInfo = m.minBuy < Infinity ? (UI.fmtCompact(m.minBuy) + '~' + UI.fmtCompact(m.maxBuy) + ' · ' + UI.fmtCompact(m.totalBuy) + ' 件') : '—';
 
       html += '<div class="mk-item-row">'
         + iconHtml(name)
@@ -307,7 +307,7 @@ var Trade = (function () {
           + '<span class="tr-order-tag ' + (isSell ? 'sell' : 'buy') + '">' + (isSell ? '出' : '收') + '</span>'
           + '<div class="tr-order-body">'
           + '<span class="tr-order-name">' + escHtml(bill.itemName) + '</span>'
-          + '<span class="tr-order-price">' + formatNum(bill.univalence) + ' SC/件  ×' + formatNum(bill.count) + '</span>'
+          + '<span class="tr-order-price">' + UI.fmtNum(bill.univalence) + ' SC/件  ×' + UI.fmtNum(bill.count) + '</span>'
           + '<span class="tr-order-owner">' + escHtml(bill.ownerDisplayName || '') + '</span>'
           + '</div></div>';
       });
@@ -346,7 +346,7 @@ var Trade = (function () {
         + '<span class="tr-order-tag ' + (isSell ? 'sell' : 'buy') + '">' + (isSell ? '出' : '收') + '</span>'
         + '<div class="tr-order-body">'
         + '<span class="tr-order-name">' + escHtml(bill.itemName) + '</span>'
-        + '<span class="tr-order-price">' + formatNum(bill.univalence) + ' SC/件  ×' + formatNum(bill.count) + '</span>'
+        + '<span class="tr-order-price">' + UI.fmtNum(bill.univalence) + ' SC/件  ×' + UI.fmtNum(bill.count) + '</span>'
         + '<span class="tr-order-owner">' + escHtml(bill.ownerDisplayName || '') + '</span>'
         + '</div>'
         + '<button class="tr-order-cancel" onclick="event.stopPropagation();Trade.cancelOrder(\'' + escAttr(String(bill.id)) + '\')">撤销</button>'
@@ -425,7 +425,7 @@ var Trade = (function () {
     var range = (maxP - minP) / MAX_BUCKETS;
     var buckets = [];
     for (var i = 0; i < MAX_BUCKETS; i++) {
-      buckets.push({ label: fmtCompact(Math.round(minP + i * range)) + '~' + fmtCompact(Math.round(minP + (i + 1) * range)), count: 0, priceMin: minP + i * range, priceMax: minP + (i + 1) * range });
+      buckets.push({ label: UI.fmtCompact(Math.round(minP + i * range)) + '~' + UI.fmtCompact(Math.round(minP + (i + 1) * range)), count: 0, priceMin: minP + i * range, priceMax: minP + (i + 1) * range });
     }
     sorted.forEach(function (o) {
       var idx = Math.min(MAX_BUCKETS - 1, Math.floor((o.price - minP) / range));
@@ -487,7 +487,7 @@ var Trade = (function () {
     tsQty = Math.min(100, tsMaxQty);
 
     document.getElementById('ts-title').textContent = (mode === 'buy' ? '购买 ' : '出售 ') + itemName;
-    document.getElementById('ts-stock').textContent = '仓库: ' + fmtCompact(Warehouse.getStock(itemName) || 0);
+    document.getElementById('ts-stock').textContent = '仓库: ' + UI.fmtCompact(Warehouse.getStock(itemName) || 0);
     document.getElementById('ts-price-label').textContent = mode === 'buy' ? '最高单价' : '最低单价';
     document.getElementById('ts-price').value = tsPrice;
     document.getElementById('ts-qty').value = tsQty;
@@ -534,8 +534,8 @@ var Trade = (function () {
     }
 
     // Y轴刻度（3档：0, 50%, 100%）
-    var maxFmt = fmtCompact(tsMaxBucket);
-    var midFmt = fmtCompact(Math.round(tsMaxBucket / 2));
+    var maxFmt = UI.fmtCompact(tsMaxBucket);
+    var midFmt = UI.fmtCompact(Math.round(tsMaxBucket / 2));
 
     var highlights = computeAccum(tsBuckets, tsPrice, tsQty, tsMode === 'buy');
     var html = '<div class="ts-chart-inner">';
@@ -555,7 +555,7 @@ var Trade = (function () {
       var bg = hl > 0 ? 'rgba(93,221,170,' + hl.toFixed(2) + ')' : 'var(--bg-hover)';
       var pctLabel = hl > 0 && hl < 1 ? Math.round(hl * 100) + '%' : '';
       html += '<div class="ts-bar-col">'
-        + '<div class="ts-bar" style="height:' + h + '%;background:' + bg + '" title="' + b.label + ': ' + fmtCompact(b.count) + ' 件">'
+        + '<div class="ts-bar" style="height:' + h + '%;background:' + bg + '" title="' + b.label + ': ' + UI.fmtCompact(b.count) + ' 件">'
         + (pctLabel ? '<span class="ts-bar-label">' + pctLabel + '</span>' : '')
         + '</div>'
         + '</div>';
@@ -564,9 +564,9 @@ var Trade = (function () {
 
     // X轴分区点（显示在柱与柱之间的间隙，justify-content: space-between 均匀分布）
     html += '<div class="ts-xaxis">';
-    html += '<span>' + fmtCompact(tsBuckets[0].priceMin) + '</span>';
+    html += '<span>' + UI.fmtCompact(tsBuckets[0].priceMin) + '</span>';
     for (var j = 0; j < tsBuckets.length; j++) {
-      html += '<span>' + fmtCompact(tsBuckets[j].priceMax) + '</span>';
+      html += '<span>' + UI.fmtCompact(tsBuckets[j].priceMax) + '</span>';
     }
     html += '</div>';
 
@@ -583,9 +583,9 @@ var Trade = (function () {
     // 滑块已拖动部分填色
     var pct2 = tsMaxQty > 0 ? (slider.value / tsMaxQty) * 100 : 0;
     slider.style.background = 'linear-gradient(to right, var(--jade-200) 0%, var(--jade-200) ' + pct2 + '%, var(--bg-hover) ' + pct2 + '%)';
-    document.getElementById('ts-price').value = fmtPrice(tsPrice);
-    document.getElementById('ts-qty').value = fmtPrice(tsQty);
-    document.getElementById('ts-total').textContent = '预估成交 ' + fmtPrice(tsPrice * tsQty) + ' SC';
+    document.getElementById('ts-price').value = UI.fmtPrice(tsPrice);
+    document.getElementById('ts-qty').value = UI.fmtPrice(tsQty);
+    document.getElementById('ts-total').textContent = '预估成交 ' + UI.fmtPrice(tsPrice * tsQty) + ' SC';
   }
 
   /** 计算当前价格下可购买/出售的最大数量 */
@@ -684,30 +684,6 @@ var Trade = (function () {
   }
 
   // ========== 工具函数 ==========
-
-  function fmtCompact(n) {
-    if (n == null) return '0';
-    if (n >= 1e9) return (n / 1e9).toFixed(1).replace(/\.?0+$/, '') + 'B';
-    if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.?0+$/, '') + 'M';
-    if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.?0+$/, '') + 'k';
-    return Number(n).toLocaleString();
-  }
-
-  /** 价格专用：始终显示完整数字带逗号分隔（不用 KMB） */
-  function fmtPrice(n) {
-    if (n == null || isNaN(n)) return '0';
-    return Number(n).toLocaleString();
-  }
-
-  function formatNum(n) {
-    if (n == null) return '0';
-    if (typeof n === 'object' && n.toString) n = parseFloat(n.toString());
-    if (isNaN(n)) return '0';
-    if (n >= 1e9) { var v = (n / 1e9).toFixed(2).replace(/\.?0+$/, ''); return v + '<span class="wh-num-sfx num-b">B</span>'; }
-    if (n >= 1e6) { var v = (n / 1e6).toFixed(2).replace(/\.?0+$/, ''); return v + '<span class="wh-num-sfx num-m">M</span>'; }
-    if (n >= 1e3) { var v = (n / 1e3).toFixed(2).replace(/\.?0+$/, ''); return v + '<span class="wh-num-sfx num-k">k</span>'; }
-    return Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 });
-  }
 
   function escHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   function escAttr(s) { return String(s || '').replace(/'/g, "\\'").replace(/"/g, '&quot;'); }

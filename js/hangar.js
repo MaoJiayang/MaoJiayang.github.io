@@ -263,7 +263,7 @@ var Hangar = (function () {
         + '<span class="ha-grid-icon">🚀</span>'
         + '<div class="ha-world-info">'
         + '<span class="ha-world-name" data-full="' + escAttr(dn) + '" onclick="Hangar.tapName(this)">' + escHtml(label) + '</span>'
-        + '<span class="ha-world-meta">PCU ' + (g.pcu || 0) + ' · ' + (g.blocksCount || 0) + ' 方块 · ' + formatNum(g.price) + ' SC</span>'
+        + '<span class="ha-world-meta">PCU ' + (g.pcu || 0) + ' · ' + (g.blocksCount || 0) + ' 方块 · ' + UI.fmtCompact(g.price) + ' SC</span>'
         + '</div>'
         + '</div>'
         + '<div class="ha-row-actions">'
@@ -359,14 +359,6 @@ var Hangar = (function () {
   }
 
   // ========== 工具函数 ==========
-
-  function formatNum(n) {
-    if (n == null) return '0';
-    if (n >= 1e9) return (n / 1e9).toFixed(2).replace(/\.?0+$/, '') + 'B';
-    if (n >= 1e6) return (n / 1e6).toFixed(2).replace(/\.?0+$/, '') + 'M';
-    if (n >= 1e3) return (n / 1e3).toFixed(2).replace(/\.?0+$/, '') + 'k';
-    return Number(n).toLocaleString();
-  }
 
   function escHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   function escAttr(s) { return String(s || '').replace(/'/g, "\\'").replace(/"/g, '&quot;'); }

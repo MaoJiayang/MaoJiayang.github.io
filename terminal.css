@@ -217,10 +217,10 @@ body::before{
 }
 .wh-card-name{font-size:11px;color:var(--text-secondary);text-align:center;line-height:1.3}
 .wh-card-amt{font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--text-primary)}
-.wh-num-sfx{font-size:10px;font-weight:700;margin-left:1px}
-.wh-num-sfx.num-k{color:var(--jade-200)}
-.wh-num-sfx.num-m{color:var(--gold-200)}
-.wh-num-sfx.num-b{color:var(--color-arcane)}
+.num-sfx{font-size:10px;font-weight:700;margin-left:1px}
+.num-sfx.num-k{color:var(--jade-200)}
+.num-sfx.num-m{color:var(--gold-200)}
+.num-sfx.num-b{color:var(--color-arcane)}
 .wh-empty{padding:32px;text-align:center;color:var(--text-muted);font-size:13px}
 .wh-select-banner{
   display:flex;align-items:center;justify-content:space-between;gap:8px;

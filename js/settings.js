@@ -27,9 +27,9 @@ var Settings = (function () {
       var rows = [
         { label: '名称', value: escHtml(infoData.displayName || '—') },
         { label: '等级', value: 'Lv.' + (infoData.level || 0) },
-        { label: '经验', value: fmtNum(infoData.expCurrent) + ' / ' + fmtNum(infoData.expToNext) },
-        { label: '科技等级', value: (infoData.techLevel || '—') + ' · ' + fmtNum(infoData.techPoints) + ' 点' },
-        { label: '银行余额', value: fmtNum(infoData.bankBalance) + ' SC' },
+        { label: '经验', value: UI.fmtPrice(infoData.expCurrent) + ' / ' + UI.fmtPrice(infoData.expToNext) },
+        { label: '科技等级', value: (infoData.techLevel || '—') + ' · ' + UI.fmtPrice(infoData.techPoints) + ' 点' },
+        { label: '银行余额', value: UI.fmtPrice(infoData.bankBalance) + ' SC' },
         { label: '精英凭证', value: (infoData.vipDays > 0 ? infoData.vipDays + ' 天' : '—') },
       ];
       rows.forEach(function (r) {
@@ -120,11 +120,6 @@ var Settings = (function () {
   }
 
   // ========== 工具函数 ==========
-
-  function fmtNum(n) {
-    if (n == null || isNaN(n)) return '0';
-    return Number(n).toLocaleString();
-  }
 
   function escHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
