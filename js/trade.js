@@ -191,7 +191,7 @@ var Trade = (function () {
         + '</div>'
         + '<div class="wh-cat-body' + (isOpen ? ' open' : '') + '"><div class="wh-grid">';
       items.forEach(function (item) {
-        var priceStr = item.price != null ? UI.fmtPrice(item.price) + ' SC' : '—';
+        var priceStr = item.price != null ? UI.fmtNum(item.price) + ' SC' : '—';
         html += '<div class="wh-card" onclick="Trade.shopBuySell(\'' + escAttr(item.name) + '\')">'
           + iconHtml(item.name)
           + '<span class="wh-card-name">' + escHtml(item.name) + '</span>'
