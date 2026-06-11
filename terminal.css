@@ -75,6 +75,11 @@ body{
 }
 #user-badge:hover{color:var(--text-primary);border-color:var(--jade-400)}
 #user-badge.logged-in{color:var(--jade-200);border-color:var(--jade-600)}
+#fs-btn{cursor:pointer;font-size:17px;color:var(--text-muted);padding:0 6px;line-height:var(--topbar-h);transition:color .2s;user-select:none;position:relative}
+#fs-btn:hover{color:var(--text-primary)}
+.fs-bubble{position:absolute;top:calc(var(--topbar-h) + 6px);left:50%;transform:translateX(-50%);background:var(--bg-card);color:var(--text-primary);font-size:12px;padding:6px 12px;border-radius:6px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .3s;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.fs-bubble::before{content:'';position:absolute;top:-5px;left:50%;transform:translateX(-50%);border:5px solid transparent;border-bottom-color:var(--bg-card)}
+.fs-bubble.show{opacity:1}
 .conn-dot{
   display:inline-block;width:8px;height:8px;border-radius:50%;
   background:#8b949e;flex-shrink:0;transition:background .3s;

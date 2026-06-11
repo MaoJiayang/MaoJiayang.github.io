@@ -77,6 +77,26 @@ var UI = (function () {
     }
   }
 
+  // ========== 全屏切换 ==========
+
+  function toggleFullscreen() {
+    // 点过全屏后隐藏气泡
+    var bubble = document.getElementById('fs-bubble');
+    if (bubble) bubble.classList.remove('show');
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(function () {});
+    } else {
+      document.exitFullscreen();
+    }
+  }
+
+  function showFsBubble() {
+    var bubble = document.getElementById('fs-bubble');
+    if (!bubble) return;
+    bubble.classList.add('show');
+    setTimeout(function () { bubble.classList.remove('show'); }, 5000);
+  }
+
   // ========== 断开确认弹窗 ==========
 
   function closeDcDialog() {
@@ -691,6 +711,12 @@ var UI = (function () {
       if (e.target === this) hideConfirmDialog();
     });
 
+    // 首次访问全屏提示
+    if (!localStorage.getItem('fs_tip_shown')) {
+      setTimeout(showFsBubble, 1500);
+      localStorage.setItem('fs_tip_shown', '1');
+    }
+
     // Dots
     updateTabDots();
   }
@@ -705,6 +731,7 @@ var UI = (function () {
     updateGauge: updateGauge,
     updateUserBadge: updateUserBadge,
     handleUserBadgeClick: handleUserBadgeClick,
+    toggleFullscreen: toggleFullscreen,
     // Disconnect
     closeDcDialog: closeDcDialog,
     confirmDisconnect: confirmDisconnect,
