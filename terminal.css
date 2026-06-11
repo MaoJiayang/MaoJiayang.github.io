@@ -553,7 +553,7 @@ body::before{
 /* ========== TradeSheet ========== */
 #tradesheet-overlay{position:fixed;inset:0;z-index:260;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
 #tradesheet-overlay.show{opacity:1;pointer-events:auto}
-#tradesheet{background:var(--bg-panel);border-radius:12px 12px 0 0;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:20px 16px 24px}
+#tradesheet{background:var(--bg-panel);border-radius:12px 12px 0 0;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:20px 16px 24px;margin-bottom:env(keyboard-inset-height,0px)}
 
 .ts-header{display:flex;align-items:baseline;gap:10px;margin-bottom:16px}
 .ts-title{font-size:16px;font-weight:600;color:var(--text-primary)}

@@ -787,18 +787,19 @@ var Trade = (function () {
     });
     document.getElementById('ts-price').addEventListener('input', onTsPriceInput);
     document.getElementById('ts-qty').addEventListener('input', onTsQtyInput);
-    // 手机输入法弹窗时自动滚到可见位置（visualViewport 兼容全屏模式）
+    // 手机输入法弹窗时自动滚到可见位置
+    var _tsInitH = window.innerHeight;
     var _tsFocusScroll = function () {
       var self = this;
+      // Android：viewport resize → 延迟等键盘动画 → scrollIntoView
+      // iOS：visualViewport resize → transform 顶卡片（由 _tsVvHandler 处理）
       setTimeout(function () {
-        var sheet = document.getElementById('tradesheet');
-        var vv = window.visualViewport;
-        var visBottom = vv ? vv.height + vv.offsetTop : window.innerHeight;
-        var ir = self.getBoundingClientRect();
-        if (ir.bottom > visBottom - 10) {
-          sheet.scrollTop += ir.bottom - visBottom + 30;
+        var nowH = window.innerHeight;
+        if (nowH < _tsInitH - 100) {
+          // Android 键盘已弹出（viewport 缩小）→ 滚容器
+          self.scrollIntoView({ block: 'center', behavior: 'smooth' });
         }
-      }, 400);
+      }, 500);
     };
     document.getElementById('ts-price').addEventListener('focus', _tsFocusScroll);
     document.getElementById('ts-qty').addEventListener('focus', _tsFocusScroll);
