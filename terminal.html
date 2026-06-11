@@ -102,8 +102,8 @@
     <!-- 玩家市场 -->
     <div class="tr-section" id="trade-market" style="display:none">
       <div class="tr-modebar">
-        <button class="tr-market-mode active" data-market-mode="all">全部</button>
-        <button class="tr-market-mode" data-market-mode="mine">我的</button>
+        <button class="tr-market-mode active" data-market-mode="mk">行情</button>
+        <button class="tr-market-mode" data-market-mode="orders">我的订单</button>
         <span class="tr-refresh" id="tr-market-refresh" onclick="Trade.refreshMarket()" title="刷新">↻</span>
       </div>
       <input class="wh-search" id="tr-market-search" type="text" placeholder="搜索物品…">
@@ -230,6 +230,42 @@
     <div class="qs-actions">
       <button class="qs-cancel" onclick="UI.closeQSheet()">取消</button>
       <button class="qs-confirm" id="qs-confirm" onclick="UI.confirmQSheet()">确认存入</button>
+    </div>
+  </div>
+</div>
+
+<!-- 市场行情 TradeSheet -->
+<div id="tradesheet-overlay">
+  <div id="tradesheet">
+    <div class="ts-header">
+      <span class="ts-title" id="ts-title"></span>
+      <span class="ts-stock" id="ts-stock"></span>
+    </div>
+    <div class="ts-chart" id="ts-chart"></div>
+    <div class="ts-field">
+      <span class="ts-label">单价</span>
+      <div class="ts-stepper">
+        <button class="ts-step" id="ts-price-sub">−</button>
+        <input id="ts-price" type="text" inputmode="numeric">
+        <button class="ts-step" id="ts-price-add">+</button>
+      </div>
+      <span class="ts-suffix">SC</span>
+    </div>
+    <div class="ts-field">
+      <span class="ts-label">数量</span>
+      <div class="ts-stepper">
+        <button class="ts-step" id="ts-qty-sub">−</button>
+        <input id="ts-qty" type="text" inputmode="numeric">
+        <button class="ts-step" id="ts-qty-add">+</button>
+      </div>
+    </div>
+    <div class="ts-slider-wrap">
+      <input type="range" id="ts-slider" min="0" max="100" value="0">
+    </div>
+    <div class="ts-total" id="ts-total"></div>
+    <div class="ts-actions">
+      <button class="ts-cancel" id="ts-cancel">取消</button>
+      <button class="ts-confirm" id="ts-confirm">确认购买</button>
     </div>
   </div>
 </div>

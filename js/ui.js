@@ -219,6 +219,7 @@ var UI = (function () {
   var _lockQty = 0;            // >0 表示数量锁定
   var _lockExtra = false;      // 单价锁定
   var _noCap = false;          // 数量无上限（服营商店买入等）
+  var _maxQty = 0;             // >0 表示数量上限（市场拆单用）
 
   /**
    * openQSheet(mode, itemName, stock, onConfirm)        ← 仓库用法（向后兼容）
