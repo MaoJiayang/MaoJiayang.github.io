@@ -333,15 +333,19 @@ var UI = (function () {
     return Number(n).toLocaleString();
   }
 
-  /** HTML 彩色 KMB（物品数量、余额等展示区）。后缀 k=翠绿 M=金 B=紫 */
+  /** HTML 彩色 KMB（物品数量、余额等展示区）。后缀 k=翠绿 M=金 B=紫。支持负数 */
   function fmtNum(n) {
     if (n == null || isNaN(n)) return '0';
     if (typeof n === 'object' && n.toString) n = parseFloat(n.toString());
     if (isNaN(n)) return '0';
-    if (n >= 1e9) { var v = (n / 1e9).toFixed(2).replace(/\.?0+$/, ''); return v + '<span class="num-sfx num-b">B</span>'; }
-    if (n >= 1e6) { var v = (n / 1e6).toFixed(2).replace(/\.?0+$/, ''); return v + '<span class="num-sfx num-m">M</span>'; }
-    if (n >= 1e3) { var v = (n / 1e3).toFixed(2).replace(/\.?0+$/, ''); return v + '<span class="num-sfx num-k">k</span>'; }
-    return Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 });
+    var neg = n < 0;
+    var abs = Math.abs(n);
+    var result;
+    if (abs >= 1e9) { result = (abs / 1e9).toFixed(2).replace(/\.?0+$/, '') + '<span class="num-sfx num-b">B</span>'; }
+    else if (abs >= 1e6) { result = (abs / 1e6).toFixed(2).replace(/\.?0+$/, '') + '<span class="num-sfx num-m">M</span>'; }
+    else if (abs >= 1e3) { result = (abs / 1e3).toFixed(2).replace(/\.?0+$/, '') + '<span class="num-sfx num-k">k</span>'; }
+    else { result = abs.toLocaleString(undefined, { maximumFractionDigits: 0 }); }
+    return (neg ? '<span style="color:var(--color-error)">-</span>' : '') + result;
   }
 
   /** 完整逗号分隔数字（价格专用，不用 KMB） */

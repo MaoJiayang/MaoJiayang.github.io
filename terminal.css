@@ -252,6 +252,7 @@ body::before{
 .tr-info-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em}
 .tr-info-val{font-size:15px;font-family:var(--font-mono);font-weight:600;color:var(--text-primary)}
 .tr-info-box.good .tr-info-val{color:var(--jade-200)}
+.tr-info-box.bad .tr-info-val{color:var(--color-error)}
 .tr-info-box.warn .tr-info-val{color:var(--color-warn)}
 .tr-modebar{display:flex;gap:0;margin-bottom:10px;border-radius:4px;overflow:hidden;border:1px solid var(--bg-hover)}
 .tr-shop-mode,.tr-market-mode{
