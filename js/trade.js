@@ -395,8 +395,8 @@ var Trade = (function () {
     Warehouse.enterSelectionMode(modeForQ, function (itemName) {
       Warehouse.exitSelectionMode();
       UI.switchTab('trade');
-      // 统一走 TradeSheet（无行情时显示空图表，自由定价）
-      openTradeSheet(modeForQ, itemName);
+      // 发布视角看同方向订单（卖单参考卖单、收单参考收单），与交易视角相反
+      openTradeSheet(modeForQ === 'sell' ? 'buy' : 'sell', itemName);
       // 覆盖 UI 文案：发布订单 vs 自动交易
       var isSell = modeForQ === 'sell';
       document.getElementById('ts-title').textContent = (isSell ? '发布卖单 ' : '发布收单 ') + itemName;
