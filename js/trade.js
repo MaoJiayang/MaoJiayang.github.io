@@ -653,7 +653,6 @@ var Trade = (function () {
       + '<span>' + maxFmt + '</span>'
       + '<span>' + midFmt + '</span>'
       + '<span>0</span>'
-      + '<span class="ts-yunit">件数</span>'
       + '</div>';
 
     // 柱状图 + 横轴标签（列布局：每列 bar + label）
