@@ -148,13 +148,16 @@ var UI = (function () {
     el.classList.add('show');
   }
 
-  function onLoginSuccess() {
+  function onLoginSuccess(rateLimit) {
     hideLoginGuide();
     updateUserBadge();
     updateGauge();
     document.getElementById('wh-bar').style.display = '';
     fireTabCallback(currentTab);
     showToast('success', '已连接至伊卡洛斯星服务器');
+
+    // 应用服务端下发的限流上限
+    if (rateLimit) SeBridge.setRateLimit(rateLimit);
 
     // 首次登录引导全屏
     if (!localStorage.getItem('fs_guide_shown')) {
@@ -688,8 +691,12 @@ var UI = (function () {
       btn.textContent = '连接服务器';
       if (r.code === 200) {
         SeBridge.saveCredentials(steamId, pwd, remember);
-        SeBridge.syncUser().catch(function(){});
-        onLoginSuccess();
+        SeBridge.syncUser().then(function(syncR){
+          var rl = (syncR && syncR.data && syncR.data.attrs && syncR.data.attrs.rateLimit) || 0;
+          onLoginSuccess(rl);
+        }).catch(function(){
+          onLoginSuccess(0);
+        });
       } else {
         showLoginErr(r.msg || '验证失败');
       }

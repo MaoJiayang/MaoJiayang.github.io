@@ -206,6 +206,10 @@ var SeBridge = (function () {
     return RATE_LIMIT;
   }
 
+  function setRateLimit(n) {
+    if (typeof n === 'number' && n > 0) RATE_LIMIT = n;
+  }
+
   // ========== 初始化 ==========
 
   function init(opts) {
@@ -249,6 +253,7 @@ var SeBridge = (function () {
     getRemainingCalls: getRemainingCalls,
     getResetSeconds: getResetSeconds,
     getRateLimit: getRateLimit,
+    setRateLimit: setRateLimit,
 
     // 桥接状态（只读）
     get bridgeDown() { return _bridgeDown; },

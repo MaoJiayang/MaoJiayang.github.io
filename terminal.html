@@ -380,7 +380,13 @@ setTimeout(function(){
 
 // 初始状态
 if (SeBridge.hasCredentials()) {
-  UI.onLoginSuccess();
+  // 从服务端拉取限流上限（静默，失败不影响使用）
+  SeBridge.syncUser().then(function(syncR){
+    var rl = (syncR && syncR.data && syncR.data.attrs && syncR.data.attrs.rateLimit) || 0;
+    UI.onLoginSuccess(rl);
+  }).catch(function(){
+    UI.onLoginSuccess(0);
+  });
 } else {
   UI.showLoginGuide();
 }
