@@ -56,6 +56,18 @@ async function checkBanned(steamId, db) {
   return null;
 }
 
+/** 递归清除所有字符串值中的 Unicode 私有使用区字符（U+E000~U+F8FF） */
+function cleanPUA(obj) {
+  if (typeof obj === 'string') return obj.replace(/[-]/g, '');
+  if (Array.isArray(obj)) return obj.map(cleanPUA);
+  if (obj && typeof obj === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(obj)) out[k] = cleanPUA(v);
+    return out;
+  }
+  return obj;
+}
+
 function getConfig(env) {
   return {
     host: env.SE_HOST || DEFAULT_HOST,
@@ -139,6 +151,8 @@ async function tcpRequest(host, port, authKey, steamId, command, password, custo
   try { raw = JSON.parse(responseJson); } catch (_) {
     return { code: 500, msg: 'SE服务器响应异常', data: null };
   }
+
+  raw = cleanPUA(raw);
 
   // 归一化响应格式（兼容新旧两种 SE 插件格式）
   if (raw.code !== undefined) return raw;
