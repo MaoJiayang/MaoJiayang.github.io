@@ -207,13 +207,9 @@ var Trade = (function () {
 
   function shopBuySell(name) {
     var isBuy = shopMode === 'buy';
-    var data = isBuy ? shopBuyData : shopSellData;
-    var item = data ? data.find(function (x) { return x.name === name; }) : null;
-    var price = item ? item.price : 0;
-    var stock = isBuy ? 0 : Warehouse.getStock(name);
+    var stock = Warehouse.getStock(name);
     UI.openQSheet(shopMode, name, {
-      stock: stock, noCap: isBuy, lockExtra: !isBuy,
-      extraField: isBuy ? null : { label: '回收单价', value: price, suffix: 'SC', step: 10, min: 0, max: 999999 },
+      stock: stock, noCap: isBuy,
       onConfirm: function (m, qty) {
         var cmd = isBuy ? '!采购 提交 ' + name + ' ' + qty : '!收购 提交 ' + name + ' ' + qty;
         var label = (isBuy ? '已购买 ' : '已出售 ') + name;
