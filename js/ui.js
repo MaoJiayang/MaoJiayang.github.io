@@ -559,7 +559,7 @@ var UI = (function () {
       tapState.count = 0;
     }
     tapState.last = now;
-    var step = getDirStep(currentVal, dir) * (tapState.count + 1);
+    var step = getDirStep(currentVal, dir) * (tapState.count * 5 + 10);
     clearTimeout(tapState.timer);
     tapState.timer = setTimeout(function(){ tapState.count = 0; tapState.last = 0; }, 600);
     return step;
