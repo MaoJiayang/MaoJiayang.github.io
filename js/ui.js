@@ -711,12 +711,6 @@ var UI = (function () {
       if (e.target === this) hideConfirmDialog();
     });
 
-    // 首次访问全屏提示
-    if (!localStorage.getItem('fs_tip_shown')) {
-      setTimeout(showFsBubble, 1500);
-      localStorage.setItem('fs_tip_shown', '1');
-    }
-
     // Dots
     updateTabDots();
   }

@@ -605,6 +605,27 @@ body{
 .ts-cancel{flex:1;padding:12px;font-size:14px;font-weight:600;background:var(--bg-card);color:var(--text-secondary);border:1px solid var(--bg-hover);border-radius:6px;cursor:pointer;font-family:inherit}
 .ts-confirm{flex:2;padding:12px;font-size:14px;font-weight:600;background:var(--jade-200);color:var(--bg-void);border:none;border-radius:6px;cursor:pointer;font-family:inherit}
 
+/* ========== 设置面板 ========== */
+.st-card{background:var(--bg-card);border-radius:6px;padding:12px 14px;margin-bottom:10px}
+.st-card-h{font-size:12px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+.st-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bg-hover)}
+.st-row:last-child{border-bottom:none}
+.st-label{font-size:13px;color:var(--text-muted)}
+.st-value{font-size:14px;font-weight:500;color:var(--text-primary)}
+.st-fs-row{display:flex;justify-content:space-between;align-items:center}
+.st-fs-row span{font-size:14px;color:var(--text-primary)}
+#st-fs-btn{font-size:13px;padding:6px 16px;border-radius:4px;background:var(--jade-200);color:var(--bg-void);border:none;cursor:pointer;font-family:inherit;font-weight:600}
+.st-disconnect{display:block;width:100%;padding:12px;font-size:14px;font-weight:600;background:var(--color-error);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;margin-top:16px}
+.st-donate{display:block;width:100%;padding:8px;font-size:14px;color:var(--text-muted);background:none;border:none;cursor:pointer;font-family:inherit;text-align:center;margin-top:8px}
+.st-donate:hover{color:var(--gold-200)}
+
+/* 赞赏弹窗 */
+#donate-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+#donate-overlay.show{opacity:1;pointer-events:auto}
+#donate-dialog{background:var(--bg-panel);border-radius:12px;padding:20px;text-align:center;max-width:90vw}
+#donate-dialog img{max-width:100%;max-height:70vh;border-radius:8px;display:block}
+#donate-dialog .donate-close{margin-top:12px;font-size:14px;color:var(--text-muted);background:none;border:none;cursor:pointer;font-family:inherit}
+
 /* ========== 响应式 ========== */
 @media(min-width:768px){
   #sidebar{display:flex}

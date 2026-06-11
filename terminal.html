@@ -16,9 +16,6 @@
 <div id="topbar">
   <span class="logo">◈ 虚空终端<span class="logo-hash" id="logo-hash"></span></span>
   <span class="spacer"></span>
-  <span id="fs-btn" onclick="UI.toggleFullscreen()" title="全屏">⛶</span>
-  <span class="fs-bubble" id="fs-bubble">点击全屏，沉浸体验</span>
-  <span class="spacer"></span>
   <span class="conn-dot" id="conn-dot" title="检测中"></span>
   <span class="gauge-bar" id="gauge-bar" style="display:none"><span class="gauge-fill" id="gauge-fill"></span></span>
   <span id="user-badge" onclick="UI.handleUserBadgeClick()">未登录</span>
@@ -184,7 +181,30 @@
           <div class="placeholder"><span class="ph-icon">📜</span><span class="ph-text">舰船市场 — 即将开放</span></div>
         </div>
       </div>
-  <div class="tab-panel" id="panel-settings"><div class="placeholder"><span class="ph-icon">⚙</span><span class="ph-text">设置 — 即将开放</span></div></div>
+  <div class="tab-panel" id="panel-settings">
+    <div class="st-card">
+      <div class="st-card-h">显示</div>
+      <div class="st-fs-row">
+        <span>全屏模式</span>
+        <button id="st-fs-btn">进入</button>
+      </div>
+    </div>
+
+    <div class="st-card">
+      <div class="st-card-h">账号</div>
+      <div id="st-info"><div class="tr-empty">加载中…</div></div>
+    </div>
+
+    <div class="st-card">
+      <div class="st-card-h">关于</div>
+      <div class="st-row"><span class="st-label">版本</span><span class="st-value" id="st-ver">—</span></div>
+      <div class="st-row"><span class="st-label">服务状态</span><span class="st-value" id="st-status">检测中</span></div>
+      <div class="st-row"><span class="st-label">API 用量</span><span class="st-value" id="st-gauge">—</span></div>
+    </div>
+
+    <button class="st-disconnect" id="st-disconnect">断开连接</button>
+    <button class="st-donate" id="st-donate">🧋 请杯奶茶</button>
+  </div>
   </div><!-- /#panels-wrap -->
   <div id="tab-dots"></div>
 </div>
@@ -282,6 +302,14 @@
   </div>
 </div>
 
+<!-- 赞赏弹窗 -->
+<div id="donate-overlay">
+  <div id="donate-dialog">
+    <img src="icons/tea.jpg" alt="收款码">
+    <button class="donate-close" onclick="Settings.hideDonate()">关闭</button>
+  </div>
+</div>
+
 <!-- 断开确认弹窗 -->
 <div id="dc-overlay">
   <div id="dc-dialog">
@@ -304,6 +332,7 @@
 <script src="js/trade.js"></script>
 <script src="js/hangar.js"></script>
 <script src="js/shipyard.js"></script>
+<script src="js/settings.js"></script>
 <script>
 // ========== 伊卡洛斯虚空终端 — 入口 ==========
 SeBridge.init({ bridgeUrl: '' });
@@ -320,12 +349,14 @@ Warehouse.init();
 Trade.init();
 Hangar.init();
 Shipyard.init();
+Settings.init();
 
 // Tab 回调
 UI.onTabChange('warehouse', function(){ Warehouse.onTabActivated(); });
 UI.onTabChange('trade', function(){ Trade.onTabActivated(); });
 UI.onTabChange('hangar', function(){ Hangar.onTabActivated(); });
 UI.onTabChange('shipyard', function(){ Shipyard.onTabActivated(); });
+UI.onTabChange('settings', function(){ Settings.onTabActivated(); });
 
 // 断开/撤销弹窗关闭时清理
 var origCloseDc = UI.closeDcDialog;
