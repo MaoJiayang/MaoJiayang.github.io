@@ -464,32 +464,64 @@ var Trade = (function () {
 
   // ========== TradeSheet ==========
 
-  /** 计算价格分桶 */
+  /** 自适应分桶：按唯一价格聚合，>MAX_BUCKETS 时 greedy merge 相邻最近桶 */
   function buildBuckets(orders, MAX_BUCKETS) {
     MAX_BUCKETS = MAX_BUCKETS || 10;
-    if (!orders || orders.length === 0) return { buckets: [], maxCount: 0, total: 0 };
-    var sorted = orders.slice().sort(function (a, b) { return a.price - b.price; });
-    var minP = sorted[0].price;
-    var maxP = sorted[sorted.length - 1].price;
-    if (minP === maxP) maxP = minP + 1; // 防止除零
-    var range = (maxP - minP) / MAX_BUCKETS;
-    var buckets = [];
-    for (var i = 0; i < MAX_BUCKETS; i++) {
-      buckets.push({ label: UI.fmtCompact(Math.round(minP + i * range)) + '~' + UI.fmtCompact(Math.round(minP + (i + 1) * range)), count: 0, priceMin: minP + i * range, priceMax: minP + (i + 1) * range });
-    }
-    sorted.forEach(function (o) {
-      var idx = Math.min(MAX_BUCKETS - 1, Math.floor((o.price - minP) / range));
-      buckets[idx].count += o.count || 0;
+    if (!orders || orders.length === 0) return { buckets: [], maxCount: 0, total: 0, minPrice: 0, maxPrice: 0 };
+
+    // 按价格去重聚合
+    var priceMap = {};
+    orders.forEach(function (o) {
+      var p = o.price;
+      if (!priceMap[p]) priceMap[p] = { priceMin: p, priceMax: p, count: 0 };
+      priceMap[p].count += o.count || 0;
     });
-    var maxCount = 0, total = 0;
-    buckets.forEach(function (b) { maxCount = Math.max(maxCount, b.count); total += b.count; });
+    var buckets = Object.keys(priceMap).map(Number).sort(function (a, b) { return a - b; }).map(function (p) {
+      var b = priceMap[p];
+      b.label = UI.fmtCompact(p);
+      return b;
+    });
+
+    // >MAX_BUCKETS 时合并
+    if (buckets.length > MAX_BUCKETS) {
+      buckets = mergeBuckets(buckets, MAX_BUCKETS);
+    }
+
+    var maxCount = 0, total = 0, minP = Infinity, maxP = -Infinity;
+    buckets.forEach(function (b) {
+      maxCount = Math.max(maxCount, b.count);
+      total += b.count;
+      if (b.priceMin < minP) minP = b.priceMin;
+      if (b.priceMax > maxP) maxP = b.priceMax;
+    });
     return { buckets: buckets, maxCount: maxCount, total: total, minPrice: minP, maxPrice: maxP };
   }
 
-  /** 累加高亮计算：从 best price 方向扫描，返回每个桶的高亮比例 [0,1] */
+  /** Greedy merge：每次合并相对差距最小的一对相邻桶，直到 ≤ target */
+  function mergeBuckets(buckets, target) {
+    while (buckets.length > target) {
+      var bestGap = Infinity, bestIdx = -1;
+      for (var i = 0; i < buckets.length - 1; i++) {
+        var a = buckets[i], b = buckets[i + 1];
+        var mid = (a.priceMin + b.priceMax) / 2;
+        var gap = mid > 0 ? (b.priceMin - a.priceMax) / mid : 0;
+        if (gap < bestGap) { bestGap = gap; bestIdx = i; }
+      }
+      // 合并 bestIdx 和 bestIdx+1
+      var prev = buckets[bestIdx], next = buckets[bestIdx + 1];
+      prev.priceMax = Math.max(prev.priceMax, next.priceMax);
+      prev.count += next.count;
+      prev.label = UI.fmtCompact(prev.priceMin) + '~' + UI.fmtCompact(prev.priceMax);
+      buckets.splice(bestIdx + 1, 1);
+    }
+    return buckets;
+  }
+
+  /** 累积填充计算：桶内从下往上填满再进下一个。返回 fills(0~100)、当前桶索引、当前价 */
   function computeAccum(buckets, maxPrice, qty, asc) {
-    var highlights = buckets.map(function () { return 0; });
-    if (!qty || qty <= 0 || !buckets.length) return highlights;
+    var fills = buckets.map(function () { return 0; });
+    var currentIdx = -1, currentPrice = 0;
+    if (!qty || qty <= 0 || !buckets.length) return { fills: fills, currentIdx: currentIdx, currentPrice: currentPrice };
     var remaining = qty;
     for (var i = 0; i < buckets.length; i++) {
       var idx = asc ? i : buckets.length - 1 - i;
@@ -499,16 +531,16 @@ var Trade = (function () {
       if (b.count <= 0) continue;
       if (remaining <= 0) break;
       if (b.count >= remaining) {
-        // 部分覆盖
-        var pct = remaining / b.count;
-        highlights[idx] = Math.max(0.25, Math.min(1, pct));
+        fills[idx] = Math.round((remaining / b.count) * 100);
+        currentIdx = idx;
+        currentPrice = asc ? b.priceMin : b.priceMax;
         remaining = 0;
       } else {
-        highlights[idx] = 1;
+        fills[idx] = 100;
         remaining -= b.count;
       }
     }
-    return highlights;
+    return { fills: fills, currentIdx: currentIdx, currentPrice: currentPrice };
   }
 
   /** 打开 TradeSheet（交易 / 发布订单共用） */
@@ -587,7 +619,7 @@ var Trade = (function () {
     var maxFmt = UI.fmtCompact(tsMaxBucket);
     var midFmt = UI.fmtCompact(Math.round(tsMaxBucket / 2));
 
-    var highlights = computeAccum(tsBuckets, tsPrice, tsQty, tsMode === 'buy');
+    var acc = computeAccum(tsBuckets, tsPrice, tsQty, tsMode === 'buy');
     var html = '<div class="ts-chart-inner">';
 
     // Y轴
@@ -597,26 +629,33 @@ var Trade = (function () {
       + '<span>0</span>'
       + '</div>';
 
-    // 柱状图区域
+    // 柱状图区域 — 桶内线性渐变填充（从下往上）
     html += '<div class="ts-bars">';
     tsBuckets.forEach(function (b, i) {
       var h = tsMaxBucket > 0 ? Math.round((b.count / tsMaxBucket) * 100) : 0;
-      var hl = highlights[i];
-      var bg = hl > 0 ? 'rgba(93,221,170,' + hl.toFixed(2) + ')' : 'var(--bg-hover)';
-      var pctLabel = hl > 0 && hl < 1 ? Math.round(hl * 100) + '%' : '';
+      var fill = acc.fills[i];
+      var bg = fill > 0
+        ? 'linear-gradient(to top, var(--jade-200) ' + fill + '%, var(--bg-hover) ' + fill + '%)'
+        : 'var(--bg-hover)';
       html += '<div class="ts-bar-col">'
-        + '<div class="ts-bar" style="height:' + h + '%;background:' + bg + '" title="' + b.label + ': ' + UI.fmtCompact(b.count) + ' 件">'
-        + (pctLabel ? '<span class="ts-bar-label">' + pctLabel + '</span>' : '')
-        + '</div>'
+        + '<div class="ts-bar" style="height:' + h + '%;background:' + bg + ';min-width:3px" title="' + b.label + ': ' + UI.fmtCompact(b.count) + ' 件"></div>'
         + '</div>';
     });
     html += '</div></div>';
 
-    // X轴分区点（显示在柱与柱之间的间隙，justify-content: space-between 均匀分布）
+    // X轴：仅标首、尾、当前价
     html += '<div class="ts-xaxis">';
     html += '<span>' + UI.fmtCompact(tsBuckets[0].priceMin) + '</span>';
     for (var j = 0; j < tsBuckets.length; j++) {
-      html += '<span>' + UI.fmtCompact(tsBuckets[j].priceMax) + '</span>';
+      var isCur = j === acc.currentIdx;
+      var isLast = j === tsBuckets.length - 1;
+      if (isCur && acc.currentPrice > 0) {
+        html += '<span style="color:var(--jade-200);font-weight:700">' + UI.fmtCompact(acc.currentPrice) + '</span>';
+      } else if (isLast) {
+        html += '<span>' + UI.fmtCompact(tsBuckets[j].priceMax) + '</span>';
+      } else {
+        html += '<span class="ts-tick"></span>';
+      }
     }
     html += '</div>';
 
