@@ -644,15 +644,14 @@ var Trade = (function () {
         : 'var(--bg-hover)';
       var isCur = i === acc.currentIdx && acc.currentPrice > 0;
       var isLast = i === N - 1;
-      var isFirst = i === 0;
-      // 标签：当前价（绿）> 末桶价 > 首桶省略
+      // 标签：当前价（绿）> 末桶价 > 其余空白占位（保基线对齐）
       var lbl = '';
       if (isCur) {
         lbl = '<span class="ts-xlbl ts-xlbl-cur">' + UI.fmtCompact(acc.currentPrice) + ' SC</span>';
       } else if (isLast) {
         lbl = '<span class="ts-xlbl">' + UI.fmtCompact(b.priceMax) + ' SC</span>';
-      } else if (!isFirst) {
-        lbl = '<span class="ts-xlbl"></span>';  // 占位保对齐
+      } else {
+        lbl = '<span class="ts-xlbl"></span>';  // 始终占位，首桶省略文字但保留空间
       }
       html += '<div class="ts-bar-col">'
         + '<div class="ts-bar" style="height:' + h + '%;background:' + bg + ';min-width:3px" title="' + b.label + ': ' + UI.fmtCompact(b.count) + ' 件"></div>'
@@ -765,9 +764,20 @@ var Trade = (function () {
     });
     document.getElementById('ts-price').addEventListener('input', onTsPriceInput);
     document.getElementById('ts-qty').addEventListener('input', onTsQtyInput);
-    // 手机输入法弹窗时自动滚到可见位置
-    document.getElementById('ts-price').addEventListener('focus', function () { var self = this; setTimeout(function(){ self.scrollIntoView({block:'center',behavior:'smooth'}); }, 300); });
-    document.getElementById('ts-qty').addEventListener('focus', function () { var self = this; setTimeout(function(){ self.scrollIntoView({block:'center',behavior:'smooth'}); }, 300); });
+    // 手机输入法弹窗时手动滚容器
+    var _tsFocusHandler = function () {
+      var self = this;
+      setTimeout(function () {
+        var sheet = document.getElementById('tradesheet');
+        var ir = self.getBoundingClientRect();
+        var sr = sheet.getBoundingClientRect();
+        if (ir.bottom > sr.bottom - 10) {
+          sheet.scrollTop += ir.bottom - sr.bottom + 30;
+        }
+      }, 400);
+    };
+    document.getElementById('ts-price').addEventListener('focus', _tsFocusHandler);
+    document.getElementById('ts-qty').addEventListener('focus', _tsFocusHandler);
     document.getElementById('ts-slider').addEventListener('input', onTsSliderInput);
     document.getElementById('ts-price-sub').addEventListener('click', function () { adjustTsPrice(-1); });
     document.getElementById('ts-price-add').addEventListener('click', function () { adjustTsPrice(1); });
