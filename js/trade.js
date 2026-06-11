@@ -29,6 +29,7 @@ var Trade = (function () {
   var tsMaxBucket = 0;
   var _tsOrders = [];           // 当前使用的订单列表（升序或降序）
   var _tsOnConfirm = null;
+  var _tsVvHandler = null;      // visualViewport 键盘适配
 
   // ========== 通用执行 ==========
 
@@ -593,10 +594,32 @@ var Trade = (function () {
 
     renderChart();
     updateTsDisplay();
+
+    // 移动端键盘适配：全屏模式下 position:fixed 不随键盘上移，需用 transform 顶卡片
+    if (window.visualViewport) {
+      _tsVvHandler = function () {
+        var kbH = window.innerHeight - window.visualViewport.height;
+        var sheet = document.getElementById('tradesheet');
+        if (kbH > 100) {
+          sheet.style.transform = 'translateY(-' + kbH + 'px)';
+        } else {
+          sheet.style.transform = '';
+        }
+      };
+      window.visualViewport.addEventListener('resize', _tsVvHandler);
+      window.visualViewport.addEventListener('scroll', _tsVvHandler);
+    }
+
     document.getElementById('tradesheet-overlay').classList.add('show');
   }
 
   function closeTradeSheet() {
+    if (_tsVvHandler && window.visualViewport) {
+      window.visualViewport.removeEventListener('resize', _tsVvHandler);
+      window.visualViewport.removeEventListener('scroll', _tsVvHandler);
+      _tsVvHandler = null;
+      document.getElementById('tradesheet').style.transform = '';
+    }
     document.getElementById('tradesheet-overlay').classList.remove('show');
     _tsOnConfirm = null;
   }
