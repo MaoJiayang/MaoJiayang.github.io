@@ -329,9 +329,14 @@ var Trade = (function () {
       return !search || bill.itemName.toLowerCase().indexOf(search) !== -1;
     });
 
-    if (filtered.length === 0) { container.innerHTML = '<div class="tr-empty">' + (search ? '没有匹配的订单' : '暂无订单') + '</div>'; return; }
+    // 顶部操作栏：发布按钮
+    var html = '<div class="tr-actions">'
+      + '<button class="tr-act-btn" onclick="Trade.publishOrder(\'sell\')">+ 发布卖单</button>'
+      + '<button class="tr-act-btn" onclick="Trade.publishOrder(\'buy\')">+ 发布收单</button>'
+      + '</div>';
 
-    var html = '';
+    if (filtered.length === 0) { html += '<div class="tr-empty">' + (search ? '没有匹配的订单' : '暂无订单') + '</div>'; container.innerHTML = html; return; }
+
     filtered.forEach(function (bill) {
       var isSell = bill.orderType === 1;
       html += '<div class="tr-order-card ' + (isSell ? 'tr-order-sell' : 'tr-order-buy') + '">'
@@ -645,12 +650,6 @@ var Trade = (function () {
     initSubTabs();
     initShop();
     initMarket();
-
-    // 发布按钮
-    var pubSell = document.getElementById('trade-pub-sell');
-    var pubBuy = document.getElementById('trade-pub-buy');
-    if (pubSell) pubSell.addEventListener('click', function () { publishOrder('sell'); });
-    if (pubBuy) pubBuy.addEventListener('click', function () { publishOrder('buy'); });
 
     // TradeSheet 按钮
     document.getElementById('ts-cancel').addEventListener('click', closeTradeSheet);
