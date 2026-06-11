@@ -130,6 +130,7 @@ var UI = (function () {
 
   function showLoginGuide() {
     document.getElementById('login-guide').style.display = 'flex';
+    document.getElementById('panels-wrap').style.display = 'none';
     document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
     document.getElementById('tabbar').style.display = 'none';
     document.getElementById('wh-bar').style.display = 'none';
@@ -137,6 +138,7 @@ var UI = (function () {
 
   function hideLoginGuide() {
     document.getElementById('login-guide').style.display = 'none';
+    document.getElementById('panels-wrap').style.display = 'block';
     document.getElementById('tabbar').style.display = 'flex';
   }
 
@@ -212,10 +214,12 @@ var UI = (function () {
     var startX = 0, startY = 0, swiping = false;
 
     container.addEventListener('touchstart', function(e){
-      if (e.target.closest('#qsheet-overlay') || e.target.closest('#dc-overlay') || e.target.closest('#cf-overlay') || e.target.closest('#tradesheet-overlay')) return;
-      if (e.target.closest('.wh-grid') || e.target.closest('.wh-cat-body') ||
-          e.target.closest('.sem-card-body') || e.target.closest('.ac-card-body') ||
-          e.target.closest('.hist-card-body')) return;
+      // 覆盖层打开时不滑动
+      if (e.target.closest('#qsheet-overlay, #dc-overlay, #cf-overlay, #tradesheet-overlay, #donate-overlay')) return;
+      // 输入控件中不滑动（input / textarea / range / select / contenteditable）
+      var tag = e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (e.target.isContentEditable) return;
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
       swiping = true;
