@@ -37,11 +37,17 @@ body{
   font-family:var(--font-sans);
   background:var(--bg-void);
   color:var(--text-primary);
-  min-height:100vh;
-  min-height:100dvh;
   overflow-x:hidden;
   overscroll-behavior-x:none;
   -webkit-font-smoothing:antialiased;
+}
+/* 蓝图网格背景（fixed，随滚动保持参照感） */
+body::before{
+  content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(93,221,170,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(93,221,170,.025) 1px,transparent 1px);
+  background-size:24px 24px;
 }
 
 /* ========== 全局顶栏 ========== */
@@ -91,7 +97,6 @@ body{
 #main{
   padding-top:var(--topbar-h);
   padding-bottom:calc(var(--tab-h) + env(safe-area-inset-bottom, 0px));
-  min-height:100vh;min-height:100dvh;
 }
 
 /* ========== 登录引导页 ========== */
