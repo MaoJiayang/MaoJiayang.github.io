@@ -372,6 +372,32 @@ body::before{
   font-family:var(--font-mono);font-weight:600;outline:none;
 }
 #qsheet .qs-btns input:focus{border-color:var(--jade-400)}
+/* 数量拖动条 */
+#qsheet .qs-slider-wrap{padding:0 4px;margin-bottom:18px}
+
+/* === 统一滑块 === */
+.slider-range{
+  width:100%;height:6px;-webkit-appearance:none;appearance:none;
+  border-radius:3px;outline:none;background:var(--bg-hover);margin:0;
+}
+.slider-range::-webkit-slider-thumb{
+  -webkit-appearance:none;width:24px;height:24px;border-radius:50%;
+  background:var(--jade-200);cursor:pointer;
+  border:2px solid var(--bg-panel);
+  box-shadow:0 1px 4px rgba(0,0,0,.35);
+  transition:transform .12s,box-shadow .12s;
+}
+.slider-range::-webkit-slider-thumb:hover{transform:scale(1.15);box-shadow:0 2px 8px rgba(0,0,0,.45)}
+.slider-range::-webkit-slider-thumb:active{transform:scale(1.05)}
+.slider-range::-moz-range-thumb{
+  width:24px;height:24px;border-radius:50%;
+  background:var(--jade-200);cursor:pointer;
+  border:2px solid var(--bg-panel);
+  box-shadow:0 1px 4px rgba(0,0,0,.35);
+}
+.slider-range::-moz-range-track{height:6px;border-radius:3px;background:var(--bg-hover);border:none}
+.slider-range:disabled{opacity:.35;cursor:not-allowed}
+.slider-range:disabled::-webkit-slider-thumb{cursor:not-allowed;transform:none;box-shadow:none}
 #qsheet .qs-actions{display:flex;gap:10px}
 #qsheet .qs-actions button{
   flex:1;padding:12px;font-size:14px;font-weight:600;
@@ -609,9 +635,6 @@ body::before{
 
 /* 滑块 */
 .ts-slider-wrap{padding:0 4px;margin-bottom:12px}
-.ts-slider-wrap input[type=range]{width:100%;height:6px;-webkit-appearance:none;appearance:none;border-radius:3px;outline:none}
-.ts-slider-wrap input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:var(--jade-200);cursor:pointer;border:none}
-.ts-slider-wrap input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;background:var(--jade-200);cursor:pointer;border:none}
 
 /* 总价 */
 .ts-total{text-align:center;font-size:14px;font-weight:600;color:var(--jade-200);margin-bottom:16px}

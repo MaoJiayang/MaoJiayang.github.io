@@ -582,8 +582,7 @@ var Trade = (function () {
     document.getElementById('ts-price-label').textContent = mode === 'buy' ? '最高单价' : '最低单价';
     document.getElementById('ts-price').value = tsPrice;
     document.getElementById('ts-qty').value = tsQty;
-    document.getElementById('ts-slider').max = tsMaxQty;
-    document.getElementById('ts-slider').value = tsQty;
+    UI.syncSlider(document.getElementById('ts-slider'), tsQty, tsMaxQty, false);
     document.getElementById('ts-confirm').textContent = mode === 'buy' ? '确认购买' : '确认出售';
 
     _tsOnConfirm = function () {
@@ -712,12 +711,7 @@ var Trade = (function () {
   function updateTsDisplay() {
     document.getElementById('ts-price').value = tsPrice;
     document.getElementById('ts-qty').value = tsQty;
-    var slider = document.getElementById('ts-slider');
-    slider.max = tsMaxQty;
-    slider.value = Math.min(tsQty, tsMaxQty);
-    // 滑块已拖动部分填色
-    var pct2 = tsMaxQty > 0 ? (slider.value / tsMaxQty) * 100 : 0;
-    slider.style.background = 'linear-gradient(to right, var(--jade-200) 0%, var(--jade-200) ' + pct2 + '%, var(--bg-hover) ' + pct2 + '%)';
+    UI.syncSlider(document.getElementById('ts-slider'), Math.min(tsQty, tsMaxQty), tsMaxQty, false);
     document.getElementById('ts-price').value = UI.fmtPrice(tsPrice);
     document.getElementById('ts-qty').value = UI.fmtPrice(tsQty);
     var cost = calcFillCost(tsQty, tsPrice, tsMode);
@@ -765,7 +759,6 @@ var Trade = (function () {
     tsPrice = v;
     tsMaxQty = calcMaxQtyForPrice(tsPrice, tsMode);
     if (tsQty > tsMaxQty) tsQty = tsMaxQty;
-    document.getElementById('ts-slider').max = tsMaxQty;
     renderChart();
     updateTsDisplay();
   }
@@ -785,7 +778,6 @@ var Trade = (function () {
     tsPrice = Math.max(0, tsPrice + delta * step);
     tsMaxQty = calcMaxQtyForPrice(tsPrice, tsMode);
     if (tsQty > tsMaxQty) tsQty = tsMaxQty;
-    document.getElementById('ts-slider').max = tsMaxQty;
     renderChart();
     updateTsDisplay();
   }

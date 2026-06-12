@@ -292,6 +292,9 @@ var UI = (function () {
     }
     document.getElementById('qs-qty').value = fmtCompact(qsheetQty);
 
+    // 拖动条初始范围
+    UI.syncSlider(document.getElementById('qs-slider'), Math.min(qsheetQty, getMaxSlider()), getMaxSlider(), _lockQty > 0);
+
     // extra field
     var extraEl = document.getElementById('qs-extra');
     var confirmBtn = document.getElementById('qs-confirm');
@@ -386,6 +389,16 @@ var UI = (function () {
     return qsheetStock;
   }
 
+  function getMaxSlider() {
+    var m = getMaxWithdraw();
+    return isFinite(m) ? m : 99999;
+  }
+
+  function onQsSliderInput() {
+    qsheetQty = parseInt(document.getElementById('qs-slider').value, 10) || 1;
+    updateQSheetDisplay();
+  }
+
   // ========== 显示更新 ==========
 
   function updateQSheetDisplay() {
@@ -405,6 +418,9 @@ var UI = (function () {
     }
     updateQSheetBtns();
     if (qsheetExtra) updateExtraDisplay();
+    // 拖动条同步
+    var slider = document.getElementById('qs-slider');
+    if (slider) UI.syncSlider(slider, Math.min(qsheetQty, getMaxSlider()), getMaxSlider(), _lockQty > 0);
   }
 
   function updateExtraDisplay() {
@@ -746,6 +762,7 @@ var UI = (function () {
     document.getElementById('qs-plus').addEventListener('click', function(){ adjustQty(1); });
     document.getElementById('qs-minus-fast').addEventListener('click', function(){ fastAdjust(-1); });
     document.getElementById('qs-plus-fast').addEventListener('click', function(){ fastAdjust(1); });
+    document.getElementById('qs-slider').addEventListener('input', onQsSliderInput);
 
     // QSheet extra 按钮
     document.getElementById('qs-extra-minus').addEventListener('click', function(){ adjustExtra(-1); });
@@ -846,6 +863,14 @@ var UI = (function () {
     // 工具函数
     escHtml: function (s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); },
     escAttr: function (s) { return String(s || '').replace(/'/g, "\\'").replace(/"/g, '&quot;'); },
+    /** 统一滑块同步：设置范围、值、禁用态，并填充已拖动区域 */
+    syncSlider: function (slider, value, max, disabled) {
+      slider.max = max;
+      slider.value = value;
+      slider.disabled = !!disabled;
+      var pct = max > 0 ? (value / max) * 100 : 0;
+      slider.style.background = 'linear-gradient(to right, var(--jade-200) 0%, var(--jade-200) ' + pct + '%, var(--bg-hover) ' + pct + '%)';
+    },
     // Init
     init: init,
   };
