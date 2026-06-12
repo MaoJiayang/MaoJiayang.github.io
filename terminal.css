@@ -335,7 +335,7 @@ body::before{
   display:flex;align-items:flex-end;justify-content:center;
   opacity:0;pointer-events:none;transition:opacity .2s;
 }
-#qsheet-overlay.show{opacity:1;pointer-events:auto}
+#qsheet-overlay.show{opacity:1;pointer-events:auto;visibility:visible}
 #qsheet{
   background:var(--bg-panel);border:1px solid var(--bg-hover);
   border-radius:12px 12px 0 0;width:100%;max-width:480px;
@@ -477,7 +477,7 @@ body::before{
   display:flex;align-items:center;justify-content:center;
   opacity:0;pointer-events:none;transition:opacity .2s;
 }
-#dc-overlay.show,#cf-overlay.show{opacity:1;pointer-events:auto}
+#dc-overlay.show,#cf-overlay.show{opacity:1;pointer-events:auto;visibility:visible}
 #dc-dialog,#cf-dialog{
   background:var(--bg-panel);border:1px solid var(--bg-hover);
   border-radius:8px;width:320px;max-width:90vw;padding:24px;text-align:center;
@@ -610,7 +610,7 @@ body::before{
 
 /* ========== TradeSheet ========== */
 #tradesheet-overlay{position:fixed;inset:0;z-index:260;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
-#tradesheet-overlay.show{opacity:1;pointer-events:auto}
+#tradesheet-overlay.show{opacity:1;pointer-events:auto;visibility:visible}
 #tradesheet{background:var(--bg-panel);border-radius:12px 12px 0 0;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:20px 16px 24px;margin-bottom:env(keyboard-inset-height,0px)}
 
 .ts-header{display:flex;align-items:baseline;gap:10px;margin-bottom:16px}
@@ -673,7 +673,7 @@ body::before{
 
 /* 赞赏弹窗 */
 #donate-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
-#donate-overlay.show{display:flex;opacity:1;pointer-events:auto}
+#donate-overlay.show{display:flex;opacity:1;pointer-events:auto;visibility:visible}
 #donate-dialog{background:var(--bg-panel);border-radius:12px;padding:20px;text-align:center;max-width:90vw}
 #donate-dialog img{max-width:100%;max-height:70vh;border-radius:8px;display:block}
 #donate-dialog .donate-close{margin-top:12px;font-size:14px;color:var(--text-muted);background:none;border:none;cursor:pointer;font-family:inherit}
