@@ -198,7 +198,6 @@ var Hangar = (function () {
       + '<button class="ha-act-btn" onclick="Hangar.loadNear(\'' + UI.escAttr(full) + '\')">就近</button>'
       + '<button class="ha-act-btn" onclick="Hangar.loadLocal(\'' + UI.escAttr(full) + '\')">原地</button>'
       + '<button class="ha-act-btn ha-act-danger" onclick="Hangar.loadForceLocal(\'' + UI.escAttr(full) + '\')" title="强制原地（无碰撞检测）">强制</button>'
-      + (isUnsynced ? '<button class="ha-act-btn ha-act-warn" onclick="Hangar.sellGrid(\'' + UI.escAttr(full) + '\')" title="上架到舰船市场">出售</button>' : '')
       + '</div>'
       + '</div>';
   }
@@ -495,14 +494,14 @@ var Hangar = (function () {
     );
   }
 
-  function sellGrid(name) {
-    UI.showPromptDialog('出售「' + shortName(name) + '」', '请输入出售价格（SC）', function (val) {
+  function sellShip() {
+    UI.showPromptDialog('出售飞船', '请输入出售价格（SC）', function (val) {
       var p = parseInt(val, 10);
       if (isNaN(p) || p < 0) { UI.showToast('error', '请输入有效价格'); return; }
       UI.showConfirmDialog(
-        '确定以 ' + UI.fmtCompact(p) + ' SC 出售「' + shortName(name) + '」？\n（需在游戏中对准该网格）',
+        '确定以 ' + UI.fmtCompact(p) + ' SC 出售当前瞄准的飞船？',
         function () {
-          exec('!网格 出售 ' + p + ' ""', '已上架「' + shortName(name) + '」').then(function () {
+          exec('!网格 出售 ' + p + ' ""', '已上架飞船').then(function () {
             loadHangar(); loadShipMarket();
           }).catch(function () {});
         }
@@ -574,9 +573,11 @@ var Hangar = (function () {
     var sortBtn = document.getElementById('ha-sort-btn');
     if (sortBtn) sortBtn.addEventListener('click', cycleWorldSort);
 
-    // 保存按钮
+    // 工具栏按钮
     var saveBtn = document.getElementById('ha-save');
     if (saveBtn) saveBtn.addEventListener('click', saveShip);
+    var sellBtn = document.getElementById('ha-sell');
+    if (sellBtn) sellBtn.addEventListener('click', sellShip);
 
     updateSortBtn();
 
@@ -603,6 +604,6 @@ var Hangar = (function () {
     saveRemote: saveRemote,
     // 舰船市场
     loadShipMarket: loadShipMarket,
-    buyShip: buyShip, sellGrid: sellGrid,
+    buyShip: buyShip, sellShip: sellShip,
   };
 })();

@@ -515,8 +515,6 @@ body::before{
 #ha-name-toggle:hover{color:var(--text-primary);background:var(--bg-hover)}
 .ha-sort-btn{font-size:12px;padding:5px 10px;min-height:32px;border-radius:4px;background:var(--bg-card);color:var(--text-muted);border:1px solid var(--bg-hover);cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s}
 .ha-sort-btn:hover{color:var(--text-primary);background:var(--bg-hover)}
-#ha-sort-btn{position:absolute;right:44px;top:0;line-height:32px}
-#hm-sort-btn{flex-shrink:0}
 
 /* 船坞列表行 */
 .ha-grid-row{display:flex;flex-direction:column;padding:10px 12px;background:var(--bg-card);border-radius:4px;margin-bottom:6px;gap:8px}
