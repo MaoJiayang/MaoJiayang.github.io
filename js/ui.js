@@ -292,8 +292,11 @@ var UI = (function () {
     }
     document.getElementById('qs-qty').value = fmtCompact(qsheetQty);
 
-    // 拖动条初始范围
-    UI.syncSlider(document.getElementById('qs-slider'), Math.min(qsheetQty, getMaxSlider()), getMaxSlider(), _lockQty > 0);
+    // 拖动条初始范围（无上限时隐藏）
+    var hasCap = isFinite(getMaxWithdraw());
+    var sliderWrap = document.getElementById('qs-slider-wrap');
+    if (sliderWrap) sliderWrap.style.display = hasCap ? '' : 'none';
+    if (hasCap) UI.syncSlider(document.getElementById('qs-slider'), Math.min(qsheetQty, getMaxSlider()), getMaxSlider(), _lockQty > 0);
 
     // extra field
     var extraEl = document.getElementById('qs-extra');
@@ -418,9 +421,12 @@ var UI = (function () {
     }
     updateQSheetBtns();
     if (qsheetExtra) updateExtraDisplay();
-    // 拖动条同步
+    // 拖动条：有实际上限时显示（取出/锁定数量），无上限时隐藏（存入/无限购买）
+    var sliderWrap = document.getElementById('qs-slider-wrap');
     var slider = document.getElementById('qs-slider');
-    if (slider) UI.syncSlider(slider, Math.min(qsheetQty, getMaxSlider()), getMaxSlider(), _lockQty > 0);
+    var hasCap = isFinite(getMaxWithdraw());
+    if (sliderWrap) sliderWrap.style.display = hasCap ? '' : 'none';
+    if (slider && hasCap) UI.syncSlider(slider, Math.min(qsheetQty, getMaxSlider()), getMaxSlider(), _lockQty > 0);
   }
 
   function updateExtraDisplay() {
