@@ -337,6 +337,9 @@ var Warehouse = (function () {
 
   function init() {
     loadPrefs();
+    // 搜索框即时过滤
+    var searchInput = document.getElementById('wh-search');
+    if (searchInput) searchInput.addEventListener('input', function () { render(); });
     // 加载图标和物品目录
     fetch('icons/mapping.json')
       .then(function(r){ return r.json(); })
