@@ -522,6 +522,8 @@ body::before{
 .ha-act-btn:hover{background:var(--jade-400);color:var(--bg-void);border-color:var(--jade-400)}
 .ha-act-danger{color:var(--color-error)}
 .ha-act-danger:hover{background:var(--color-error);color:#fff;border-color:var(--color-error)}
+.ha-act-warn{color:var(--gold-200)}
+.ha-act-warn:hover{background:var(--gold-200);color:var(--bg-void);border-color:var(--gold-200)}
 
 /* 世界网格列表行 */
 .ha-world-row{display:flex;flex-direction:column;padding:10px 12px;background:var(--bg-card);border-radius:4px;margin-bottom:6px;gap:8px}
@@ -828,6 +830,20 @@ body::before{
   min-height:40px;transition:opacity .12s;
 }
 .hm-buy-btn:hover{opacity:.85}
+/* 舰船描述展开 */
+.hm-ship-desc{
+  display:flex;align-items:center;gap:4px;
+  font-size:11px;color:var(--text-muted);cursor:pointer;
+  padding:2px 0;user-select:none;
+}
+.hm-ship-desc:hover{color:var(--text-secondary)}
+.hm-desc-arrow{font-size:9px;transition:transform .15s;flex-shrink:0}
+.hm-desc-arrow.open{transform:rotate(90deg)}
+.hm-desc-label{font-size:11px}
+.hm-ship-desc-body{
+  font-size:12px;color:var(--text-secondary);line-height:1.5;
+  padding:4px 0 2px;word-break:break-word;
+}
 
 /* ========== 清单构建器 ========== */
 /* 清单构建器 — z-index 低于 QSheet(200) 便于叠加 */

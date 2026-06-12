@@ -157,18 +157,7 @@ var Hangar = (function () {
 
     var html = '';
 
-    if (syncedFiltered.length > 0) {
-      html += '<div class="wh-cat"><div class="wh-cat-h"><span class="arrow open">▸</span>'
-        + '<span class="wh-cat-dot" style="background:var(--jade-200)"></span>'
-        + '<span class="wh-cat-label">已同步船舶</span>'
-        + '<span class="wh-cat-count">' + syncedFiltered.length + ' 艘</span>'
-        + '</div><div class="wh-cat-body open">';
-      syncedFiltered.forEach(function (name) {
-        html += renderGridRow(name, false);
-      });
-      html += '</div></div>';
-    }
-
+    // 未同步排前面（提醒玩家及时同步）
     if (unsyncedFiltered.length > 0) {
       html += '<div class="wh-cat"><div class="wh-cat-h"><span class="arrow open">▸</span>'
         + '<span class="wh-cat-dot" style="background:var(--color-warn)"></span>'
@@ -177,6 +166,18 @@ var Hangar = (function () {
         + '</div><div class="wh-cat-body open">';
       unsyncedFiltered.forEach(function (name) {
         html += renderGridRow(name, true);
+      });
+      html += '</div></div>';
+    }
+
+    if (syncedFiltered.length > 0) {
+      html += '<div class="wh-cat"><div class="wh-cat-h"><span class="arrow open">▸</span>'
+        + '<span class="wh-cat-dot" style="background:var(--jade-200)"></span>'
+        + '<span class="wh-cat-label">已同步船舶</span>'
+        + '<span class="wh-cat-count">' + syncedFiltered.length + ' 艘</span>'
+        + '</div><div class="wh-cat-body open">';
+      syncedFiltered.forEach(function (name) {
+        html += renderGridRow(name, false);
       });
       html += '</div></div>';
     }
@@ -197,6 +198,7 @@ var Hangar = (function () {
       + '<button class="ha-act-btn" onclick="Hangar.loadNear(\'' + UI.escAttr(full) + '\')">就近</button>'
       + '<button class="ha-act-btn" onclick="Hangar.loadLocal(\'' + UI.escAttr(full) + '\')">原地</button>'
       + '<button class="ha-act-btn ha-act-danger" onclick="Hangar.loadForceLocal(\'' + UI.escAttr(full) + '\')" title="强制原地（无碰撞检测）">强制</button>'
+      + (isUnsynced ? '<button class="ha-act-btn ha-act-warn" onclick="Hangar.sellGrid(\'' + UI.escAttr(full) + '\')" title="上架到舰船市场">出售</button>' : '')
       + '</div>'
       + '</div>';
   }
@@ -441,6 +443,17 @@ var Hangar = (function () {
         couponInfo = '<span class="hm-price-after">券后 ' + UI.fmtCompact(priceAfterCoupon) + ' SC</span>';
       }
     }
+    // 可选描述（后端可能尚未同步该字段）
+    var descHtml = '';
+    if (ship.description && String(ship.description).trim()) {
+      descHtml = '<div class="hm-ship-desc" onclick="var n=this.nextElementSibling;var a=this.querySelector(\'.hm-desc-arrow\');var o=n.style.display===\'none\';n.style.display=o?\'\':\'none\';a.classList.toggle(\'open\',o);this.classList.toggle(\'open\',o)">'
+        + '<span class="hm-desc-arrow">▸</span>'
+        + '<span class="hm-desc-label">简介</span>'
+        + '</div>'
+        + '<div class="hm-ship-desc-body" style="display:none">'
+        + UI.escHtml(String(ship.description).trim())
+        + '</div>';
+    }
     return '<div class="hm-ship-card">'
       + '<div class="hm-ship-top">'
       + '<span class="hm-ship-icon">🚀</span>'
@@ -455,6 +468,7 @@ var Hangar = (function () {
       + '<span class="hm-ship-price">售价 ' + UI.fmtCompact(ship.sellPrice || 0) + ' SC</span>'
       + couponInfo
       + '</div>'
+      + descHtml
       + '<div class="hm-ship-actions">'
       + '<button class="hm-buy-btn" onclick="Hangar.buyShip(\'' + UI.escAttr(String(ship.id)) + '\',\'' + UI.escAttr(ship.shipName || '') + '\')">购买</button>'
       + '</div>'
@@ -476,7 +490,22 @@ var Hangar = (function () {
     UI.showConfirmDialog(
       '购买舰船「' + name + '」？\n售价: ' + UI.fmtCompact(ship.sellPrice) + ' SC' + couponNote + '\n最终价格: ' + UI.fmtCompact(finalPrice) + ' SC',
       function () {
-        exec('!网格 购买 ' + id, '已购买「' + name + '」').then(function () { loadShipMarket(); }).catch(function () {});
+        exec('!网格 购买 ' + id, '已购买「' + name + '」').then(function () { loadShipMarket(); loadHangar(); }).catch(function () {});
+      }
+    );
+  }
+
+  function sellGrid(name) {
+    var price = prompt('请输入出售价格（SC），取消则不操作：', '0');
+    if (price === null) return;
+    var p = parseInt(price, 10);
+    if (isNaN(p) || p < 0) { UI.showToast('error', '请输入有效价格'); return; }
+    UI.showConfirmDialog(
+      '确定以 ' + UI.fmtCompact(p) + ' SC 出售「' + name + '」？\n（需在游戏中对准该网格）',
+      function () {
+        exec('!网格 出售 ' + p + ' ""', '已上架「' + name + '」').then(function () {
+          loadHangar(); loadShipMarket();
+        }).catch(function () {});
       }
     );
   }
@@ -574,6 +603,6 @@ var Hangar = (function () {
     saveRemote: saveRemote,
     // 舰船市场
     loadShipMarket: loadShipMarket,
-    buyShip: buyShip,
+    buyShip: buyShip, sellGrid: sellGrid,
   };
 })();
