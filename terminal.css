@@ -871,6 +871,7 @@ body::before{
 }
 .lb-cart-head{font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.04em}
 .lb-cart-items{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.lb-cart-empty{color:var(--text-muted);font-size:12px;padding:4px 0}
 .lb-cart-chip{
   display:inline-flex;align-items:center;gap:3px;
   background:var(--bg-hover);border-radius:3px;padding:3px 7px;

@@ -255,6 +255,7 @@ var UI = (function () {
   var _lockExtra = false;      // 单价锁定
   var _noCap = false;          // 数量无上限（服营商店买入等）
   var _maxQty = 0;             // >0 表示数量上限（市场拆单用）
+  var _qsheetConfirmLabel = null;  // 自定义确认按钮文字
 
   /**
    * openQSheet(mode, itemName, stock, onConfirm)        ← 仓库用法（向后兼容）
@@ -277,6 +278,7 @@ var UI = (function () {
     _noCap = options.noCap === true;
     qsheetQty = _lockQty > 0 ? _lockQty : 100;
     _qsheetOnConfirm = options.onConfirm || null;
+    _qsheetConfirmLabel = options.confirmLabel || null;  // 自定义确认按钮文字（清单构建器等场景）
     qsheetExtra = options.extraField || null;
     qsheetExtraVal = qsheetExtra ? qsheetExtra.value : 0;
     var depositing = mode === 'deposit';
@@ -297,7 +299,10 @@ var UI = (function () {
     // extra field
     var extraEl = document.getElementById('qs-extra');
     var confirmBtn = document.getElementById('qs-confirm');
-    if (qsheetExtra) {
+    if (_qsheetConfirmLabel) {
+      extraEl.style.display = 'none';
+      confirmBtn.textContent = _qsheetConfirmLabel + ' ' + fmtCompact(qsheetQty);
+    } else if (qsheetExtra) {
       extraEl.style.display = 'block';
       document.getElementById('qs-extra-label').textContent = qsheetExtra.label;
       document.getElementById('qs-extra-val').value = fmtCompact(qsheetExtraVal);

@@ -1050,7 +1050,7 @@ var Trade = (function () {
     + '<div class="lb-grid-scroll" id="lb-grid-scroll">'
     + '<div id="lb-grid"></div>'
     + '</div>'
-    + '<div class="lb-cart" id="lb-cart" style="display:none">'
+    + '<div class="lb-cart" id="lb-cart">'
     + '<div class="lb-cart-head">清单预览</div>'
     + '<div class="lb-cart-items" id="lb-cart-items"></div>'
     + '<div class="lb-cart-money">'
@@ -1152,6 +1152,7 @@ var Trade = (function () {
     var currentQty = _listDraft[name] || 0;
     UI.openQSheet('deposit', name, {
       stock: Warehouse.getStock(name) || 999999,
+      confirmLabel: '加入清单',
       onConfirm: function (mode, qty) {
         if (qty > 0) {
           _listDraft[name] = qty;
@@ -1183,10 +1184,11 @@ var Trade = (function () {
     var cartEl = _lbOverlay.get('#lb-cart');
     var names = Object.keys(_listDraft);
     if (names.length === 0) {
-      cartEl.style.display = 'none';
+      _lbOverlay.get('#lb-cart-items').innerHTML = '<span class="lb-cart-empty">尚未选择物品，点击上方物品加入清单</span>';
+      _lbOverlay.get('#lb-confirm').disabled = true;
       return;
     }
-    cartEl.style.display = '';
+    _lbOverlay.get('#lb-confirm').disabled = false;
     var itemsHtml = '';
     names.forEach(function (name) {
       itemsHtml += '<span class="lb-cart-chip" onclick="Trade.removeFromListDraft(\'' + escAttr(name) + '\')">'
@@ -1196,7 +1198,6 @@ var Trade = (function () {
         + '</span>';
     });
     _lbOverlay.get('#lb-cart-items').innerHTML = itemsHtml;
-    _lbOverlay.get('#lb-confirm').disabled = false;
   }
 
   function confirmListBuilder() {
