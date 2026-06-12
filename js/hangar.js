@@ -495,13 +495,16 @@ var Hangar = (function () {
   }
 
   function sellShip() {
-    UI.showPromptDialog('出售飞船', '请输入出售价格（SC）', function (val) {
-      var p = parseInt(val, 10);
+    UI.showPromptDialog('出售飞船', '价格 描述（如：50000 高速矿船）', function (val) {
+      var parts = val.trim().split(/\s+/);
+      var p = parseInt(parts[0], 10);
       if (isNaN(p) || p < 0) { UI.showToast('error', '请输入有效价格'); return; }
+      var desc = parts.slice(1).join(' ') || '';
+      var descStr = desc ? ' "' + desc + '"' : ' ""';
       UI.showConfirmDialog(
-        '确定以 ' + UI.fmtCompact(p) + ' SC 出售瞄准的飞船？',
+        '确定以 ' + UI.fmtCompact(p) + ' SC 出售瞄准的飞船？' + (desc ? '\n描述：' + desc : ''),
         function () {
-          exec('!网格 出售 ' + p + ' ""', '已上架飞船').then(function () {
+          exec('!网格 出售 ' + p + ' ' + descStr, '已上架飞船').then(function () {
             loadHangar(); loadShipMarket();
           }).catch(function () {});
         }
