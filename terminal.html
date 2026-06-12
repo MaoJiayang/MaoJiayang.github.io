@@ -368,6 +368,38 @@
 <script src="js/hangar.js"></script>
 <script src="js/shipyard.js"></script>
 <script src="js/settings.js"></script>
+<!-- 清单构建器 -->
+<div id="list-builder-overlay">
+  <div id="list-builder">
+    <div class="lb-header">
+      <span class="lb-title">创建清单</span>
+      <span class="lb-close" onclick="Trade.closeListBuilder()">&times;</span>
+    </div>
+    <div class="lb-name-row">
+      <input id="lb-name" type="text" placeholder="清单名称">
+    </div>
+    <input class="wh-search" id="lb-search" type="text" placeholder="搜索物品…" oninput="Trade.renderListBuilderGrid()">
+    <div class="lb-grid-scroll" id="lb-grid-scroll">
+      <div id="lb-grid"></div>
+    </div>
+    <div class="lb-cart" id="lb-cart" style="display:none">
+      <div class="lb-cart-head">清单预览</div>
+      <div class="lb-cart-items" id="lb-cart-items"></div>
+      <div class="lb-cart-money">
+        <label>银行余额</label>
+        <div class="lb-money-row">
+          <input id="lb-money" type="text" inputmode="numeric" value="0" placeholder="0" oninput="Trade.updateListBuilderMoney()">
+          <span>SC</span>
+        </div>
+      </div>
+      <div class="lb-cart-actions">
+        <button class="lb-cancel" onclick="Trade.closeListBuilder()">取消</button>
+        <button class="lb-confirm" id="lb-confirm" onclick="Trade.confirmListBuilder()">确认创建</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ========== 伊卡洛斯虚空终端 — 入口 ==========
 SeBridge.init({ bridgeUrl: '' });
@@ -423,38 +455,6 @@ if (SeBridge.hasCredentials()) {
   UI.showLoginGuide();
 }
 </script>
-
-<!-- 清单构建器 -->
-<div id="list-builder-overlay">
-  <div id="list-builder">
-    <div class="lb-header">
-      <span class="lb-title">创建清单</span>
-      <span class="lb-close" onclick="Trade.closeListBuilder()">&times;</span>
-    </div>
-    <div class="lb-name-row">
-      <input id="lb-name" type="text" placeholder="清单名称">
-    </div>
-    <input class="wh-search" id="lb-search" type="text" placeholder="搜索物品…" oninput="Trade.renderListBuilderGrid()">
-    <div class="lb-grid-scroll" id="lb-grid-scroll">
-      <div id="lb-grid"></div>
-    </div>
-    <div class="lb-cart" id="lb-cart" style="display:none">
-      <div class="lb-cart-head">清单预览</div>
-      <div class="lb-cart-items" id="lb-cart-items"></div>
-      <div class="lb-cart-money">
-        <label>银行余额</label>
-        <div class="lb-money-row">
-          <input id="lb-money" type="text" inputmode="numeric" value="0" placeholder="0" oninput="Trade.updateListBuilderMoney()">
-          <span>SC</span>
-        </div>
-      </div>
-      <div class="lb-cart-actions">
-        <button class="lb-cancel" onclick="Trade.closeListBuilder()">取消</button>
-        <button class="lb-confirm" id="lb-confirm" onclick="Trade.confirmListBuilder()">确认创建</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 </body>
 </html>
