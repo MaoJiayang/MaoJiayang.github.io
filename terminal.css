@@ -676,7 +676,8 @@ body::before{
   background:var(--bg-hover);border-radius:3px;padding:2px 6px;
   font-size:11px;
 }
-.ct-list-item .wh-card-icon{width:16px;height:16px;border-radius:2px;background-size:256px 112px}
+.ct-list-icon-wrap{width:16px;height:16px;overflow:hidden;border-radius:2px;flex-shrink:0}
+.ct-list-icon-wrap .wh-card-icon{width:32px;height:32px;transform:scale(0.5);transform-origin:top left}
 .ct-list-item .wh-card-icon-fb{
   width:16px;height:16px;border-radius:2px;font-size:8px;font-weight:700;
   display:flex;align-items:center;justify-content:center;

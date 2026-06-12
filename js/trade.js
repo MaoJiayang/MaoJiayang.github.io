@@ -46,10 +46,11 @@ var Trade = (function () {
 
   // ========== 图标 ==========
 
-  function iconHtml(name) {
+  function iconHtml(name, small) {
     var iconFile = Warehouse.getIcon(name);
     if (iconFile) {
-      return '<span class="wh-card-icon si si-' + iconFile + '" title="' + escAttr(name) + '"></span>';
+      var el = '<span class="wh-card-icon si si-' + iconFile + '" title="' + escAttr(name) + '"></span>';
+      return small ? '<span class="ct-list-icon-wrap">' + el + '</span>' : el;
     }
     var cat = Warehouse.getCategory(name);
     var color = Warehouse.getCatColor(cat);
@@ -935,7 +936,7 @@ var Trade = (function () {
         var iconHtml = '';
         var iconFile = Warehouse.getIcon(name);
         if (iconFile) {
-          iconHtml = '<span class="wh-card-icon si si-' + iconFile + '"></span>';
+          iconHtml = '<span class="ct-list-icon-wrap"><span class="wh-card-icon si si-' + iconFile + '"></span></span>';
         } else {
           var cat = Warehouse.getCategory(name);
           var color = Warehouse.getCatColor(cat);
