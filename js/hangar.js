@@ -496,18 +496,18 @@ var Hangar = (function () {
   }
 
   function sellGrid(name) {
-    var price = prompt('请输入出售价格（SC），取消则不操作：', '0');
-    if (price === null) return;
-    var p = parseInt(price, 10);
-    if (isNaN(p) || p < 0) { UI.showToast('error', '请输入有效价格'); return; }
-    UI.showConfirmDialog(
-      '确定以 ' + UI.fmtCompact(p) + ' SC 出售「' + name + '」？\n（需在游戏中对准该网格）',
-      function () {
-        exec('!网格 出售 ' + p + ' ""', '已上架「' + name + '」').then(function () {
-          loadHangar(); loadShipMarket();
-        }).catch(function () {});
-      }
-    );
+    UI.showPromptDialog('出售「' + shortName(name) + '」', '请输入出售价格（SC）', function (val) {
+      var p = parseInt(val, 10);
+      if (isNaN(p) || p < 0) { UI.showToast('error', '请输入有效价格'); return; }
+      UI.showConfirmDialog(
+        '确定以 ' + UI.fmtCompact(p) + ' SC 出售「' + shortName(name) + '」？\n（需在游戏中对准该网格）',
+        function () {
+          exec('!网格 出售 ' + p + ' ""', '已上架「' + shortName(name) + '」').then(function () {
+            loadHangar(); loadShipMarket();
+          }).catch(function () {});
+        }
+      );
+    });
   }
 
   function findShipById(id) {

@@ -252,22 +252,20 @@ var Shipyard = (function () {
 
   /** 保存模板 */
   function saveTemplate() {
-    var name = prompt('请输入模板名称：');
-    if (!name || !name.trim()) return;
-    name = name.trim();
-    exec('!模板 保存 ' + name, '模板「' + name + '」已保存').then(function () {
-      refreshTemplates();
-    }).catch(function () {});
+    UI.showPromptDialog('保存模板', '请输入模板名称', function (name) {
+      exec('!模板 保存 ' + name, '模板「' + name + '」已保存').then(function () {
+        refreshTemplates();
+      }).catch(function () {});
+    });
   }
 
   /** 从投影创建模板 */
   function createFromProjector() {
-    var name = prompt('请输入模板名称：');
-    if (!name || !name.trim()) return;
-    name = name.trim();
-    exec('!模板 从投影创建 ' + name, '模板「' + name + '」已创建').then(function () {
-      refreshTemplates();
-    }).catch(function () {});
+    UI.showPromptDialog('从投影创建模板', '请输入模板名称', function (name) {
+      exec('!模板 从投影创建 ' + name, '模板「' + name + '」已创建').then(function () {
+        refreshTemplates();
+      }).catch(function () {});
+    });
   }
 
   /** 删除模板 */

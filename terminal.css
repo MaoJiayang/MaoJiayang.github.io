@@ -483,6 +483,13 @@ body::before{
 }
 #dc-dialog .dc-icon,#cf-dialog .dc-icon{font-size:36px;margin-bottom:10px}
 #dc-dialog .dc-msg,#cf-dialog .dc-msg{font-size:14px;color:var(--text-secondary);margin-bottom:20px;line-height:1.5}
+#cf-dialog .dc-input{
+  width:100%;padding:10px 12px;font-size:14px;margin-bottom:16px;
+  border:1px solid var(--bg-hover);border-radius:6px;
+  background:var(--bg-deep);color:var(--text-primary);outline:none;
+  font-family:inherit;box-sizing:border-box;
+}
+#cf-dialog .dc-input:focus{border-color:var(--jade-400)}
 #dc-dialog .dc-actions,#cf-dialog .dc-actions{display:flex;gap:8px}
 #dc-dialog .dc-actions button,#cf-dialog .dc-actions button{
   flex:1;padding:10px;font-size:14px;font-weight:600;

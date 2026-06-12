@@ -711,7 +711,8 @@ var Trade = (function () {
   /** 更新显示：总价 + 滑块填色 + 输入框 */
   function updateTsDisplay() {
     document.getElementById('ts-price').value = UI.fmtPrice(tsPrice);
-    document.getElementById('ts-qty').value = _tsSliderDragging ? String(tsQty) : UI.fmtPrice(tsQty);
+    var qtyFmt = _tsSliderDragging ? String(tsQty) : UI.fmtCompact(tsQty);
+    document.getElementById('ts-qty').value = qtyFmt.replace(/^([\d,]+)([KMBk])$/, '$1.0$2');
     UI.syncSlider(document.getElementById('ts-slider'), Math.min(tsQty, tsMaxQty), tsMaxQty, false);
     var cost = calcFillCost(tsQty, tsPrice, tsMode);
     document.getElementById('ts-total').textContent = '预估成交 ' + UI.fmtPrice(cost.total) + ' SC（均价 ' + UI.fmtCompact(cost.avgPrice) + '）';

@@ -190,10 +190,10 @@
         <div class="ha-section" id="hangar-my">
           <input class="wh-search" id="ha-search" type="text" placeholder="搜索船名…">
           <span class="icon-refresh abs" onclick="Hangar.load()" title="刷新">↻</span>
-          <div id="ha-grids"></div>
           <div class="tr-actions">
             <button class="tr-act-btn" id="ha-save">+ 保存飞船</button>
           </div>
+          <div id="ha-grids"></div>
         </div>
         <div class="ha-section" id="hangar-world" style="display:none">
           <div class="ha-search-row">
@@ -330,6 +330,7 @@
   <div id="cf-dialog">
     <div class="dc-icon">⚠</div>
     <div class="dc-msg" id="cf-msg"></div>
+    <input class="dc-input" id="cf-input" type="text" style="display:none" placeholder="">
     <div class="dc-actions">
       <button class="dc-cancel" id="cf-cancel">取消</button>
       <button class="dc-confirm" id="cf-confirm">确认执行</button>

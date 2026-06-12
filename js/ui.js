@@ -126,7 +126,25 @@ var UI = (function () {
 
   function hideConfirmDialog() {
     document.getElementById('cf-overlay').classList.remove('show');
+    document.getElementById('cf-input').style.display = 'none';
     _cfOnConfirm = null;
+  }
+
+  /** 输入弹窗（替代浏览器 prompt，风格统一） */
+  function showPromptDialog(title, placeholder, onConfirm) {
+    document.getElementById('cf-msg').textContent = title;
+    var input = document.getElementById('cf-input');
+    input.value = '';
+    input.placeholder = placeholder || '';
+    input.style.display = '';
+    _cfOnConfirm = function () {
+      var val = input.value.trim();
+      if (!val) return; // 空值不触发
+      onConfirm(val);
+    };
+    document.getElementById('cf-overlay').classList.add('show');
+    // 自动聚焦
+    setTimeout(function () { input.focus(); }, 100);
   }
 
   // ========== 登录引导 ==========
@@ -802,6 +820,9 @@ var UI = (function () {
       hideConfirmDialog();
       if (fn) fn();
     });
+    document.getElementById('cf-input').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') document.getElementById('cf-confirm').click();
+    });
     document.getElementById('cf-overlay').addEventListener('click', function(e){
       if (e.target === this) hideConfirmDialog();
     });
@@ -826,6 +847,7 @@ var UI = (function () {
     confirmDisconnect: confirmDisconnect,
     showConfirmDialog: showConfirmDialog,
     hideConfirmDialog: hideConfirmDialog,
+    showPromptDialog: showPromptDialog,
     executeWithConfirm: executeWithConfirm,
     // Login
     handleLogin: handleLogin,
