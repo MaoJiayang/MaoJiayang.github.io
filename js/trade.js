@@ -26,6 +26,7 @@ var Trade = (function () {
   var listData = null;             // 清单缓存 { lists: [...] }（供创建合同选择）
   var _listDraft = {};             // 清单构建器草稿 { itemName: qty }
   var _listBuilderVisible = false;
+  var _lbOverlay = null;             // 清单构建器 overlay 实例
 
   // TradeSheet 状态
   var tsMode = 'buy';
