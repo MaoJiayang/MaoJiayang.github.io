@@ -119,15 +119,23 @@ var Warehouse = (function () {
     return warehouseData.items[itemName] || 0;
   }
 
-  function renderCardIcon(itemName) {
-    var iconFile = iconMap[itemName];
-    var cat = getItemCategory(itemName);
-    var color = catColors[cat] || catColors['其他'];
-    var initial = itemName.charAt(0);
+  /**
+   * 统一图标渲染
+   * @param {string} name  物品名
+   * @param {number|string} size  'card'=32px, 'sm'=16px
+   */
+  function renderIcon(name, size) {
+    var isSm = size === 'sm' || size === 16;
+    var iconFile = iconMap[name];
     if (iconFile) {
-      return '<span class="wh-card-icon si si-' + iconFile + '" title="' + escAttr(itemName) + '"></span>';
+      var el = '<span class="wh-icon si si-' + iconFile + '" title="' + escAttr(name) + '"></span>';
+      return isSm ? '<span class="wh-icon-wrap-sm">' + el + '</span>' : el;
     }
-    return '<span class="wh-card-icon-fb" style="background:' + color + '">' + initial + '</span>';
+    var cat = getItemCategory(name);
+    var color = catColors[cat] || catColors['其他'];
+    var cls = 'wh-icon-fb' + (isSm ? ' wh-icon-sm' : '');
+    var initial = name.charAt(0);
+    return '<span class="' + cls + '" style="background:' + color + '">' + initial + '</span>';
   }
 
   function render() {
@@ -206,7 +214,7 @@ var Warehouse = (function () {
         var compact = warehouseCompactNum;
         var amtNum = typeof item.amount === 'number' ? item.amount : parseInt(item.amount) || 0;
         var display = amtNum === 0 ? '0' : (compact ? UI.fmtNum(amtNum) : UI.fmtPrice(amtNum));
-        var iconHtml = renderCardIcon(item.name);
+        var iconHtml = renderIcon(item.name, 'card');
         var zeroClass = item.amount === 0 ? ' zero' : '';
         html += '<div class="wh-card' + zeroClass + '" onclick="Warehouse.openCard(this,\'' + escAttr(item.name) + '\',' + item.amount + ')">'
           + iconHtml
@@ -370,6 +378,7 @@ var Warehouse = (function () {
     markStale: markStale,
     getIcon: getIcon,
     getStock: getStock,
+    renderIcon: renderIcon,
     getCatOrder: function(){ return ['矿石','矿锭','零件','弹药','工具','消耗品','其他']; },
     getItemCategories: function(){ return itemCategories; },
     getCatColor: function(cat){ return catColors[cat] || catColors['其他']; },

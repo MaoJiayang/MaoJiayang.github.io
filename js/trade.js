@@ -46,15 +46,8 @@ var Trade = (function () {
 
   // ========== 图标 ==========
 
-  function iconHtml(name, small) {
-    var iconFile = Warehouse.getIcon(name);
-    if (iconFile) {
-      var el = '<span class="wh-card-icon si si-' + iconFile + '" title="' + escAttr(name) + '"></span>';
-      return small ? '<span class="ct-list-icon-wrap">' + el + '</span>' : el;
-    }
-    var cat = Warehouse.getCategory(name);
-    var color = Warehouse.getCatColor(cat);
-    return '<span class="wh-card-icon-fb" style="background:' + color + '">' + name.charAt(0) + '</span>';
+  function iconHtml(name, size) {
+    return Warehouse.renderIcon(name, size || 'card');
   }
 
   // ========== 子 Tab 切换 ==========
@@ -933,17 +926,7 @@ var Trade = (function () {
       var names = Object.keys(list.items).sort();
       names.forEach(function (name) {
         var qty = list.items[name];
-        var iconHtml = '';
-        var iconFile = Warehouse.getIcon(name);
-        if (iconFile) {
-          iconHtml = '<span class="ct-list-icon-wrap"><span class="wh-card-icon si si-' + iconFile + '"></span></span>';
-        } else {
-          var cat = Warehouse.getCategory(name);
-          var color = Warehouse.getCatColor(cat);
-          var letter = name.charAt(0);
-          iconHtml = '<span class="wh-card-icon-fb" style="background:' + color + '">' + letter + '</span>';
-        }
-        parts.push('<span class="ct-list-item">' + iconHtml
+        parts.push('<span class="ct-list-item">' + Warehouse.renderIcon(name, 'sm')
           + '<span class="ct-list-qty">×' + UI.fmtCompact(qty) + '</span>'
           + '</span>');
       });
@@ -1009,21 +992,13 @@ var Trade = (function () {
         + '<span class="ct-list-qty">' + UI.fmtCompact(l.money) + ' SC</span>'
         + '</span>');
     }
-    if (l.items) {
-      l.items.forEach(function (item) {
-        var iconFile = Warehouse.getIcon(item.name);
-        var iconHtml;
-        if (iconFile) {
-          iconHtml = '<span class="wh-card-icon si si-' + iconFile + '"></span>';
-        } else {
-          var letter = (item.name || '?').charAt(0);
-          iconHtml = '<span class="wh-card-icon-fb" style="background:#253748">' + letter + '</span>';
-        }
-        parts.push('<span class="ct-list-item">' + iconHtml
-          + '<span class="ct-list-qty">×' + UI.fmtCompact(item.amount) + '</span>'
-          + '</span>');
-      });
-    }
+            if (l.items) {
+              l.items.forEach(function (item) {
+                parts.push('<span class="ct-list-item">' + Warehouse.renderIcon(item.name, 'sm')
+                  + '<span class="ct-list-qty">×' + UI.fmtCompact(item.amount) + '</span>'
+                  + '</span>');
+              });
+            }
     var itemHtml = parts.length > 0 ? '<div class="ct-list-items">' + parts.join('') + '</div>' : '<div class="ct-list-empty">—</div>';
 
     return '<div class="ct-list-card">'

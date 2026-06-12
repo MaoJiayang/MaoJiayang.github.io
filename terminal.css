@@ -209,8 +209,8 @@ body::before{
 .wh-card:hover,.wh-card:active{background:var(--bg-hover);border-color:var(--jade-400)}
 .wh-card.zero{opacity:.45}
 .wh-card.zero .wh-card-amt{color:var(--text-disabled)}
-.wh-card-icon{width:32px;height:32px;border-radius:4px;flex-shrink:0}
-.wh-card-icon-fb{
+.wh-icon{width:32px;height:32px;border-radius:4px;flex-shrink:0}
+.wh-icon-fb{
   width:32px;height:32px;border-radius:4px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
   font-size:16px;font-weight:700;color:var(--jade-50);
@@ -676,12 +676,14 @@ body::before{
   background:var(--bg-hover);border-radius:3px;padding:2px 6px;
   font-size:11px;
 }
-.ct-list-icon-wrap{width:16px;height:16px;overflow:hidden;border-radius:2px;flex-shrink:0}
-.ct-list-icon-wrap .wh-card-icon{width:32px;height:32px;transform:scale(0.5);transform-origin:top left}
-.ct-list-item .wh-card-icon-fb{
-  width:16px;height:16px;border-radius:2px;font-size:8px;font-weight:700;
+/* 小图标缩放容器（16px） */
+.wh-icon-wrap-sm{width:16px;height:16px;overflow:hidden;border-radius:2px;flex-shrink:0}
+.wh-icon-wrap-sm .wh-icon{width:32px;height:32px;transform:scale(0.5);transform-origin:top left}
+.wh-icon-fb.wh-icon-sm{width:16px;height:16px;border-radius:2px;font-size:8px;font-weight:700}
+.wh-icon-fb{
+  width:32px;height:32px;border-radius:4px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
-  color:var(--jade-50);flex-shrink:0;
+  font-size:16px;font-weight:700;color:var(--jade-50);
 }
 .ct-list-qty{font-family:var(--font-mono);color:var(--text-primary);font-weight:600}
 .ct-list-empty{font-size:11px;color:var(--text-disabled)}
