@@ -68,6 +68,14 @@ function cleanPUA(obj) {
   return obj;
 }
 
+/** 从 known_ip JSON 数组中取最新 IP */
+function latestIp(knownIpJson) {
+  try {
+    var ips = JSON.parse(knownIpJson || '[]');
+    return (Array.isArray(ips) && ips.length > 0) ? ips[0] : '';
+  } catch (_) { return ''; }
+}
+
 function getConfig(env) {
   return {
     host: env.SE_HOST || DEFAULT_HOST,
@@ -201,20 +209,34 @@ async function handleUserSync(body, env, cfg, request) {
     const defaultAttrs = JSON.stringify({ rateLimit: 20, banned: false });
     const displayName = (result.data && result.data.displayName) || '';
 
-    // 先尝试 INSERT（新用户），冲突则更新 login_at 和 known_ip（保留已有 attrs）
-    const insertResult = await env.LOG_DB.prepare(`
-      INSERT INTO users (steam_id, attrs, known_ip, login_at, created_at)
-      VALUES (?, ?, ?, ?, ?)
-      ON CONFLICT(steam_id) DO UPDATE SET login_at = excluded.login_at, known_ip = excluded.known_ip
-    `).bind(String(body.steamId), defaultAttrs, ip, now, now).run();
-
-    // 读取当前 attrs，检查 displayName 是否需要更新
-    const currentRow = await env.LOG_DB.prepare(
-      'SELECT attrs FROM users WHERE steam_id = ?'
+    // 合并 known_ip 数组：新 IP 插到头部，去重，截 10 条
+    const existing = await env.LOG_DB.prepare(
+      'SELECT steam_id, attrs, known_ip FROM users WHERE steam_id = ?'
     ).bind(String(body.steamId)).first();
 
-    if (currentRow && displayName) {
-      const attrs = JSON.parse(currentRow.attrs || '{}');
+    var mergedIp;
+    if (existing) {
+      var ips = [];
+      try { ips = JSON.parse(existing.known_ip || '[]'); } catch (_) { ips = []; }
+      if (!Array.isArray(ips)) ips = [];
+      ips = ips.filter(function (v) { return v !== ip; });
+      ips.unshift(ip);
+      if (ips.length > 10) ips = ips.slice(0, 10);
+      mergedIp = JSON.stringify(ips);
+
+      await env.LOG_DB.prepare(
+        'UPDATE users SET known_ip = ?, login_at = ? WHERE steam_id = ?'
+      ).bind(mergedIp, now, String(body.steamId)).run();
+    } else {
+      mergedIp = JSON.stringify([ip]);
+      await env.LOG_DB.prepare(
+        'INSERT INTO users (steam_id, attrs, known_ip, login_at, created_at) VALUES (?, ?, ?, ?, ?)'
+      ).bind(String(body.steamId), defaultAttrs, mergedIp, now, now).run();
+    }
+
+    // 读取当前 attrs，检查 displayName 是否需要更新
+    if (existing && displayName) {
+      const attrs = JSON.parse(existing.attrs || '{}');
       if (attrs.displayName !== displayName) {
         attrs.displayName = displayName;
         await env.LOG_DB.prepare(
@@ -234,7 +256,7 @@ async function handleUserSync(body, env, cfg, request) {
       data: {
         steamId: row.steam_id,
         loginAt: row.login_at,
-        knownIp: row.known_ip || '',
+        knownIp: latestIp(row.known_ip),
         attrs: JSON.parse(row.attrs || '{}'),
       },
     });
