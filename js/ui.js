@@ -414,7 +414,9 @@ var UI = (function () {
   function updateQSheetDisplay() {
     var input = document.getElementById('qs-qty');
     if (document.activeElement !== input) {
-      input.value = _sliderDragging ? String(qsheetQty) : fmtCompact(qsheetQty);
+      var s = _sliderDragging ? String(qsheetQty) : fmtCompact(qsheetQty);
+      // 补齐缺省小数位，防 "132M"↔"123.5M" 宽度跳变
+      input.value = s.replace(/^([\d,]+)([KMBk])$/, '$1.0$2');
     }
     if (_qsheetConfirmLabel) {
       document.getElementById('qs-confirm').textContent = _qsheetConfirmLabel + ' ' + fmtCompact(qsheetQty);

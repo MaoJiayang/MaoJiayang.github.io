@@ -366,7 +366,7 @@ body::before{
 #qsheet .qs-btns .qs-add{color:var(--jade-200)}
 #qsheet .qs-btns .qs-fast{font-size:18px;letter-spacing:-0.06em}
 #qsheet .qs-btns input{
-  width:90px;padding:10px 6px;font-size:18px;text-align:right;
+  width:90px;padding:10px 6px;font-size:18px;text-align:center;
   font-variant-numeric:tabular-nums;
   border:1px solid var(--bg-hover);border-radius:6px;
   background:var(--bg-deep);color:var(--text-primary);
@@ -632,7 +632,7 @@ body::before{
 .ts-stepper{display:flex;align-items:center;flex:1}
 .ts-stepper button{width:40px;height:40px;border:none;background:var(--bg-hover);color:var(--text-primary);font-size:20px;cursor:pointer;font-family:inherit;border-radius:4px}
 .ts-stepper button:hover{background:var(--jade-400);color:var(--bg-void)}
-.ts-stepper input{flex:1;height:40px;text-align:right;font-size:16px;font-weight:600;color:var(--text-primary);background:var(--bg-card);border:1px solid var(--bg-hover);border-radius:4px;margin:0 4px;font-family:var(--font-mono);min-width:5ch}
+.ts-stepper input{flex:1;height:40px;text-align:center;font-size:16px;font-weight:600;color:var(--text-primary);background:var(--bg-card);border:1px solid var(--bg-hover);border-radius:4px;margin:0 4px;font-family:var(--font-mono);min-width:5ch}
 .ts-suffix{font-size:13px;color:var(--text-muted);flex-shrink:0}
 
 /* 滑块 */
