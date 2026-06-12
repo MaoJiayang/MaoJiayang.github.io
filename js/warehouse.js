@@ -11,6 +11,7 @@ var Warehouse = (function () {
   var warehouseShowAll = false;
   var warehouseCompactNum = false;
   var PREFS_KEY = 'wh_prefs';
+  var _renderTimer = null;
 
   // 选择模式（供交易面板复用仓库选物品）
   var selectionMode = null;         // 'sell' | 'buy' | null
@@ -142,6 +143,15 @@ var Warehouse = (function () {
     var container = document.getElementById('wh-categories');
     var emptyEl = document.getElementById('wh-empty');
     var search = (document.getElementById('wh-search').value || '').toLowerCase().trim();
+
+    // 加载中占位（防 CLS）
+    if (warehouseLoading && !warehouseData) {
+      var h = container.scrollHeight || 120;
+      container.style.minHeight = h + 'px';
+      container.innerHTML = '<div class="tr-empty">加载中…</div>';
+      return;
+    }
+    container.style.minHeight = '';
 
     var whItems = (warehouseData && warehouseData.items) ? warehouseData.items : {};
     var catOrder = ['矿石','矿锭','零件','弹药','工具','消耗品','其他'];
@@ -339,7 +349,10 @@ var Warehouse = (function () {
     loadPrefs();
     // 搜索框即时过滤
     var searchInput = document.getElementById('wh-search');
-    if (searchInput) searchInput.addEventListener('input', function () { render(); });
+    if (searchInput) searchInput.addEventListener('input', function () {
+      clearTimeout(_renderTimer);
+      _renderTimer = setTimeout(render, 200);
+    });
     // 加载图标和物品目录
     fetch('icons/mapping.json')
       .then(function(r){ return r.json(); })

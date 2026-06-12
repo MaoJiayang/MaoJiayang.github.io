@@ -10,6 +10,9 @@ var UI = (function () {
   var currentTab = 'warehouse';
   var _tabCallbacks = {};
   var toastTimer = null;
+  var _sidebarItems = null;
+  var _tabbarTabs = null;
+  var _dotEls = [];
 
   // ========== Toast ==========
 
@@ -129,16 +132,14 @@ var UI = (function () {
   // ========== 登录引导 ==========
 
   function showLoginGuide() {
-    document.getElementById('login-guide').style.display = 'flex';
-    document.getElementById('panels-wrap').style.display = 'none';
+    document.getElementById('login-guide').classList.add('show');
     document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
     document.getElementById('tabbar').style.display = 'none';
     document.getElementById('wh-bar').style.display = 'none';
   }
 
   function hideLoginGuide() {
-    document.getElementById('login-guide').style.display = 'none';
-    document.getElementById('panels-wrap').style.display = 'block';
+    document.getElementById('login-guide').classList.remove('show');
     document.getElementById('tabbar').style.display = 'flex';
   }
 
@@ -173,17 +174,16 @@ var UI = (function () {
   function switchTab(tab) {
     var sameTab = tab === currentTab;
     currentTab = tab;
-    document.querySelectorAll('#sidebar .sitem').forEach(function(s){
+    (_sidebarItems || []).forEach(function(s){
       s.classList.toggle('active', s.dataset.tab === tab);
     });
-    document.querySelectorAll('#tabbar .tab').forEach(function(t){
+    (_tabbarTabs || []).forEach(function(t){
       t.classList.toggle('active', t.dataset.tab === tab);
     });
     var switching = !sameTab || !document.querySelector('.tab-panel.active');
     if (switching) {
-      document.querySelectorAll('.tab-panel').forEach(function(p){
-        p.classList.remove('active');
-      });
+      var prev = document.querySelector('.tab-panel.active');
+      if (prev) prev.classList.remove('active');
       var panel = document.getElementById('panel-' + tab);
       if (panel) panel.classList.add('active');
     }
@@ -192,13 +192,9 @@ var UI = (function () {
   }
 
   function updateTabDots() {
-    var dots = document.getElementById('tab-dots');
-    if (!dots) return;
-    var html = '';
-    TAB_ORDER.forEach(function(t){
-      html += '<span class="dot' + (t === currentTab ? ' active' : '') + '"></span>';
+    _dotEls.forEach(function(d, i){
+      d.classList.toggle('active', TAB_ORDER[i] === currentTab);
     });
-    dots.innerHTML = html;
   }
 
   function onTabChange(tab, fn) {
@@ -720,13 +716,27 @@ var UI = (function () {
   // ========== 初始化 ==========
 
   function init() {
-    // Tab 点击绑定
-    document.querySelectorAll('#sidebar .sitem').forEach(function(s){
+    // Tab 点击绑定 + 缓存
+    _sidebarItems = Array.from(document.querySelectorAll('#sidebar .sitem'));
+    _tabbarTabs = Array.from(document.querySelectorAll('#tabbar .tab'));
+    _sidebarItems.forEach(function(s){
       s.addEventListener('click', function(){ switchTab(s.dataset.tab); });
     });
-    document.querySelectorAll('#tabbar .tab').forEach(function(t){
+    _tabbarTabs.forEach(function(t){
       t.addEventListener('click', function(){ switchTab(t.dataset.tab); });
     });
+
+    // 预建 dot 元素
+    var dots = document.getElementById('tab-dots');
+    if (dots) {
+      dots.innerHTML = '';
+      TAB_ORDER.forEach(function(t, i){
+        var d = document.createElement('span');
+        d.className = 'dot' + (i === 0 ? ' active' : '');
+        dots.appendChild(d);
+        _dotEls.push(d);
+      });
+    }
 
     // 滑动
     initSwipe(document.getElementById('main'));

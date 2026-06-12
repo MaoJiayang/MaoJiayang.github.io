@@ -6,9 +6,6 @@
 <title>伊卡洛斯虚空终端</title>
 <link rel="stylesheet" href="icons/sprite.css">
 <link rel="stylesheet" href="terminal.css">
-<style>
-/* ⸻ 样式已迁移至 terminal.css ⸻ */
-</style>
 </head>
 <body>
 
@@ -78,16 +75,16 @@
 
   <!-- 交易面板 -->
   <div class="tab-panel" id="panel-trade">
-    <div class="tr-info-row" id="trade-info" style="display:none">
+    <div class="tr-info-row" id="trade-info">
       <div class="tr-info-box" id="ti-balance"><span class="tr-info-label">💰 余额</span><span class="tr-info-val">—</span></div>
       <div class="tr-info-box" id="ti-overdraft"><span class="tr-info-label">🏦 透支额度</span><span class="tr-info-val">—</span></div>
       <div class="tr-info-box" id="ti-vip"><span class="tr-info-label">⭐ 精英</span><span class="tr-info-val">—</span></div>
     </div>
 
-    <div class="tr-subtabs">
-      <button class="tr-subtab active" data-trade-tab="shop">服营商店</button>
-      <button class="tr-subtab" data-trade-tab="market">玩家市场</button>
-      <button class="tr-subtab" data-trade-tab="contract">合同</button>
+    <div class="st-tabs">
+      <button class="st-tab active" data-trade-tab="shop">服营商店</button>
+      <button class="st-tab" data-trade-tab="market">玩家市场</button>
+      <button class="st-tab" data-trade-tab="contract">合同</button>
     </div>
 
     <!-- 服营商店 -->
@@ -106,7 +103,7 @@
         <button class="tr-market-mode active" data-market-mode="mk">行情</button>
         <button class="tr-market-mode" data-market-mode="orders">我的订单</button>
         <span class="spacer"></span>
-        <span class="tr-refresh" id="tr-market-refresh" onclick="Trade.refreshMarket()" title="刷新">↻</span>
+        <span class="icon-refresh" id="tr-market-refresh" onclick="Trade.refreshMarket()" title="刷新">↻</span>
       </div>
       <input class="wh-search" id="tr-market-search" type="text" placeholder="搜索物品…">
       <div id="trade-market-list"></div>
@@ -119,7 +116,7 @@
         <button class="tr-contract-mode" data-contract-mode="mine">我的合同</button>
         <button class="tr-contract-mode" data-contract-mode="lists">我的清单</button>
         <span class="spacer"></span>
-        <span class="tr-refresh" onclick="Trade.refreshContracts()" title="刷新">↻</span>
+        <span class="icon-refresh" onclick="Trade.refreshContracts()" title="刷新">↻</span>
       </div>
       <input class="wh-search" id="tr-contract-search" type="text" placeholder="搜索…">
       <div id="trade-contract-list"></div>
@@ -144,10 +141,10 @@
     </div>
   </div>
   <div class="tab-panel" id="panel-shipyard">
-        <div class="sy-subtabs">
-          <button class="sy-subtab active" data-sy-tab="queue">建造队列</button>
-          <button class="sy-subtab" data-sy-tab="templates">模板</button>
-          <button class="sy-subtab" data-sy-tab="autobuild">自动建造</button>
+        <div class="st-tabs">
+          <button class="st-tab active" data-sy-tab="queue">建造队列</button>
+          <button class="st-tab" data-sy-tab="templates">模板</button>
+          <button class="st-tab" data-sy-tab="autobuild">自动建造</button>
         </div>
 
         <!-- 建造队列 -->
@@ -183,16 +180,16 @@
         </div>
       </div>
   <div class="tab-panel" id="panel-hangar">
-        <div class="ha-subtabs">
-          <button class="ha-subtab active" data-ha-tab="my">我的船坞</button>
-          <button class="ha-subtab" data-ha-tab="world">世界网格</button>
-          <button class="ha-subtab" data-ha-tab="market">舰船市场</button>
+        <div class="st-tabs ha">
+          <button class="st-tab active" data-ha-tab="my">我的船坞</button>
+          <button class="st-tab" data-ha-tab="world">世界网格</button>
+          <button class="st-tab" data-ha-tab="market">舰船市场</button>
           <span class="spacer"></span>
           <button id="ha-name-toggle" title="切换短名/全名">简洁</button>
         </div>
         <div class="ha-section" id="hangar-my">
           <input class="wh-search" id="ha-search" type="text" placeholder="搜索船名…">
-          <span class="ha-refresh" onclick="Hangar.load()" title="刷新">↻</span>
+          <span class="icon-refresh abs" onclick="Hangar.load()" title="刷新">↻</span>
           <div id="ha-grids"></div>
           <div class="tr-actions">
             <button class="tr-act-btn" id="ha-save">+ 保存飞船</button>
@@ -202,7 +199,7 @@
           <div class="ha-search-row">
             <input class="wh-search" id="ha-world-search" type="text" placeholder="搜索船名…" style="margin-bottom:0">
             <button id="ha-sort-btn" class="ha-sort-btn" title="切换排序">名称 ↓</button>
-            <span class="ha-refresh-inline" onclick="Hangar.loadWorldGrids()" title="刷新">↻</span>
+            <span class="icon-refresh" onclick="Hangar.loadWorldGrids()" title="刷新">↻</span>
           </div>
           <div id="ha-world-grids"></div>
         </div>
@@ -210,7 +207,7 @@
           <div class="ha-search-row">
             <input class="wh-search" id="hm-search" type="text" placeholder="搜索船名…" style="margin-bottom:0">
             <button id="hm-sort-btn" class="ha-sort-btn" title="切换排序">名称 ↓</button>
-            <span class="ha-refresh-inline" onclick="Hangar.loadShipMarket()" title="刷新">↻</span>
+            <span class="icon-refresh" onclick="Hangar.loadShipMarket()" title="刷新">↻</span>
           </div>
           <div id="hm-coupon" style="display:none"></div>
           <div id="hm-content"></div>

@@ -131,7 +131,7 @@ var Trade = (function () {
     var row = document.getElementById('trade-info');
     if (!row) return;
     if (bankInfo) {
-      row.style.display = '';
+      row.classList.add('show');
       var balBox = document.getElementById('ti-balance');
       balBox.querySelector('.tr-info-val').innerHTML = UI.fmtNum(bankInfo.balance) + ' SC';
       balBox.className = 'tr-info-box' + (bankInfo.balance > 0 ? ' good' : bankInfo.balance < 0 ? ' bad' : '');
@@ -141,7 +141,7 @@ var Trade = (function () {
       var vipBox = document.getElementById('ti-vip');
       vipBox.querySelector('.tr-info-val').innerHTML = bankInfo.vipDays > 0 ? bankInfo.vipDays + ' 天' : '—';
       vipBox.className = 'tr-info-box' + (bankInfo.vipDays > 0 ? ' good' : '');
-    } else { row.style.display = 'none'; }
+    } else { row.classList.remove('show'); }
   }
 
   function toggleShopCat(hdr) {
