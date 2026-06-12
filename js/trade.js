@@ -1228,8 +1228,10 @@ var Trade = (function () {
     if (!sourceCard) return;
     var srcRect = sourceCard.getBoundingClientRect();
 
-    var targetEl = _lbOverlay.get('#lb-cart-items');
-    if (!targetEl) return;
+    // 刚加入的物品 chip 始终是最后一个
+    var chips = _lbOverlay.el.querySelectorAll('.lb-cart-chip');
+    var targetChip = chips.length ? chips[chips.length - 1] : null;
+    var targetEl = targetChip || _lbOverlay.get('#lb-cart-items');
     var tgtRect = targetEl.getBoundingClientRect();
 
     // 发光小球，从卡片中心飞向购物车中心
