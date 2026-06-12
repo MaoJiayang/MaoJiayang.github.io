@@ -796,6 +796,29 @@ var UI = (function () {
     onExtraFocus: onExtraFocus,
     onExtraBlur: onExtraBlur,
     switchQSheetMode: switchQSheetMode,
+    // Overlay 工厂
+    createOverlay: function (id, innerHTML, opts) {
+      opts = opts || {};
+      var wrap = document.createElement('div');
+      wrap.id = id;
+      wrap.className = 'overlay';
+      wrap.innerHTML = '<div class="overlay-pane">' + innerHTML + '</div>';
+      document.body.appendChild(wrap);
+      if (opts.onBackdrop) {
+        wrap.addEventListener('click', function (e) { if (e.target === wrap) opts.onBackdrop(); });
+      }
+      return {
+        show: function () { wrap.classList.add('show'); if (opts.onShow) opts.onShow(); },
+        hide: function () { wrap.classList.remove('show'); if (opts.onHide) opts.onHide(); },
+        on: function (sel, event, fn) {
+          (typeof sel === 'string' ? wrap.querySelectorAll(sel) : [sel]).forEach(function (el) {
+            el.addEventListener(event, fn);
+          });
+        },
+        get: function (sel) { return wrap.querySelector(sel); },
+        el: wrap
+      };
+    },
     // KMB 格式
     fmtCompact: fmtCompact,
     fmtNum: fmtNum,

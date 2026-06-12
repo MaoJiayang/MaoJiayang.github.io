@@ -305,6 +305,21 @@ body::before{
 
 .tr-empty{padding:32px;text-align:center;color:var(--text-muted);font-size:13px}
 
+/* ========== Overlay 基类 ========== */
+.overlay{
+  position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.5);
+  display:flex;align-items:flex-end;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.overlay.show{opacity:1;pointer-events:auto}
+.overlay-pane{
+  background:var(--bg-panel);border-radius:12px 12px 0 0;
+  width:100%;max-width:480px;max-height:90vh;
+  display:flex;flex-direction:column;
+  transform:translateY(100%);transition:transform .25s cubic-bezier(.2,.8,.2,1);
+}
+.overlay.show .overlay-pane{transform:translateY(0)}
+
 /* ========== 数量输入 Bottom Sheet ========== */
 #qsheet-overlay{
   position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.5);
@@ -793,19 +808,8 @@ body::before{
 .hm-buy-btn:hover{opacity:.85}
 
 /* ========== 清单构建器 ========== */
-#list-builder-overlay{
-  position:fixed;inset:0;z-index:190;background:rgba(0,0,0,.5);
-  display:flex;align-items:flex-end;justify-content:center;
-  opacity:0;pointer-events:none;transition:opacity .2s;
-}
-#list-builder-overlay.show{opacity:1;pointer-events:auto}
-#list-builder{
-  background:var(--bg-panel);border-radius:12px 12px 0 0;
-  width:100%;max-width:480px;max-height:90vh;
-  display:flex;flex-direction:column;
-  transform:translateY(100%);transition:transform .25s cubic-bezier(.2,.8,.2,1);
-}
-#list-builder-overlay.show #list-builder{transform:translateY(0)}
+/* 清单构建器 — z-index 低于 QSheet(200) 便于叠加 */
+#list-builder-overlay{z-index:190}
 
 .lb-header{
   display:flex;align-items:center;justify-content:space-between;

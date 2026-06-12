@@ -1037,6 +1037,34 @@ var Trade = (function () {
 
   // ========== 清单构建器 ==========
 
+  var LIST_BUILDER_HTML = ''
+    + '<div class="lb-header">'
+    + '<span class="lb-title">创建清单</span>'
+    + '<span class="lb-close">&times;</span>'
+    + '</div>'
+    + '<div class="lb-name-row">'
+    + '<input id="lb-name" type="text" placeholder="清单名称">'
+    + '</div>'
+    + '<input class="wh-search" id="lb-search" type="text" placeholder="搜索物品…">'
+    + '<div class="lb-grid-scroll" id="lb-grid-scroll">'
+    + '<div id="lb-grid"></div>'
+    + '</div>'
+    + '<div class="lb-cart" id="lb-cart" style="display:none">'
+    + '<div class="lb-cart-head">清单预览</div>'
+    + '<div class="lb-cart-items" id="lb-cart-items"></div>'
+    + '<div class="lb-cart-money">'
+    + '<label>银行余额</label>'
+    + '<div class="lb-money-row">'
+    + '<input id="lb-money" type="text" inputmode="numeric" value="0" placeholder="0">'
+    + '<span>SC</span>'
+    + '</div>'
+    + '</div>'
+    + '<div class="lb-cart-actions">'
+    + '<button class="lb-cancel">取消</button>'
+    + '<button class="lb-confirm" id="lb-confirm">确认创建</button>'
+    + '</div>'
+    + '</div>';
+
   function openListBuilder() {
     if (!Warehouse.hasData()) {
       Warehouse.ensureData();
@@ -1045,25 +1073,38 @@ var Trade = (function () {
     }
     _listDraft = {};
     _listBuilderVisible = true;
-    document.getElementById('lb-name').value = '';
-    document.getElementById('lb-money').value = '0';
-    document.getElementById('lb-search').value = '';
+    if (!_lbOverlay) {
+      _lbOverlay = UI.createOverlay('list-builder-overlay', LIST_BUILDER_HTML, {
+        onBackdrop: closeListBuilder
+      });
+      _lbOverlay.on('.lb-close', 'click', closeListBuilder);
+      _lbOverlay.on('.lb-cancel', 'click', closeListBuilder);
+      _lbOverlay.on('#lb-confirm', 'click', confirmListBuilder);
+      _lbOverlay.on('#lb-search', 'input', renderListBuilderGrid);
+      _lbOverlay.on('#lb-money', 'input', function () {
+        var hasItems = Object.keys(_listDraft).length > 0;
+        _lbOverlay.get('#lb-confirm').disabled = !hasItems;
+      });
+    }
+    _lbOverlay.get('#lb-name').value = '';
+    _lbOverlay.get('#lb-money').value = '0';
+    _lbOverlay.get('#lb-search').value = '';
     renderListBuilderGrid();
     renderListBuilderCart();
-    document.getElementById('list-builder-overlay').classList.add('show');
-    setTimeout(function () { document.getElementById('lb-name').focus(); }, 300);
+    _lbOverlay.show();
+    setTimeout(function () { _lbOverlay.get('#lb-name').focus(); }, 300);
   }
 
   function closeListBuilder() {
     _listBuilderVisible = false;
     _listDraft = {};
-    document.getElementById('list-builder-overlay').classList.remove('show');
+    if (_lbOverlay) _lbOverlay.hide();
   }
 
   function renderListBuilderGrid() {
-    var container = document.getElementById('lb-grid');
+    var container = _lbOverlay && _lbOverlay.get('#lb-grid');
     if (!container) return;
-    var search = (document.getElementById('lb-search').value || '').toLowerCase().trim();
+    var search = (_lbOverlay.get('#lb-search').value || '').toLowerCase().trim();
     var cats = Warehouse.getItemCategories();
     var catOrder = Warehouse.getCatOrder();
     var html = '';
@@ -1133,13 +1174,12 @@ var Trade = (function () {
   }
 
   function updateListBuilderMoney() {
-    // 输入时实时更新购物车（仅刷新按钮禁用态）
-    var hasItems = Object.keys(_listDraft).length > 0;
-    document.getElementById('lb-confirm').disabled = !hasItems;
+    // (已内联到工厂事件绑定中)
   }
 
   function renderListBuilderCart() {
-    var cartEl = document.getElementById('lb-cart');
+    if (!_lbOverlay) return;
+    var cartEl = _lbOverlay.get('#lb-cart');
     var names = Object.keys(_listDraft);
     if (names.length === 0) {
       cartEl.style.display = 'none';
@@ -1154,17 +1194,18 @@ var Trade = (function () {
         + '<span class="lb-chip-remove">×</span>'
         + '</span>';
     });
-    document.getElementById('lb-cart-items').innerHTML = itemsHtml;
-    document.getElementById('lb-confirm').disabled = false;
+    _lbOverlay.get('#lb-cart-items').innerHTML = itemsHtml;
+    _lbOverlay.get('#lb-confirm').disabled = false;
   }
 
   function confirmListBuilder() {
-    var name = document.getElementById('lb-name').value.trim();
+    if (!_lbOverlay) return;
+    var name = _lbOverlay.get('#lb-name').value.trim();
     if (!name) { UI.showToast('error', '请输入清单名称'); return; }
     var names = Object.keys(_listDraft);
     if (names.length === 0) { UI.showToast('error', '请至少选择一个物品'); return; }
     var parts = names.map(function (n) { return n + '=' + _listDraft[n]; });
-    var moneyVal = parseInt(document.getElementById('lb-money').value.replace(/[^\d]/g, ''), 10) || 0;
+    var moneyVal = parseInt(_lbOverlay.get('#lb-money').value.replace(/[^\d]/g, ''), 10) || 0;
     if (moneyVal > 0) parts.push('money=' + moneyVal);
     var args = parts.join(' ');
     exec('!清单 创建 ' + name + ' "' + args + '"', '已创建清单「' + name + '」').then(function () {
@@ -1259,10 +1300,6 @@ var Trade = (function () {
       el.addEventListener('click', function () { switchContractMode(el.dataset.contractMode); });
     });
     document.getElementById('tr-contract-search').addEventListener('input', function () { renderContracts(); });
-    // 清单构建器遮罩点击关闭
-    document.getElementById('list-builder-overlay').addEventListener('click', function (e) {
-      if (e.target === this) closeListBuilder();
-    });
   }
 
   // ========== 初始化 ==========
