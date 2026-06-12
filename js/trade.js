@@ -1054,7 +1054,7 @@ var Trade = (function () {
     + '<div class="lb-cart-head">清单预览</div>'
     + '<div class="lb-cart-items" id="lb-cart-items"></div>'
     + '<div class="lb-cart-money">'
-    + '<label>银行余额</label>'
+    + '<label>附带转账（可选）</label>'
     + '<div class="lb-money-row">'
     + '<input id="lb-money" type="text" inputmode="numeric" value="0" placeholder="0">'
     + '<span>SC</span>'

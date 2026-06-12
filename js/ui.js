@@ -397,7 +397,9 @@ var UI = (function () {
     if (document.activeElement !== input) {
       input.value = fmtCompact(qsheetQty);
     }
-    if (!qsheetExtra) {
+    if (_qsheetConfirmLabel) {
+      document.getElementById('qs-confirm').textContent = _qsheetConfirmLabel + ' ' + fmtCompact(qsheetQty);
+    } else if (!qsheetExtra) {
       var label;
       if (qsheetMode === 'deposit') label = '确认存入 ';
       else if (qsheetMode === 'withdraw') label = '确认取出 ';
@@ -497,8 +499,8 @@ var UI = (function () {
     var tabsEl = document.getElementById('qs-tabs');
     var tabDep = document.getElementById('qs-tab-deposit');
     var tabWdr = document.getElementById('qs-tab-withdraw');
-    // 非仓库模式（商店/市场）隐藏存入/取出 tabs
-    if (qsheetMode === 'buy' || qsheetMode === 'sell') {
+    // 非仓库模式（商店/市场/自定义标签）隐藏存入/取出 tabs
+    if (qsheetMode === 'buy' || qsheetMode === 'sell' || _qsheetConfirmLabel) {
       tabsEl.style.display = 'none';
       return;
     }
@@ -614,6 +616,9 @@ var UI = (function () {
         _qsheetOnConfirm(qsheetMode, qsheetQty, extraVal);
       } else if (qsheetMode === 'buy' || qsheetMode === 'sell') {
         // 商店买入/卖出：传 mode + qty
+        _qsheetOnConfirm(qsheetMode, qsheetQty);
+      } else if (_qsheetConfirmLabel) {
+        // 自定义场景（清单构建器等）：传 mode + qty，不生成仓库指令
         _qsheetOnConfirm(qsheetMode, qsheetQty);
       } else {
         // 仓库存入/取出：传完整指令
