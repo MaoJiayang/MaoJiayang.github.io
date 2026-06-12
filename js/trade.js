@@ -936,7 +936,7 @@ var Trade = (function () {
           iconHtml = '<span class="wh-card-icon si si-' + iconFile + '"></span>';
         } else {
           var letter = name.charAt(0);
-          iconHtml = '<span class="wh-card-icon-fb">' + letter + '</span>';
+          iconHtml = '<span class="wh-card-icon-fb" style="background:#253748">' + letter + '</span>';
         }
         parts.push('<span class="ct-list-item">' + iconHtml
           + '<span class="ct-list-qty">×' + UI.fmtCompact(qty) + '</span>'
@@ -1012,7 +1012,7 @@ var Trade = (function () {
           iconHtml = '<span class="wh-card-icon si si-' + iconFile + '"></span>';
         } else {
           var letter = (item.subtypeId || '?').charAt(0);
-          iconHtml = '<span class="wh-card-icon-fb">' + letter + '</span>';
+          iconHtml = '<span class="wh-card-icon-fb" style="background:#253748">' + letter + '</span>';
         }
         parts.push('<span class="ct-list-item">' + iconHtml
           + '<span class="ct-list-qty">×' + UI.fmtCompact(item.amount) + '</span>'
