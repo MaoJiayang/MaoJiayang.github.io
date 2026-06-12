@@ -37,23 +37,54 @@ var Hangar = (function () {
 
   function updateSellDisplay() {
     var input = document.getElementById('sf-price');
-    if (input) input.value = _sellPrice;
+    if (input && document.activeElement !== input) {
+      var s = UI.fmtCompact(_sellPrice);
+      input.value = s.replace(/^([\d,]+)([KMB])$/, '$1.0$2'); // 补齐缺省小数位防跳变
+    }
     var preview = document.getElementById('sf-preview');
     if (!preview) return;
     var desc = (document.getElementById('sf-desc').value || '').trim();
     var text = '出售飞船 — ' + UI.fmtCompact(_sellPrice) + ' SC';
     if (desc) text += ' — ' + desc;
     preview.textContent = text;
+    updateSellBtns();
+  }
+
+  function updateSellBtns() {
+    var minReached = _sellPrice <= 1;
+    var subs = document.querySelectorAll('#sell-form-overlay .sf-sub');
+    for (var i = 0; i < subs.length; i++) subs[i].disabled = minReached;
+  }
+
+  function onSellPriceFocus() {
+    var input = document.getElementById('sf-price');
+    input.value = _sellPrice;
+    _fitSellFont(input);
+  }
+
+  function onSellPriceBlur() {
+    var input = document.getElementById('sf-price');
+    input.value = UI.fmtCompact(_sellPrice);
+    input.style.fontSize = '';
   }
 
   function onSellPriceInput() {
-    var raw = document.getElementById('sf-price').value.replace(/,/g, '');
-    var v = parseInt(raw, 10);
-    if (!isNaN(v) && v >= 1) {
-      _sellPrice = v;
-      _sellTap.count = 0;
-    }
+    var input = document.getElementById('sf-price');
+    input.value = input.value.replace(/[^\d.kKmMbB]/g, '');
+    _fitSellFont(input);
+    var v = UI.parseCompact(input.value);
+    if (isNaN(v) || v < 1) v = 1;
+    _sellPrice = Math.max(1, v);
+    _sellTap.count = 0;
     updateSellDisplay();
+  }
+
+  function _fitSellFont(input) {
+    var len = input.value.length;
+    if (len <= 7) input.style.fontSize = '';
+    else if (len <= 9) input.style.fontSize = '14px';
+    else if (len <= 12) input.style.fontSize = '12px';
+    else input.style.fontSize = '10px';
   }
 
   function showSellForm() {
@@ -658,6 +689,8 @@ var Hangar = (function () {
       '</div>',
       { onBackdrop: function () { _sellOverlay.hide(); } }
     );
+    _sellOverlay.on('#sf-price', 'focus', onSellPriceFocus);
+    _sellOverlay.on('#sf-price', 'blur', onSellPriceBlur);
     _sellOverlay.on('#sf-price', 'input', onSellPriceInput);
     _sellOverlay.on('.sf-sub:not(.sf-fast)', 'click', function(){ adjustSellPrice(-1); });
     _sellOverlay.on('.sf-add:not(.sf-fast)', 'click', function(){ adjustSellPrice(1); });

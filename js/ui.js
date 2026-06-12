@@ -902,6 +902,7 @@ var UI = (function () {
     fmtCompact: fmtCompact,
     fmtNum: fmtNum,
     fmtPrice: fmtPrice,
+    parseCompact: parseCompact,
     // 工具函数
     escHtml: function (s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); },
     escAttr: function (s) { return String(s || '').replace(/'/g, "\\'").replace(/"/g, '&quot;'); },
