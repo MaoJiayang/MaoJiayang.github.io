@@ -635,6 +635,7 @@ body::before{
   #tabbar{display:none !important}
   #main{margin-left:180px;padding-bottom:0}
   #login-guide{min-height:calc(100vh - var(--topbar-h))}
+}
 
 /* ========== 合同 & 清单 ========== */
 .tr-contract-mode{
