@@ -252,6 +252,7 @@ var UI = (function () {
   var _noCap = false;          // 数量无上限（服营商店买入等）
   var _maxQty = 0;             // >0 表示数量上限（市场拆单用）
   var _qsheetConfirmLabel = null;  // 自定义确认按钮文字
+  var _sliderDragging = false;    // 拖动中暂缓格式化，防闪烁
 
   /**
    * openQSheet(mode, itemName, stock, onConfirm)        ← 仓库用法（向后兼容）
@@ -398,8 +399,14 @@ var UI = (function () {
   }
 
   function onQsSliderInput() {
+    _sliderDragging = true;
     qsheetQty = parseInt(document.getElementById('qs-slider').value, 10) || 1;
     updateQSheetDisplay();
+  }
+
+  function onQsSliderChange() {
+    _sliderDragging = false;
+    updateQSheetDisplay(); // 松手后刷新为格式化显示
   }
 
   // ========== 显示更新 ==========
@@ -407,7 +414,7 @@ var UI = (function () {
   function updateQSheetDisplay() {
     var input = document.getElementById('qs-qty');
     if (document.activeElement !== input) {
-      input.value = fmtCompact(qsheetQty);
+      input.value = _sliderDragging ? String(qsheetQty) : fmtCompact(qsheetQty);
     }
     if (_qsheetConfirmLabel) {
       document.getElementById('qs-confirm').textContent = _qsheetConfirmLabel + ' ' + fmtCompact(qsheetQty);
@@ -769,6 +776,7 @@ var UI = (function () {
     document.getElementById('qs-minus-fast').addEventListener('click', function(){ fastAdjust(-1); });
     document.getElementById('qs-plus-fast').addEventListener('click', function(){ fastAdjust(1); });
     document.getElementById('qs-slider').addEventListener('input', onQsSliderInput);
+    document.getElementById('qs-slider').addEventListener('change', onQsSliderChange);
 
     // QSheet extra 按钮
     document.getElementById('qs-extra-minus').addEventListener('click', function(){ adjustExtra(-1); });

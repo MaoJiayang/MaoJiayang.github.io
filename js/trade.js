@@ -30,6 +30,7 @@ var Trade = (function () {
   var _lbOpenCat = null;             // 清单构建器当前展开的分类
 
   // TradeSheet 状态
+  var _tsSliderDragging = false; // 拖动中暂缓格式化
   var tsMode = 'buy';
   var tsItem = '';
   var tsPrice = 0;
@@ -709,11 +710,9 @@ var Trade = (function () {
 
   /** 更新显示：总价 + 滑块填色 + 输入框 */
   function updateTsDisplay() {
-    document.getElementById('ts-price').value = tsPrice;
-    document.getElementById('ts-qty').value = tsQty;
-    UI.syncSlider(document.getElementById('ts-slider'), Math.min(tsQty, tsMaxQty), tsMaxQty, false);
     document.getElementById('ts-price').value = UI.fmtPrice(tsPrice);
-    document.getElementById('ts-qty').value = UI.fmtPrice(tsQty);
+    document.getElementById('ts-qty').value = _tsSliderDragging ? String(tsQty) : UI.fmtPrice(tsQty);
+    UI.syncSlider(document.getElementById('ts-slider'), Math.min(tsQty, tsMaxQty), tsMaxQty, false);
     var cost = calcFillCost(tsQty, tsPrice, tsMode);
     document.getElementById('ts-total').textContent = '预估成交 ' + UI.fmtPrice(cost.total) + ' SC（均价 ' + UI.fmtCompact(cost.avgPrice) + '）';
   }
@@ -790,8 +789,14 @@ var Trade = (function () {
   }
 
   function onTsSliderInput() {
+    _tsSliderDragging = true;
     tsQty = parseInt(document.getElementById('ts-slider').value, 10) || 0;
     renderChart();
+    updateTsDisplay();
+  }
+
+  function onTsSliderChange() {
+    _tsSliderDragging = false;
     updateTsDisplay();
   }
 
@@ -1410,6 +1415,7 @@ var Trade = (function () {
     document.getElementById('ts-price').addEventListener('focus', _tsFocusScroll);
     document.getElementById('ts-qty').addEventListener('focus', _tsFocusScroll);
     document.getElementById('ts-slider').addEventListener('input', onTsSliderInput);
+    document.getElementById('ts-slider').addEventListener('change', onTsSliderChange);
     document.getElementById('ts-price-sub').addEventListener('click', function () { adjustTsPrice(-1); });
     document.getElementById('ts-price-add').addEventListener('click', function () { adjustTsPrice(1); });
     document.getElementById('ts-qty-sub').addEventListener('click', function () { adjustTsQty(-1); });
