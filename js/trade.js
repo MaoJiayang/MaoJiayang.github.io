@@ -719,7 +719,30 @@ var Trade = (function () {
     slider.style.background = 'linear-gradient(to right, var(--jade-200) 0%, var(--jade-200) ' + pct2 + '%, var(--bg-hover) ' + pct2 + '%)';
     document.getElementById('ts-price').value = UI.fmtPrice(tsPrice);
     document.getElementById('ts-qty').value = UI.fmtPrice(tsQty);
-    document.getElementById('ts-total').textContent = '预估成交 ' + UI.fmtPrice(tsPrice * tsQty) + ' SC';
+    var cost = calcFillCost(tsQty, tsPrice, tsMode);
+    document.getElementById('ts-total').textContent = '预估成交 ' + UI.fmtPrice(cost.total) + ' SC（均价 ' + UI.fmtCompact(cost.avgPrice) + '）';
+  }
+
+  /**
+   * 分段计算成交总价：从最优价开始逐档成交直到满足数量或超出限价
+   * @returns {{ total: number, avgPrice: number }}
+   */
+  function calcFillCost(qty, priceCap, mode) {
+    if (!_tsOrders || !_tsOrders.length) return { total: priceCap * qty, avgPrice: priceCap };
+    var remaining = qty;
+    var total = 0;
+    for (var i = 0; i < _tsOrders.length; i++) {
+      var o = _tsOrders[i];
+      if (mode === 'buy' && o.price > priceCap) break;   // 卖出价超出买入限价
+      if (mode === 'sell' && o.price < priceCap) break;  // 买入价低于卖出限价
+      var take = Math.min(remaining, o.count);
+      total += take * o.price;
+      remaining -= take;
+      if (remaining <= 0) break;
+    }
+    // 订单簿耗尽仍未满：剩余部分按限价估算
+    total += remaining * priceCap;
+    return { total: total, avgPrice: qty > 0 ? Math.round(total / qty) : 0 };
   }
 
   /** 计算当前价格下可购买/出售的最大数量（无对手方订单时不设上限） */
