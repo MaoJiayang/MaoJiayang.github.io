@@ -27,6 +27,7 @@ var Trade = (function () {
   var _listDraft = {};             // 清单构建器草稿 { itemName: qty }
   var _listBuilderVisible = false;
   var _lbOverlay = null;             // 清单构建器 overlay 实例
+  var _lbOpenCat = null;             // 清单构建器当前展开的分类
 
   // TradeSheet 状态
   var tsMode = 'buy';
@@ -1074,6 +1075,7 @@ var Trade = (function () {
     }
     _listDraft = {};
     _listBuilderVisible = true;
+    _lbOpenCat = Warehouse.getOpenCat();  // 从仓库同步初始展开分类
     if (!_lbOverlay) {
       _lbOverlay = UI.createOverlay('list-builder-overlay', LIST_BUILDER_HTML, {
         onBackdrop: closeListBuilder
@@ -1121,11 +1123,11 @@ var Trade = (function () {
         visible.push(name);
       });
       if (!visible.length) return;
-      var openCat = Warehouse.getOpenCat();
-      var isOpen = openCat ? cat === openCat : catIdx === 0;
+      // null=未设定取第一个 / ''=明确折叠 / 其他=指定分类
+      var isOpen = _lbOpenCat ? cat === _lbOpenCat : (_lbOpenCat === null && catIdx === 0);
       catIdx++;
       anyVisible = true;
-      html += '<div class="lb-cat-h" onclick="var b=this.nextElementSibling;var a=this.querySelector(\'.arrow\');var o=b.style.display===\'none\';b.style.display=o?\'\':\'none\';a.classList.toggle(\'open\',o)">'
+      html += '<div class="lb-cat-h" onclick="Trade.setListBuilderCat(\'' + escAttr(cat) + '\')">'
         + '<span class="arrow' + (isOpen ? ' open' : '') + '">▸</span>'
         + '<span class="lb-cat-dot" style="background:' + Warehouse.getCatColor(cat) + '"></span>'
         + '<span class="lb-cat-label">' + escHtml(cat) + '</span>'
@@ -1150,6 +1152,12 @@ var Trade = (function () {
     } else {
       container.innerHTML = html;
     }
+  }
+
+  /** 切换清单构建器中的展开分类 */
+  function setListBuilderCat(cat) {
+    _lbOpenCat = _lbOpenCat === cat ? '' : cat;
+    renderListBuilderGrid();
   }
 
   function pickItemForList(name) {
@@ -1196,8 +1204,8 @@ var Trade = (function () {
     _lbOverlay.get('#lb-confirm').disabled = false;
     var itemsHtml = '';
     names.forEach(function (name) {
-      itemsHtml += '<span class="lb-cart-chip" onclick="Trade.removeFromListDraft(\'' + escAttr(name) + '\')">'
-        + escHtml(name)
+      itemsHtml += '<span class="lb-cart-chip" onclick="Trade.removeFromListDraft(\'' + escAttr(name) + '\')" title="' + escAttr(name) + '">'
+        + Warehouse.renderIcon(name, 'sm')
         + '<span class="lb-chip-remove">×</span>'
         + '</span>';
     });
@@ -1224,27 +1232,27 @@ var Trade = (function () {
     if (!targetEl) return;
     var tgtRect = targetEl.getBoundingClientRect();
 
-    // 创建飞行克隆体
+    // 创建飞行克隆体并用 WAAPI 执行动画（比 CSS transition 更可靠）
     var flyer = sourceIcon.cloneNode(true);
     flyer.style.position = 'fixed';
     flyer.style.zIndex = '999';
     flyer.style.left = srcRect.left + 'px';
     flyer.style.top = srcRect.top + 'px';
-    flyer.style.width = srcRect.width + 'px';
-    flyer.style.height = srcRect.height + 'px';
     flyer.style.margin = '0';
     flyer.style.pointerEvents = 'none';
-    flyer.style.transition = 'all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)';
     document.body.appendChild(flyer);
 
-    requestAnimationFrame(function () {
-      flyer.style.left = (tgtRect.left + tgtRect.width / 2 - srcRect.width / 2) + 'px';
-      flyer.style.top = (tgtRect.top + tgtRect.height / 2 - srcRect.height / 2) + 'px';
-      flyer.style.opacity = '0.4';
-      flyer.style.transform = 'scale(0.6)';
-    });
+    var endLeft = tgtRect.left + tgtRect.width / 2 - srcRect.width / 2;
+    var endTop = tgtRect.top + tgtRect.height / 2 - srcRect.height / 2;
 
-    setTimeout(function () { flyer.remove(); }, 400);
+    flyer.animate([
+      { left: srcRect.left + 'px', top: srcRect.top + 'px', opacity: 1, transform: 'scale(1)' },
+      { left: endLeft + 'px', top: endTop + 'px', opacity: 0.3, transform: 'scale(0.5)' }
+    ], {
+      duration: 350,
+      easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+      fill: 'forwards'
+    }).onfinish = function () { flyer.remove(); };
   }
 
   function confirmListBuilder() {
@@ -1416,6 +1424,7 @@ var Trade = (function () {
     toggleContractPublic: toggleContractPublic,
     openListBuilder: openListBuilder, closeListBuilder: closeListBuilder,
     pickItemForList: pickItemForList, removeFromListDraft: removeFromListDraft,
+    setListBuilderCat: setListBuilderCat,
     confirmListBuilder: confirmListBuilder, renderListBuilderGrid: renderListBuilderGrid,
     updateListBuilderMoney: updateListBuilderMoney,
     deleteList: deleteList, toggleCreateContract: toggleCreateContract,
