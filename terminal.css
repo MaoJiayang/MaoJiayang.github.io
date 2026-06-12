@@ -694,7 +694,7 @@ body::before{
   font-family:inherit;min-height:38px;transition:all .12s;
 }
 .ct-act-btn:hover{background:var(--bg-hover);color:var(--text-primary)}
-.ct-act-delete{color:var(--color-error)}
+.ct-act-delete{flex:0 0 auto;padding:8px 14px;color:var(--color-error)}
 .ct-act-delete:hover{background:var(--color-error);color:#fff}
 .ct-act-accept{background:var(--jade-200);color:var(--bg-void);border-color:var(--jade-200)}
 .ct-act-accept:hover{opacity:.85}

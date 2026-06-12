@@ -51,7 +51,9 @@ var Trade = (function () {
     if (iconFile) {
       return '<span class="wh-card-icon si si-' + iconFile + '" title="' + escAttr(name) + '"></span>';
     }
-    return '<span class="wh-card-icon-fb" style="background:#253748">' + name.charAt(0) + '</span>';
+    var cat = Warehouse.getCategory(name);
+    var color = Warehouse.getCatColor(cat);
+    return '<span class="wh-card-icon-fb" style="background:' + color + '">' + name.charAt(0) + '</span>';
   }
 
   // ========== 子 Tab 切换 ==========
@@ -935,8 +937,10 @@ var Trade = (function () {
         if (iconFile) {
           iconHtml = '<span class="wh-card-icon si si-' + iconFile + '"></span>';
         } else {
+          var cat = Warehouse.getCategory(name);
+          var color = Warehouse.getCatColor(cat);
           var letter = name.charAt(0);
-          iconHtml = '<span class="wh-card-icon-fb" style="background:#253748">' + letter + '</span>';
+          iconHtml = '<span class="wh-card-icon-fb" style="background:' + color + '">' + letter + '</span>';
         }
         parts.push('<span class="ct-list-item">' + iconHtml
           + '<span class="ct-list-qty">×' + UI.fmtCompact(qty) + '</span>'
