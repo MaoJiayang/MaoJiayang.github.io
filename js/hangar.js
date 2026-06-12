@@ -499,7 +499,7 @@ var Hangar = (function () {
       var p = parseInt(val, 10);
       if (isNaN(p) || p < 0) { UI.showToast('error', '请输入有效价格'); return; }
       UI.showConfirmDialog(
-        '确定以 ' + UI.fmtCompact(p) + ' SC 出售当前瞄准的飞船？',
+        '确定以 ' + UI.fmtCompact(p) + ' SC 出售瞄准的飞船？',
         function () {
           exec('!网格 出售 ' + p + ' ""', '已上架飞船').then(function () {
             loadHangar(); loadShipMarket();

@@ -126,7 +126,8 @@ var UI = (function () {
 
   function hideConfirmDialog() {
     document.getElementById('cf-overlay').classList.remove('show');
-    document.getElementById('cf-input').style.display = 'none';
+    var input = document.getElementById('cf-input');
+    if (input) input.style.display = 'none';
     _cfOnConfirm = null;
   }
 

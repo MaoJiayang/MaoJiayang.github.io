@@ -513,6 +513,8 @@ body::before{
 .ha-search-row .ha-sort-btn{position:static;flex-shrink:0}
 #ha-name-toggle{font-size:11px;padding:2px 8px;border-radius:3px;background:var(--bg-card);color:var(--text-muted);border:1px solid var(--bg-hover);cursor:pointer;font-family:inherit;flex-shrink:0}
 #ha-name-toggle:hover{color:var(--text-primary);background:var(--bg-hover)}
+#ha-sell{color:var(--gold-200);border-color:var(--gold-200)}
+#ha-sell:hover{background:var(--gold-200);color:var(--bg-void)}
 .ha-sort-btn{font-size:12px;padding:5px 10px;min-height:32px;border-radius:4px;background:var(--bg-card);color:var(--text-muted);border:1px solid var(--bg-hover);cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s}
 .ha-sort-btn:hover{color:var(--text-primary);background:var(--bg-hover)}
 
