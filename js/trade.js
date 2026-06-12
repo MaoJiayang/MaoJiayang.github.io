@@ -1141,7 +1141,11 @@ var Trade = (function () {
         html += Warehouse.renderIcon(name, 'sm');
         html += '<span class="lb-card-name">' + escHtml(name) + '</span>';
         html += '<span class="lb-card-stock">' + UI.fmtCompact(stock) + '</span>';
-        if (qty > 0) html += '<span class="lb-card-badge">' + UI.fmtCompact(qty) + '</span>';
+        if (qty > 0) {
+          html += '<span class="lb-card-badge" onclick="event.stopPropagation();Trade.pickItemForList(\'' + escAttr(name) + '\')" title="点击修改数量">'
+            + UI.fmtCompact(qty) + '</span>';
+          html += '<span class="lb-card-rm" onclick="event.stopPropagation();Trade.removeFromListDraft(\'' + escAttr(name) + '\')" title="移出清单">&times;</span>';
+        }
         html += '</div>';
       });
       html += '</div>';
@@ -1205,54 +1209,78 @@ var Trade = (function () {
     var itemsHtml = '';
     names.forEach(function (name) {
       itemsHtml += '<span class="lb-cart-chip" onclick="Trade.removeFromListDraft(\'' + escAttr(name) + '\')" title="' + escAttr(name) + '">'
-        + Warehouse.renderIcon(name, 'sm')
+        + Warehouse.renderIcon(name)
         + '<span class="lb-chip-remove">×</span>'
         + '</span>';
     });
     _lbOverlay.get('#lb-cart-items').innerHTML = itemsHtml;
   }
 
-  /** 物品飞入购物车动画 */
+  /** 物品飞入购物车动画（抛物线 + 弹跳感） */
   function animateItemToCart(name) {
     if (!_lbOverlay) return;
-    // 在网格中找到刚加入的物品卡片图标
+    // 在网格中找到刚加入的物品卡片
     var cards = _lbOverlay.el.querySelectorAll('.lb-card.selected');
-    var sourceIcon = null;
+    var sourceCard = null;
     for (var i = 0; i < cards.length; i++) {
-      if (cards[i].textContent.indexOf(name) !== -1) {
-        sourceIcon = cards[i].querySelector('.wh-icon-wrap');
-        break;
-      }
+      if (cards[i].textContent.indexOf(name) !== -1) { sourceCard = cards[i]; break; }
     }
-    if (!sourceIcon) return;
-    var srcRect = sourceIcon.getBoundingClientRect();
+    if (!sourceCard) return;
+    var srcRect = sourceCard.getBoundingClientRect();
 
-    // 目标：购物车物品区
     var targetEl = _lbOverlay.get('#lb-cart-items');
     if (!targetEl) return;
     var tgtRect = targetEl.getBoundingClientRect();
 
-    // 创建飞行克隆体并用 WAAPI 执行动画（比 CSS transition 更可靠）
-    var flyer = sourceIcon.cloneNode(true);
-    flyer.style.position = 'fixed';
-    flyer.style.zIndex = '999';
-    flyer.style.left = srcRect.left + 'px';
-    flyer.style.top = srcRect.top + 'px';
-    flyer.style.margin = '0';
-    flyer.style.pointerEvents = 'none';
-    document.body.appendChild(flyer);
+    // 发光小球，从卡片中心飞向购物车中心
+    var dot = document.createElement('div');
+    var s = 12;
+    dot.style.cssText = 'position:fixed;z-index:9999;width:' + s + 'px;height:' + s + 'px;'
+      + 'border-radius:50%;background:#4ade80;pointer-events:none;'
+      + 'box-shadow:0 0 12px #4ade80,0 0 24px rgba(74,222,128,.4);';
+    var sx = srcRect.left + srcRect.width / 2 - s / 2;
+    var sy = srcRect.top + srcRect.height / 2 - s / 2;
+    var ex = tgtRect.left + tgtRect.width / 2 - s / 2;
+    var ey = tgtRect.top + tgtRect.height / 2 - s / 2;
+    dot.style.left = sx + 'px';
+    dot.style.top = sy + 'px';
+    document.body.appendChild(dot);
 
-    var endLeft = tgtRect.left + tgtRect.width / 2 - srcRect.width / 2;
-    var endTop = tgtRect.top + tgtRect.height / 2 - srcRect.height / 2;
+    var dur = 480;
+    var start = performance.now();
 
-    flyer.animate([
-      { left: srcRect.left + 'px', top: srcRect.top + 'px', opacity: 1, transform: 'scale(1)' },
-      { left: endLeft + 'px', top: endTop + 'px', opacity: 0.3, transform: 'scale(0.5)' }
-    ], {
-      duration: 350,
-      easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
-      fill: 'forwards'
-    }).onfinish = function () { flyer.remove(); };
+    // 抛物线控制点：弧顶在起点/终点上方的较高者再往上 70px
+    var peakY = Math.min(sy, ey) - 70;
+    var cy = 2 * peakY - 0.5 * sy - 0.5 * ey; // 贝塞尔控制点 Y
+
+    function frame(now) {
+      var t = Math.min((now - start) / dur, 1);
+      // x：缓出（先快后慢）
+      var x = sx + (ex - sx) * (1 - Math.pow(1 - t, 3));
+      // y：二次贝塞尔抛物线
+      var y = (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * cy + t * t * ey;
+      // 缩放：中间放大，末端缩小
+      var scale = 1 + 0.5 * Math.sin(t * Math.PI);
+      dot.style.left = x + 'px';
+      dot.style.top = y + 'px';
+      dot.style.transform = 'scale(' + scale + ')';
+      dot.style.opacity = t < 0.8 ? 1 : 1 - (t - 0.8) / 0.2;
+
+      if (t < 1) { requestAnimationFrame(frame); }
+      else { dot.remove(); }
+    }
+    requestAnimationFrame(frame);
+
+    // 购物车短暂高亮反馈
+    setTimeout(function () {
+      var cart = _lbOverlay.get('#lb-cart');
+      if (cart) {
+        cart.style.transition = 'box-shadow .15s';
+        cart.style.boxShadow = 'inset 0 0 24px rgba(74,222,128,.25)';
+        setTimeout(function () { cart.style.boxShadow = ''; }, 200);
+      }
+    }, Math.round(dur * 0.7));
+  }
   }
 
   function confirmListBuilder() {
