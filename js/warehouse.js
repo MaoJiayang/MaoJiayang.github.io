@@ -129,7 +129,7 @@ var Warehouse = (function () {
     var isSm = size === 'sm' || size === 16;
     var iconFile = iconMap[name];
     if (iconFile) {
-      var el = '<span class="wh-icon si si-' + iconFile + '" title="' + escAttr(name) + '"></span>';
+      var el = '<span class="wh-icon si si-' + iconFile + '" title="' + UI.escAttr(name) + '"></span>';
       return isSm ? '<span class="wh-icon-wrap-sm">' + el + '</span>' : el;
     }
     var cat = getItemCategory(name);
@@ -226,9 +226,9 @@ var Warehouse = (function () {
         var display = amtNum === 0 ? '0' : (compact ? UI.fmtNum(amtNum) : UI.fmtPrice(amtNum));
         var iconHtml = renderIcon(item.name, 'card');
         var zeroClass = item.amount === 0 ? ' zero' : '';
-        html += '<div class="wh-card' + zeroClass + '" onclick="Warehouse.openCard(this,\'' + escAttr(item.name) + '\',' + item.amount + ')">'
+        html += '<div class="wh-card' + zeroClass + '" onclick="Warehouse.openCard(this,\'' + UI.escAttr(item.name) + '\',' + item.amount + ')">'
           + iconHtml
-          + '<span class="wh-card-name">' + escHtml(item.name) + '</span>'
+          + '<span class="wh-card-name">' + UI.escHtml(item.name) + '</span>'
           + '<span class="wh-card-amt">' + display + '</span>'
           + '</div>';
       });
@@ -375,8 +375,6 @@ var Warehouse = (function () {
 
   // ========== 工具函数 ==========
 
-  function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-  function escAttr(s) { return String(s).replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
 
   return {
     init: init,

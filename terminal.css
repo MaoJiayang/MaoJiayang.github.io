@@ -155,8 +155,10 @@ body::before{
   padding:16px;opacity:0;transform:translateY(8px);
   transition:opacity .25s,transform .25s;
   pointer-events:none;position:absolute;top:0;left:0;right:0;
+  will-change:opacity,transform;
+  content-visibility:hidden;contain-intrinsic-size:auto 500px;
 }
-.tab-panel.active{opacity:1;transform:translateY(0);pointer-events:auto;position:relative}
+.tab-panel.active{opacity:1;transform:translateY(0);pointer-events:auto;position:relative;will-change:auto;content-visibility:visible}
 #panels-wrap{position:relative}
 /* 位置指示点 */
 #tab-dots{display:flex;justify-content:center;gap:8px;padding:4px 0 8px}

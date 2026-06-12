@@ -189,14 +189,14 @@ var Hangar = (function () {
     return '<div class="ha-grid-row">'
       + '<div class="ha-grid-top">'
       + '<span class="ha-grid-icon">🚀</span>'
-      + '<span class="ha-grid-name" data-full="' + escAttr(full) + '" onclick="Hangar.tapName(this)">' + escHtml(label) + '</span>'
+      + '<span class="ha-grid-name" data-full="' + UI.escAttr(full) + '" onclick="Hangar.tapName(this)">' + UI.escHtml(label) + '</span>'
       + (isUnsynced ? '<span class="ha-grid-badge">仅本服</span>' : '')
       + '</div>'
       + '<div class="ha-row-actions">'
-      + '<button class="ha-act-btn" onclick="Hangar.checkPos(\'' + escAttr(full) + '\')" title="GPS 推送">📍</button>'
-      + '<button class="ha-act-btn" onclick="Hangar.loadNear(\'' + escAttr(full) + '\')">就近</button>'
-      + '<button class="ha-act-btn" onclick="Hangar.loadLocal(\'' + escAttr(full) + '\')">原地</button>'
-      + '<button class="ha-act-btn ha-act-danger" onclick="Hangar.loadForceLocal(\'' + escAttr(full) + '\')" title="强制原地（无碰撞检测）">强制</button>'
+      + '<button class="ha-act-btn" onclick="Hangar.checkPos(\'' + UI.escAttr(full) + '\')" title="GPS 推送">📍</button>'
+      + '<button class="ha-act-btn" onclick="Hangar.loadNear(\'' + UI.escAttr(full) + '\')">就近</button>'
+      + '<button class="ha-act-btn" onclick="Hangar.loadLocal(\'' + UI.escAttr(full) + '\')">原地</button>'
+      + '<button class="ha-act-btn ha-act-danger" onclick="Hangar.loadForceLocal(\'' + UI.escAttr(full) + '\')" title="强制原地（无碰撞检测）">强制</button>'
       + '</div>'
       + '</div>';
   }
@@ -267,12 +267,12 @@ var Hangar = (function () {
         + '<div class="ha-world-top">'
         + '<span class="ha-grid-icon">🚀</span>'
         + '<div class="ha-world-info">'
-        + '<span class="ha-world-name" data-full="' + escAttr(dn) + '" onclick="Hangar.tapName(this)">' + escHtml(label) + '</span>'
+        + '<span class="ha-world-name" data-full="' + UI.escAttr(dn) + '" onclick="Hangar.tapName(this)">' + UI.escHtml(label) + '</span>'
         + '<span class="ha-world-meta">PCU ' + (g.pcu || 0) + ' · ' + (g.blocksCount || 0) + ' 方块 · ' + UI.fmtCompact(g.price) + ' SC</span>'
         + '</div>'
         + '</div>'
         + '<div class="ha-row-actions">'
-        + '<button class="ha-world-save" onclick="Hangar.saveRemote(\'' + escAttr(dn) + '\')">保存到船坞</button>'
+        + '<button class="ha-world-save" onclick="Hangar.saveRemote(\'' + UI.escAttr(dn) + '\')">保存到船坞</button>'
         + '</div>'
         + '</div>';
     });
@@ -445,8 +445,8 @@ var Hangar = (function () {
       + '<div class="hm-ship-top">'
       + '<span class="hm-ship-icon">🚀</span>'
       + '<div class="hm-ship-info">'
-      + '<span class="hm-ship-name">' + escHtml(ship.shipName || '未命名') + '</span>'
-      + '<span class="hm-ship-id">#' + escHtml(String(ship.id)) + '</span>'
+      + '<span class="hm-ship-name">' + UI.escHtml(ship.shipName || '未命名') + '</span>'
+      + '<span class="hm-ship-id">#' + UI.escHtml(String(ship.id)) + '</span>'
       + '</div>'
       + '</div>'
       + '<div class="hm-ship-meta">'
@@ -456,7 +456,7 @@ var Hangar = (function () {
       + couponInfo
       + '</div>'
       + '<div class="hm-ship-actions">'
-      + '<button class="hm-buy-btn" onclick="Hangar.buyShip(\'' + escAttr(String(ship.id)) + '\',\'' + escAttr(ship.shipName || '') + '\')">购买</button>'
+      + '<button class="hm-buy-btn" onclick="Hangar.buyShip(\'' + UI.escAttr(String(ship.id)) + '\',\'' + UI.escAttr(ship.shipName || '') + '\')">购买</button>'
       + '</div>'
       + '</div>';
   }
@@ -557,8 +557,6 @@ var Hangar = (function () {
 
   // ========== 工具函数 ==========
 
-  function escHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-  function escAttr(s) { return String(s || '').replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
 
   return {
     init: init,

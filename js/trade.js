@@ -198,9 +198,9 @@ var Trade = (function () {
         + '<div class="wh-cat-body' + (isOpen ? ' open' : '') + '"><div class="wh-grid">';
       items.forEach(function (item) {
         var priceStr = item.price != null ? UI.fmtNum(item.price) + ' SC' : '—';
-        html += '<div class="wh-card" onclick="Trade.shopBuySell(\'' + escAttr(item.name) + '\')">'
+        html += '<div class="wh-card" onclick="Trade.shopBuySell(\'' + UI.escAttr(item.name) + '\')">'
           + iconHtml(item.name)
-          + '<span class="wh-card-name">' + escHtml(item.name) + '</span>'
+          + '<span class="wh-card-name">' + UI.escHtml(item.name) + '</span>'
           + '<span class="wh-card-amt">' + priceStr + '</span>'
           + '</div>';
       });
@@ -343,13 +343,13 @@ var Trade = (function () {
       html += '<div class="mk-item-row">'
         + iconHtml(name)
         + '<div class="mk-item-info">'
-        + '<span class="mk-item-name">' + escHtml(name) + '</span>'
+        + '<span class="mk-item-name">' + UI.escHtml(name) + '</span>'
         + '<span class="mk-item-meta">卖 ' + sellInfo + '</span>'
         + '<span class="mk-item-meta">收 ' + buyInfo + '</span>'
         + '</div>'
         + '<div class="mk-item-actions">'
-        + (m.totalSell > 0 ? '<button class="mk-buy-btn" onclick="Trade.openTradeSheet(\'buy\',\'' + escAttr(name) + '\')">购买</button>' : '')
-        + (m.totalBuy > 0 ? '<button class="mk-sell-btn" onclick="Trade.openTradeSheet(\'sell\',\'' + escAttr(name) + '\')">出售</button>' : '')
+        + (m.totalSell > 0 ? '<button class="mk-buy-btn" onclick="Trade.openTradeSheet(\'buy\',\'' + UI.escAttr(name) + '\')">购买</button>' : '')
+        + (m.totalBuy > 0 ? '<button class="mk-sell-btn" onclick="Trade.openTradeSheet(\'sell\',\'' + UI.escAttr(name) + '\')">出售</button>' : '')
         + '</div>'
         + '</div>';
     });
@@ -362,12 +362,12 @@ var Trade = (function () {
       var orders = parseOrders(marketDataCache);
       orders.forEach(function (bill) {
         var isSell = bill.orderType === 1;
-        html += '<div class="tr-order-card ' + (isSell ? 'tr-order-sell' : 'tr-order-buy') + '" onclick="Trade.quickTrade(\'' + escAttr(bill.itemName) + '\',' + bill.univalence + ',' + (isSell ? 1 : 0) + ',' + bill.count + ')">'
+        html += '<div class="tr-order-card ' + (isSell ? 'tr-order-sell' : 'tr-order-buy') + '" onclick="Trade.quickTrade(\'' + UI.escAttr(bill.itemName) + '\',' + bill.univalence + ',' + (isSell ? 1 : 0) + ',' + bill.count + ')">'
           + '<span class="tr-order-tag ' + (isSell ? 'sell' : 'buy') + '">' + (isSell ? '出' : '收') + '</span>'
           + '<div class="tr-order-body">'
-          + '<span class="tr-order-name">' + escHtml(bill.itemName) + '</span>'
+          + '<span class="tr-order-name">' + UI.escHtml(bill.itemName) + '</span>'
           + '<span class="tr-order-price">' + UI.fmtNum(bill.univalence) + ' SC/件  ×' + UI.fmtNum(bill.count) + '</span>'
-          + '<span class="tr-order-owner">' + escHtml(bill.ownerDisplayName || '') + '</span>'
+          + '<span class="tr-order-owner">' + UI.escHtml(bill.ownerDisplayName || '') + '</span>'
           + '</div></div>';
       });
     }
@@ -404,11 +404,11 @@ var Trade = (function () {
       html += '<div class="tr-order-card ' + (isSell ? 'tr-order-sell' : 'tr-order-buy') + '">'
         + '<span class="tr-order-tag ' + (isSell ? 'sell' : 'buy') + '">' + (isSell ? '出' : '收') + '</span>'
         + '<div class="tr-order-body">'
-        + '<span class="tr-order-name">' + escHtml(bill.itemName) + '</span>'
+        + '<span class="tr-order-name">' + UI.escHtml(bill.itemName) + '</span>'
         + '<span class="tr-order-price">' + UI.fmtNum(bill.univalence) + ' SC/件  ×' + UI.fmtNum(bill.count) + '</span>'
-        + '<span class="tr-order-owner">' + escHtml(bill.ownerDisplayName || '') + '</span>'
+        + '<span class="tr-order-owner">' + UI.escHtml(bill.ownerDisplayName || '') + '</span>'
         + '</div>'
-        + '<button class="tr-order-cancel" onclick="event.stopPropagation();Trade.cancelOrder(\'' + escAttr(String(bill.id)) + '\')">撤销</button>'
+        + '<button class="tr-order-cancel" onclick="event.stopPropagation();Trade.cancelOrder(\'' + UI.escAttr(String(bill.id)) + '\')">撤销</button>'
         + '</div>';
     });
     container.innerHTML = html;
@@ -916,17 +916,17 @@ var Trade = (function () {
 
     var actions = '';
     if (isOwn && contractMode === 'mine') {
-      actions += '<button class="ct-act-btn ct-act-delete" onclick="Trade.deleteContract(\'' + escAttr(String(c.id)) + '\')">删除</button>';
-      actions += '<button class="ct-act-btn" onclick="Trade.toggleContractPublic(\'' + escAttr(String(c.id)) + '\',' + (c.isPublic ? 'false' : 'true') + ')">' + (c.isPublic ? '设为私密' : '设为公开') + '</button>';
+      actions += '<button class="ct-act-btn ct-act-delete" onclick="Trade.deleteContract(\'' + UI.escAttr(String(c.id)) + '\')">删除</button>';
+      actions += '<button class="ct-act-btn" onclick="Trade.toggleContractPublic(\'' + UI.escAttr(String(c.id)) + '\',' + (c.isPublic ? 'false' : 'true') + ')">' + (c.isPublic ? '设为私密' : '设为公开') + '</button>';
     }
     if (!isOwn || contractMode === 'public') {
-      actions += '<button class="ct-act-btn ct-act-accept" onclick="Trade.acceptContract(\'' + escAttr(String(c.id)) + '\')">接受</button>';
+      actions += '<button class="ct-act-btn ct-act-accept" onclick="Trade.acceptContract(\'' + UI.escAttr(String(c.id)) + '\')">接受</button>';
     }
 
     return '<div class="ct-card">'
       + '<div class="ct-header">'
-      + '<span class="ct-id-badge">#' + escHtml(String(c.id)) + '</span>'
-      + '<span class="ct-owner">' + escHtml(c.ownerDisplayName || '未知') + '</span>'
+      + '<span class="ct-id-badge">#' + UI.escHtml(String(c.id)) + '</span>'
+      + '<span class="ct-owner">' + UI.escHtml(c.ownerDisplayName || '未知') + '</span>'
       + (c.isPublic ? '<span class="ct-badge ct-badge-public">公开</span>' : '<span class="ct-badge ct-badge-private">私密</span>')
       + '</div>'
       + '<div class="ct-lists">'
@@ -1026,10 +1026,10 @@ var Trade = (function () {
     var itemHtml = parts.length > 0 ? '<div class="ct-list-items">' + parts.join('') + '</div>' : '<div class="ct-list-empty">—</div>';
 
     return '<div class="ct-list-card">'
-      + '<div class="ct-list-name">' + escHtml(l.name || '未命名') + '</div>'
+      + '<div class="ct-list-name">' + UI.escHtml(l.name || '未命名') + '</div>'
       + itemHtml
       + '<div class="ct-list-actions">'
-      + '<button class="ct-act-btn ct-act-delete" onclick="Trade.deleteList(\'' + escAttr(l.name || '') + '\')">删除</button>'
+      + '<button class="ct-act-btn ct-act-delete" onclick="Trade.deleteList(\'' + UI.escAttr(l.name || '') + '\')">删除</button>'
       + '</div>'
       + '</div>';
   }
@@ -1124,24 +1124,24 @@ var Trade = (function () {
       var isOpen = _lbOpenCat ? cat === _lbOpenCat : (_lbOpenCat === null && catIdx === 0);
       catIdx++;
       anyVisible = true;
-      html += '<div class="lb-cat-h" onclick="Trade.setListBuilderCat(\'' + escAttr(cat) + '\')">'
+      html += '<div class="lb-cat-h" onclick="Trade.setListBuilderCat(\'' + UI.escAttr(cat) + '\')">'
         + '<span class="arrow' + (isOpen ? ' open' : '') + '">▸</span>'
         + '<span class="lb-cat-dot" style="background:' + Warehouse.getCatColor(cat) + '"></span>'
-        + '<span class="lb-cat-label">' + escHtml(cat) + '</span>'
+        + '<span class="lb-cat-label">' + UI.escHtml(cat) + '</span>'
         + '<span class="lb-cat-count">' + visible.length + '</span>'
         + '</div>'
         + '<div class="lb-grid"' + (isOpen ? '' : ' style="display:none"') + '>';
       visible.forEach(function (name) {
         var qty = _listDraft[name] || 0;
         var stock = Warehouse.getStock(name);
-        html += '<div class="lb-card' + (qty > 0 ? ' selected' : '') + '" onclick="Trade.pickItemForList(\'' + escAttr(name) + '\')">';
+        html += '<div class="lb-card' + (qty > 0 ? ' selected' : '') + '" onclick="Trade.pickItemForList(\'' + UI.escAttr(name) + '\')">';
         html += Warehouse.renderIcon(name, 'sm');
-        html += '<span class="lb-card-name">' + escHtml(name) + '</span>';
+        html += '<span class="lb-card-name">' + UI.escHtml(name) + '</span>';
         html += '<span class="lb-card-stock">' + UI.fmtCompact(stock) + '</span>';
         if (qty > 0) {
-          html += '<span class="lb-card-badge" onclick="event.stopPropagation();Trade.pickItemForList(\'' + escAttr(name) + '\')" title="点击修改数量">'
+          html += '<span class="lb-card-badge" onclick="event.stopPropagation();Trade.pickItemForList(\'' + UI.escAttr(name) + '\')" title="点击修改数量">'
             + UI.fmtCompact(qty) + '</span>';
-          html += '<span class="lb-card-rm" onclick="event.stopPropagation();Trade.removeFromListDraft(\'' + escAttr(name) + '\')" title="移出清单">&times;</span>';
+          html += '<span class="lb-card-rm" onclick="event.stopPropagation();Trade.removeFromListDraft(\'' + UI.escAttr(name) + '\')" title="移出清单">&times;</span>';
         }
         html += '</div>';
       });
@@ -1205,7 +1205,7 @@ var Trade = (function () {
     _lbOverlay.get('#lb-confirm').disabled = false;
     var itemsHtml = '';
     names.forEach(function (name) {
-      itemsHtml += '<span class="lb-cart-chip" onclick="Trade.removeFromListDraft(\'' + escAttr(name) + '\')" title="' + escAttr(name) + '">'
+      itemsHtml += '<span class="lb-cart-chip" onclick="Trade.removeFromListDraft(\'' + UI.escAttr(name) + '\')" title="' + UI.escAttr(name) + '">'
         + Warehouse.renderIcon(name)
         + '<span class="lb-chip-remove">×</span>'
         + '</span>';
@@ -1334,7 +1334,7 @@ var Trade = (function () {
       var sel2 = document.getElementById('ct-contract-list2');
       var opts = '<option value="">— 选择清单 —</option>';
       lists.forEach(function (l) {
-        opts += '<option value="' + escAttr(l.name || '') + '">' + escHtml(l.name || '') + '</option>';
+        opts += '<option value="' + UI.escAttr(l.name || '') + '">' + UI.escHtml(l.name || '') + '</option>';
       });
       sel1.innerHTML = opts;
       sel2.innerHTML = opts;
@@ -1433,8 +1433,6 @@ var Trade = (function () {
 
   // ========== 工具函数 ==========
 
-  function escHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-  function escAttr(s) { return String(s || '').replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
 
   return {
     init: init, onTabActivated: onTabActivated, switchSubTab: switchSubTab,

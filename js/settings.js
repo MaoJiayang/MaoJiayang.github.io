@@ -25,7 +25,7 @@ var Settings = (function () {
     var html = '';
     if (infoData) {
       var rows = [
-        { label: '名称', value: escHtml(infoData.displayName || '—') },
+        { label: '名称', value: UI.escHtml(infoData.displayName || '—') },
         { label: '等级', value: 'Lv.' + (infoData.level || 0) },
         { label: '经验', value: UI.fmtPrice(infoData.expCurrent) + ' / ' + UI.fmtPrice(infoData.expToNext) },
         { label: '科技等级', value: (infoData.techLevel || '—') + ' · ' + UI.fmtPrice(infoData.techPoints) + ' 点' },
@@ -121,7 +121,6 @@ var Settings = (function () {
 
   // ========== 工具函数 ==========
 
-  function escHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
   return {
     init: init,

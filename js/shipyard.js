@@ -145,7 +145,7 @@ var Shipyard = (function () {
         var w = pct(done, total);
         html += '<div class="sy-mission-info">'
           + '<span class="sy-mission-type">' + type + '</span>'
-          + '<span class="sy-mission-name">' + escHtml(name) + '</span>'
+          + '<span class="sy-mission-name">' + UI.escHtml(name) + '</span>'
           + '</div>'
           + '<div class="sy-progress">'
           + '<span class="sy-progress-bar"><span class="sy-progress-fill" style="width:' + w + '%"></span></span>'
@@ -168,8 +168,8 @@ var Shipyard = (function () {
         html += '<div class="sy-pending-row">'
           + '<div class="sy-pending-info">'
           + '<span class="sy-mission-type">' + (m.type === 'RECYCLE' ? '♻ 回收' : '🔧 建造') + '</span>'
-          + '<span class="sy-mission-name">' + escHtml(m.gridName || '?') + '</span>'
-          + (hasMsg ? '<span class="sy-mission-msg">⚠ ' + escHtml(m.message) + '</span>' : '')
+          + '<span class="sy-mission-name">' + UI.escHtml(m.gridName || '?') + '</span>'
+          + (hasMsg ? '<span class="sy-mission-msg">⚠ ' + UI.escHtml(m.message) + '</span>' : '')
           + '</div>'
           + '<button class="ha-act-btn ha-act-danger" onclick="Shipyard.cancelMission(' + (m.index || 0) + ')">取消</button>'
           + '</div>';
@@ -202,10 +202,10 @@ var Shipyard = (function () {
     } else {
       templates.forEach(function (t) {
         html += '<div class="sy-template-row">'
-          + '<span class="sy-template-name">' + escHtml(t) + '</span>'
+          + '<span class="sy-template-name">' + UI.escHtml(t) + '</span>'
           + '<div class="sy-template-actions">'
-          + '<button class="ha-act-btn" onclick="Shipyard.build(\'' + escAttr(t) + '\')">建造</button>'
-          + '<button class="ha-act-btn ha-act-danger" onclick="Shipyard.deleteTemplate(\'' + escAttr(t) + '\')">删除</button>'
+          + '<button class="ha-act-btn" onclick="Shipyard.build(\'' + UI.escAttr(t) + '\')">建造</button>'
+          + '<button class="ha-act-btn ha-act-danger" onclick="Shipyard.deleteTemplate(\'' + UI.escAttr(t) + '\')">删除</button>'
           + '</div>'
           + '</div>';
       });
@@ -315,8 +315,6 @@ var Shipyard = (function () {
 
   // ========== 工具函数 ==========
 
-  function escHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-  function escAttr(s) { return String(s || '').replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
 
   return {
     init: init,
