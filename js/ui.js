@@ -895,6 +895,9 @@ var UI = (function () {
         el: wrap
       };
     },
+    // 步进逻辑
+    getMagStep: getMagStep,
+    fastStep: fastStep,
     // KMB 格式
     fmtCompact: fmtCompact,
     fmtNum: fmtNum,

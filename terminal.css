@@ -958,3 +958,42 @@ body::before{
 .lb-confirm{flex:2;padding:10px;font-size:14px;font-weight:600;background:var(--jade-200);color:var(--bg-void);border:none;border-radius:6px;cursor:pointer;font-family:inherit}
 .lb-confirm:disabled{opacity:.4;cursor:not-allowed}
 .lb-confirm:not(:disabled):hover{opacity:.85}
+
+/* ========== 出售表单 ========== */
+#sell-form-overlay .overlay-pane{padding:20px 16px 24px}
+.sf-header{font-size:16px;font-weight:600;margin-bottom:18px;text-align:center;color:var(--text-primary)}
+.sf-field{margin-bottom:14px}
+.sf-label{display:block;font-size:12px;color:var(--text-muted);margin-bottom:6px}
+.sf-stepper{display:flex;align-items:center;justify-content:center;gap:8px}
+.sf-stepper button{
+  width:44px;height:44px;border-radius:8px;border:1px solid var(--bg-hover);
+  background:var(--bg-card);color:var(--text-primary);cursor:pointer;
+  font-family:var(--font-mono);font-size:16px;font-weight:600;
+  transition:all .12s;display:flex;align-items:center;justify-content:center;
+  -webkit-tap-highlight-color:transparent;
+}
+.sf-stepper button:active{background:var(--bg-hover);transform:scale(.94)}
+.sf-stepper .sf-sub{color:var(--color-warn)}
+.sf-stepper .sf-add{color:var(--jade-200)}
+.sf-stepper .sf-fast{font-size:18px;letter-spacing:-0.06em}
+.sf-stepper input{
+  width:110px;padding:10px 6px;font-size:18px;text-align:center;
+  font-variant-numeric:tabular-nums;
+  border:1px solid var(--bg-hover);border-radius:6px;
+  background:var(--bg-deep);color:var(--text-primary);
+  font-family:var(--font-mono);font-weight:600;outline:none;
+}
+.sf-stepper input:focus{border-color:var(--jade-400)}
+.sf-desc{
+  width:100%;padding:9px 12px;font-size:14px;
+  border:1px solid var(--bg-hover);border-radius:6px;
+  background:var(--bg-deep);color:var(--text-primary);
+  font-family:inherit;outline:none;
+}
+.sf-desc:focus{border-color:var(--jade-400)}
+.sf-preview{text-align:center;font-size:12px;color:var(--text-muted);margin:14px 0;min-height:18px}
+.sf-actions{display:flex;gap:10px}
+.sf-actions button{flex:1;padding:12px;font-size:14px;font-weight:600;border-radius:6px;border:none;cursor:pointer;font-family:inherit}
+.sf-cancel{background:var(--bg-hover);color:var(--text-muted)}
+.sf-confirm{background:var(--jade-200);color:var(--bg-void)}
+.sf-confirm:active{opacity:.85}

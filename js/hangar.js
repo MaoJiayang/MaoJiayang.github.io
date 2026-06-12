@@ -18,6 +18,66 @@ var Hangar = (function () {
   var shipMarketData = null;     // { availableCoupons, couponValue, serverShips, playerShips }
   var _shipMarketSortIdx = 0;   // 0=名称↑,1=名称↓,2=售价↑,3=售价↓,4=估价↑,5=估价↓
 
+  // ========== 出售表单 ==========
+  var _sellPrice = 50000;
+  var _sellTap = { count: 0, last: 0, timer: null };
+  var _sellOverlay = null;
+
+  function adjustSellPrice(delta) {
+    var step = UI.getMagStep(delta > 0 ? _sellPrice : Math.max(0, _sellPrice - 1));
+    if (Math.abs(delta) < step) delta = delta > 0 ? step : -step;
+    _sellPrice = Math.max(1, _sellPrice + delta);
+    updateSellDisplay();
+  }
+
+  function fastAdjustSellPrice(deltaDir) {
+    var step = UI.fastStep(_sellPrice, deltaDir, _sellTap);
+    adjustSellPrice(deltaDir * step);
+  }
+
+  function updateSellDisplay() {
+    var input = document.getElementById('sf-price');
+    if (input) input.value = _sellPrice;
+    var preview = document.getElementById('sf-preview');
+    if (!preview) return;
+    var desc = (document.getElementById('sf-desc').value || '').trim();
+    var text = '出售飞船 — ' + UI.fmtCompact(_sellPrice) + ' SC';
+    if (desc) text += ' — ' + desc;
+    preview.textContent = text;
+  }
+
+  function onSellPriceInput() {
+    var raw = document.getElementById('sf-price').value.replace(/,/g, '');
+    var v = parseInt(raw, 10);
+    if (!isNaN(v) && v >= 1) {
+      _sellPrice = v;
+      _sellTap.count = 0;
+    }
+    updateSellDisplay();
+  }
+
+  function showSellForm() {
+    _sellPrice = 50000;
+    _sellTap.count = 0; _sellTap.last = 0;
+    document.getElementById('sf-price').value = _sellPrice;
+    document.getElementById('sf-desc').value = '';
+    updateSellDisplay();
+    _sellOverlay.show();
+  }
+
+  function confirmSell() {
+    if (_sellPrice < 1 || isNaN(_sellPrice)) {
+      UI.showToast('error', '请输入有效的售价');
+      return;
+    }
+    var desc = document.getElementById('sf-desc').value.trim();
+    var descStr = desc ? ' "' + desc + '"' : ' ""';
+    _sellOverlay.hide();
+    exec('!网格 出售 ' + _sellPrice + ' ' + descStr, '已上架飞船').then(function () {
+      loadHangar(); loadShipMarket();
+    }).catch(function () {});
+  }
+
   // ========== 通用执行 ==========
 
   function exec(cmd, okLabel) {
@@ -495,21 +555,8 @@ var Hangar = (function () {
   }
 
   function sellShip() {
-    UI.showPromptDialog('出售飞船', '价格 描述（如：50000 高速矿船）', function (val) {
-      var parts = val.trim().split(/\s+/);
-      var p = parseInt(parts[0], 10);
-      if (isNaN(p) || p < 0) { UI.showToast('error', '请输入有效价格'); return; }
-      var desc = parts.slice(1).join(' ') || '';
-      var descStr = desc ? ' "' + desc + '"' : ' ""';
-      UI.showConfirmDialog(
-        '确定以 ' + UI.fmtCompact(p) + ' SC 出售瞄准的飞船？' + (desc ? '\n描述：' + desc : ''),
-        function () {
-          exec('!网格 出售 ' + p + ' ' + descStr, '已上架飞船').then(function () {
-            loadHangar(); loadShipMarket();
-          }).catch(function () {});
-        }
-      );
-    });
+    if (!SeBridge.hasCredentials()) { UI.showLoginGuide(); return; }
+    showSellForm();
   }
 
   function findShipById(id) {
@@ -586,6 +633,39 @@ var Hangar = (function () {
 
     // 舰船市场
     initShipMarket();
+
+    // 出售表单 overlay
+    _sellOverlay = UI.createOverlay('sell-form-overlay',
+      '<div class="sf-header">上架出售</div>' +
+      '<div class="sf-field">' +
+        '<label class="sf-label">售价（SC）</label>' +
+        '<div class="sf-stepper">' +
+          '<button class="sf-sub sf-fast">−−</button>' +
+          '<button class="sf-sub">−</button>' +
+          '<input id="sf-price" type="text" inputmode="numeric" value="50000">' +
+          '<button class="sf-add">+</button>' +
+          '<button class="sf-add sf-fast">++</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="sf-field">' +
+        '<label class="sf-label">描述（可选）</label>' +
+        '<input class="sf-desc" id="sf-desc" type="text" placeholder="如：高速矿船">' +
+      '</div>' +
+      '<div class="sf-preview" id="sf-preview"></div>' +
+      '<div class="sf-actions">' +
+        '<button class="sf-cancel">取消</button>' +
+        '<button class="sf-confirm">上架出售</button>' +
+      '</div>',
+      { onBackdrop: function () { _sellOverlay.hide(); } }
+    );
+    _sellOverlay.on('#sf-price', 'input', onSellPriceInput);
+    _sellOverlay.on('.sf-sub:not(.sf-fast)', 'click', function(){ adjustSellPrice(-1); });
+    _sellOverlay.on('.sf-add:not(.sf-fast)', 'click', function(){ adjustSellPrice(1); });
+    _sellOverlay.on('.sf-sub.sf-fast', 'click', function(){ fastAdjustSellPrice(-1); });
+    _sellOverlay.on('.sf-add.sf-fast', 'click', function(){ fastAdjustSellPrice(1); });
+    _sellOverlay.on('#sf-desc', 'input', updateSellDisplay);
+    _sellOverlay.on('.sf-cancel', 'click', function(){ _sellOverlay.hide(); });
+    _sellOverlay.on('.sf-confirm', 'click', confirmSell);
   }
 
   // ========== 工具函数 ==========
