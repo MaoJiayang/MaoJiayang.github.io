@@ -95,6 +95,7 @@ body::before{
 
 /* ========== 主内容区 ========== */
 #main{
+  min-height:100dvh;
   padding-top:var(--topbar-h);
   padding-bottom:calc(var(--tab-h) + env(safe-area-inset-bottom, 0px));
 }
