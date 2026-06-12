@@ -123,23 +123,6 @@
       </div>
       <input class="wh-search" id="tr-contract-search" type="text" placeholder="搜索…">
       <div id="trade-contract-list"></div>
-      <!-- 创建清单表单（折叠） -->
-      <div class="ct-create-form" id="ct-create-list-form" style="display:none">
-        <div class="ct-create-h">创建清单</div>
-        <div class="field">
-          <label>清单名称</label>
-          <input id="ct-list-name" type="text" placeholder="例如：料单">
-        </div>
-        <div class="field">
-          <label>物品内容</label>
-          <input id="ct-list-args" type="text" placeholder="钢板=1000 money=50000">
-        </div>
-        <div class="ct-create-hint">格式：物品=数量 空格分隔，money 表示太空货币</div>
-        <div class="ct-create-actions">
-          <button class="ct-create-cancel" onclick="Trade.toggleCreateList()">取消</button>
-          <button class="ct-create-confirm" onclick="Trade.createList()">确认创建</button>
-        </div>
-      </div>
       <!-- 创建合同选择器（折叠） -->
       <div class="ct-create-form" id="ct-create-contract-form" style="display:none">
         <div class="ct-create-h">创建合同</div>
@@ -440,5 +423,38 @@ if (SeBridge.hasCredentials()) {
   UI.showLoginGuide();
 }
 </script>
+
+<!-- 清单构建器 -->
+<div id="list-builder-overlay">
+  <div id="list-builder">
+    <div class="lb-header">
+      <span class="lb-title">创建清单</span>
+      <span class="lb-close" onclick="Trade.closeListBuilder()">&times;</span>
+    </div>
+    <div class="lb-name-row">
+      <input id="lb-name" type="text" placeholder="清单名称">
+    </div>
+    <input class="wh-search" id="lb-search" type="text" placeholder="搜索物品…" oninput="Trade.renderListBuilderGrid()">
+    <div class="lb-grid-scroll" id="lb-grid-scroll">
+      <div id="lb-grid"></div>
+    </div>
+    <div class="lb-cart" id="lb-cart" style="display:none">
+      <div class="lb-cart-head">清单预览</div>
+      <div class="lb-cart-items" id="lb-cart-items"></div>
+      <div class="lb-cart-money">
+        <label>银行余额</label>
+        <div class="lb-money-row">
+          <input id="lb-money" type="text" inputmode="numeric" value="0" placeholder="0" oninput="Trade.updateListBuilderMoney()">
+          <span>SC</span>
+        </div>
+      </div>
+      <div class="lb-cart-actions">
+        <button class="lb-cancel" onclick="Trade.closeListBuilder()">取消</button>
+        <button class="lb-confirm" id="lb-confirm" onclick="Trade.confirmListBuilder()">确认创建</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

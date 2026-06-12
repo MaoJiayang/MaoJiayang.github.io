@@ -24,6 +24,8 @@ var Trade = (function () {
   var contractLoading = false;
   var contractData = null;         // { contracts: [...] } 或 { lists: [...] }
   var listData = null;             // 清单缓存 { lists: [...] }（供创建合同选择）
+  var _listDraft = {};             // 清单构建器草稿 { itemName: qty }
+  var _listBuilderVisible = false;
 
   // TradeSheet 状态
   var tsMode = 'buy';
@@ -851,8 +853,8 @@ var Trade = (function () {
     if (searchEl) {
       searchEl.placeholder = mode === 'lists' ? '搜索清单…' : '搜索合同中的物品…';
     }
-    // 隐藏创建表单
-    document.getElementById('ct-create-list-form').style.display = 'none';
+    // 关闭可能打开的表单
+    closeListBuilder();
     document.getElementById('ct-create-contract-form').style.display = 'none';
     contractData = null;
     loadContracts();
@@ -981,7 +983,7 @@ var Trade = (function () {
     var search = (document.getElementById('tr-contract-search').value || '').toLowerCase().trim();
     var lists = contractData && Array.isArray(contractData.lists) ? contractData.lists : [];
 
-    var html = '<button class="ct-act-create-btn" onclick="Trade.toggleCreateList()">+ 创建清单</button>';
+    var html = '<button class="ct-act-create-btn" onclick="Trade.openListBuilder()">+ 创建清单</button>';
 
     if (lists.length === 0) {
       html += '<div class="tr-empty">暂无清单</div>';
@@ -1033,23 +1035,140 @@ var Trade = (function () {
       + '</div>';
   }
 
-  function toggleCreateList() {
-    var form = document.getElementById('ct-create-list-form');
-    form.style.display = form.style.display === 'none' ? 'block' : 'none';
-    if (form.style.display !== 'none') {
-      document.getElementById('ct-list-name').value = '';
-      document.getElementById('ct-list-args').value = '';
-      document.getElementById('ct-list-name').focus();
+  // ========== 清单构建器 ==========
+
+  function openListBuilder() {
+    if (!Warehouse.hasData()) {
+      Warehouse.ensureData();
+      UI.showToast('info', '正在加载物品数据…');
+      return;
+    }
+    _listDraft = {};
+    _listBuilderVisible = true;
+    document.getElementById('lb-name').value = '';
+    document.getElementById('lb-money').value = '0';
+    document.getElementById('lb-search').value = '';
+    renderListBuilderGrid();
+    renderListBuilderCart();
+    document.getElementById('list-builder-overlay').classList.add('show');
+    setTimeout(function () { document.getElementById('lb-name').focus(); }, 300);
+  }
+
+  function closeListBuilder() {
+    _listBuilderVisible = false;
+    _listDraft = {};
+    document.getElementById('list-builder-overlay').classList.remove('show');
+  }
+
+  function renderListBuilderGrid() {
+    var container = document.getElementById('lb-grid');
+    if (!container) return;
+    var search = (document.getElementById('lb-search').value || '').toLowerCase().trim();
+    var cats = Warehouse.getItemCategories();
+    var catOrder = Warehouse.getCatOrder();
+    var html = '';
+    var anyVisible = false;
+
+    catOrder.forEach(function (cat) {
+      var items = cats[cat];
+      if (!items || !items.length) return;
+      var visible = [];
+      items.forEach(function (name) {
+        if (search && name.toLowerCase().indexOf(search) === -1) return;
+        visible.push(name);
+      });
+      if (!visible.length) return;
+      anyVisible = true;
+      html += '<div class="lb-cat-h" onclick="var b=this.nextElementSibling;var a=this.querySelector(\'.arrow\');var o=b.style.display===\'none\';b.style.display=o?\'\':\'none\';a.classList.toggle(\'open\',o)">'
+        + '<span class="arrow open">▸</span>'
+        + '<span class="lb-cat-dot" style="background:' + Warehouse.getCatColor(cat) + '"></span>'
+        + '<span class="lb-cat-label">' + escHtml(cat) + '</span>'
+        + '<span class="lb-cat-count">' + visible.length + '</span>'
+        + '</div>'
+        + '<div class="lb-grid">';
+      visible.forEach(function (name) {
+        var qty = _listDraft[name] || 0;
+        var stock = Warehouse.getStock(name);
+        html += '<div class="lb-card' + (qty > 0 ? ' selected' : '') + '" onclick="Trade.pickItemForList(\'' + escAttr(name) + '\')">';
+        html += Warehouse.renderIcon(name, 'sm');
+        html += '<span class="lb-card-name">' + escHtml(name) + '</span>';
+        html += '<span class="lb-card-stock">' + UI.fmtCompact(stock) + '</span>';
+        if (qty > 0) html += '<span class="lb-card-badge">' + UI.fmtCompact(qty) + '</span>';
+        html += '</div>';
+      });
+      html += '</div>';
+    });
+
+    if (!anyVisible) {
+      container.innerHTML = '<div class="tr-empty">' + (search ? '没有匹配的物品' : '物品数据加载中…') + '</div>';
+    } else {
+      container.innerHTML = html;
     }
   }
 
-  function createList() {
-    var name = document.getElementById('ct-list-name').value.trim();
-    var args = document.getElementById('ct-list-args').value.trim();
+  function pickItemForList(name) {
+    var currentQty = _listDraft[name] || 0;
+    UI.openQSheet('deposit', name, {
+      stock: Warehouse.getStock(name) || 999999,
+      onConfirm: function (mode, qty) {
+        if (qty > 0) {
+          _listDraft[name] = qty;
+        } else {
+          delete _listDraft[name];
+        }
+        renderListBuilderGrid();
+        renderListBuilderCart();
+      }
+    });
+    // 预填当前数量
+    if (currentQty > 0) {
+      document.getElementById('qs-qty').value = currentQty;
+    }
+  }
+
+  function removeFromListDraft(name) {
+    delete _listDraft[name];
+    renderListBuilderGrid();
+    renderListBuilderCart();
+  }
+
+  function updateListBuilderMoney() {
+    // 输入时实时更新购物车（仅刷新按钮禁用态）
+    var hasItems = Object.keys(_listDraft).length > 0;
+    document.getElementById('lb-confirm').disabled = !hasItems;
+  }
+
+  function renderListBuilderCart() {
+    var cartEl = document.getElementById('lb-cart');
+    var names = Object.keys(_listDraft);
+    if (names.length === 0) {
+      cartEl.style.display = 'none';
+      return;
+    }
+    cartEl.style.display = '';
+    var itemsHtml = '';
+    names.forEach(function (name) {
+      itemsHtml += '<span class="lb-cart-chip" onclick="Trade.removeFromListDraft(\'' + escAttr(name) + '\')">'
+        + escHtml(name)
+        + '<span class="lb-chip-qty">×' + UI.fmtCompact(_listDraft[name]) + '</span>'
+        + '<span class="lb-chip-remove">×</span>'
+        + '</span>';
+    });
+    document.getElementById('lb-cart-items').innerHTML = itemsHtml;
+    document.getElementById('lb-confirm').disabled = false;
+  }
+
+  function confirmListBuilder() {
+    var name = document.getElementById('lb-name').value.trim();
     if (!name) { UI.showToast('error', '请输入清单名称'); return; }
-    if (!args) { UI.showToast('error', '请输入物品内容'); return; }
+    var names = Object.keys(_listDraft);
+    if (names.length === 0) { UI.showToast('error', '请至少选择一个物品'); return; }
+    var parts = names.map(function (n) { return n + '=' + _listDraft[n]; });
+    var moneyVal = parseInt(document.getElementById('lb-money').value.replace(/[^\d]/g, ''), 10) || 0;
+    if (moneyVal > 0) parts.push('money=' + moneyVal);
+    var args = parts.join(' ');
     exec('!清单 创建 ' + name + ' "' + args + '"', '已创建清单「' + name + '」').then(function () {
-      document.getElementById('ct-create-list-form').style.display = 'none';
+      closeListBuilder();
       contractData = null;
       loadContracts();
     }).catch(function () {});
@@ -1140,6 +1259,10 @@ var Trade = (function () {
       el.addEventListener('click', function () { switchContractMode(el.dataset.contractMode); });
     });
     document.getElementById('tr-contract-search').addEventListener('input', function () { renderContracts(); });
+    // 清单构建器遮罩点击关闭
+    document.getElementById('list-builder-overlay').addEventListener('click', function (e) {
+      if (e.target === this) closeListBuilder();
+    });
   }
 
   // ========== 初始化 ==========
@@ -1205,7 +1328,10 @@ var Trade = (function () {
     loadContracts: loadContracts, renderContracts: renderContracts,
     acceptContract: acceptContract, deleteContract: deleteContract,
     toggleContractPublic: toggleContractPublic,
-    toggleCreateList: toggleCreateList, createList: createList,
+    openListBuilder: openListBuilder, closeListBuilder: closeListBuilder,
+    pickItemForList: pickItemForList, removeFromListDraft: removeFromListDraft,
+    confirmListBuilder: confirmListBuilder, renderListBuilderGrid: renderListBuilderGrid,
+    updateListBuilderMoney: updateListBuilderMoney,
     deleteList: deleteList, toggleCreateContract: toggleCreateContract,
     submitCreateContract: submitCreateContract,
   };
