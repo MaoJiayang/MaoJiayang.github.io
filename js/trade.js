@@ -59,7 +59,7 @@ var Trade = (function () {
   function switchSubTab(tab) {
     if (tab === currentSubTab) return;
     currentSubTab = tab;
-    document.querySelectorAll('.tr-subtab').forEach(function (el) {
+    document.querySelectorAll('.st-tab[data-trade-tab]').forEach(function (el) {
       el.classList.toggle('active', el.dataset.tradeTab === tab);
     });
     document.querySelectorAll('.tr-section').forEach(function (el) {
@@ -71,7 +71,7 @@ var Trade = (function () {
   }
 
   function initSubTabs() {
-    document.querySelectorAll('.tr-subtab').forEach(function (el) {
+    document.querySelectorAll('.st-tab[data-trade-tab]').forEach(function (el) {
       el.addEventListener('click', function () {
         switchSubTab(el.dataset.tradeTab);
       });
@@ -128,20 +128,17 @@ var Trade = (function () {
   }
 
   function renderInfo() {
-    var row = document.getElementById('trade-info');
-    if (!row) return;
-    if (bankInfo) {
-      row.classList.add('show');
-      var balBox = document.getElementById('ti-balance');
-      balBox.querySelector('.tr-info-val').innerHTML = UI.fmtNum(bankInfo.balance) + ' SC';
-      balBox.className = 'tr-info-box' + (bankInfo.balance > 0 ? ' good' : bankInfo.balance < 0 ? ' bad' : '');
-      var odBox = document.getElementById('ti-overdraft');
-      odBox.querySelector('.tr-info-val').innerHTML = bankInfo.overdraftLimit > 0 ? UI.fmtNum(bankInfo.overdraftLimit) + ' SC' : '无';
-      odBox.className = 'tr-info-box' + (bankInfo.overdraftLimit > 0 ? ' good' : '');
-      var vipBox = document.getElementById('ti-vip');
-      vipBox.querySelector('.tr-info-val').innerHTML = bankInfo.vipDays > 0 ? bankInfo.vipDays + ' 天' : '—';
-      vipBox.className = 'tr-info-box' + (bankInfo.vipDays > 0 ? ' good' : '');
-    } else { row.classList.remove('show'); }
+    if (!bankInfo) return;
+    var setVal = function(id, html, cls) {
+      var box = document.getElementById(id);
+      if (!box) return;
+      var val = box.querySelector('.tr-info-val');
+      if (val) { val.innerHTML = html; val.classList.remove('loading'); }
+      box.className = 'tr-info-box' + (cls || '');
+    };
+    setVal('ti-balance', UI.fmtNum(bankInfo.balance) + ' SC', bankInfo.balance > 0 ? ' good' : bankInfo.balance < 0 ? ' bad' : '');
+    setVal('ti-overdraft', bankInfo.overdraftLimit > 0 ? UI.fmtNum(bankInfo.overdraftLimit) + ' SC' : '无', bankInfo.overdraftLimit > 0 ? ' good' : '');
+    setVal('ti-vip', bankInfo.vipDays > 0 ? bankInfo.vipDays + ' 天' : '—', bankInfo.vipDays > 0 ? ' good' : '');
   }
 
   function toggleShopCat(hdr) {

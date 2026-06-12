@@ -68,7 +68,7 @@ var Hangar = (function () {
   function switchSubTab(tab) {
     if (tab === currentSubTab) return;
     currentSubTab = tab;
-    document.querySelectorAll('.ha-subtab').forEach(function (el) {
+    document.querySelectorAll('.st-tab[data-ha-tab]').forEach(function (el) {
       el.classList.toggle('active', el.dataset.haTab === tab);
     });
     document.querySelectorAll('.ha-section').forEach(function (el) {
@@ -80,7 +80,7 @@ var Hangar = (function () {
   }
 
   function initSubTabs() {
-    document.querySelectorAll('.ha-subtab').forEach(function (el) {
+    document.querySelectorAll('.st-tab[data-ha-tab]').forEach(function (el) {
       el.addEventListener('click', function () {
         switchSubTab(el.dataset.haTab);
       });

@@ -76,9 +76,9 @@
   <!-- 交易面板 -->
   <div class="tab-panel" id="panel-trade">
     <div class="tr-info-row" id="trade-info">
-      <div class="tr-info-box" id="ti-balance"><span class="tr-info-label">💰 余额</span><span class="tr-info-val">—</span></div>
-      <div class="tr-info-box" id="ti-overdraft"><span class="tr-info-label">🏦 透支额度</span><span class="tr-info-val">—</span></div>
-      <div class="tr-info-box" id="ti-vip"><span class="tr-info-label">⭐ 精英</span><span class="tr-info-val">—</span></div>
+      <div class="tr-info-box" id="ti-balance"><span class="tr-info-label">💰 余额</span><span class="tr-info-val loading">—</span></div>
+      <div class="tr-info-box" id="ti-overdraft"><span class="tr-info-label">🏦 透支额度</span><span class="tr-info-val loading">—</span></div>
+      <div class="tr-info-box" id="ti-vip"><span class="tr-info-label">⭐ 精英</span><span class="tr-info-val loading">—</span></div>
     </div>
 
     <div class="st-tabs">
@@ -124,11 +124,11 @@
       <div class="ct-create-form" id="ct-create-contract-form" style="display:none">
         <div class="ct-create-h">创建合同</div>
         <div class="field">
-          <label>付出清单（甲方提供）</label>
+          <label for="ct-contract-list1">付出清单（甲方提供）</label>
           <select id="ct-contract-list1"></select>
         </div>
         <div class="field">
-          <label>索取清单（乙方提供）</label>
+          <label for="ct-contract-list2">索取清单（乙方提供）</label>
           <select id="ct-contract-list2"></select>
         </div>
         <label class="chk-row"><input id="ct-contract-public" type="checkbox"><span>设为公开合同</span></label>

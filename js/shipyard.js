@@ -22,7 +22,7 @@ var Shipyard = (function () {
   function switchSubTab(tab) {
     if (tab === currentSubTab) return;
     currentSubTab = tab;
-    document.querySelectorAll('.sy-subtab').forEach(function (el) {
+    document.querySelectorAll('.st-tab[data-sy-tab]').forEach(function (el) {
       el.classList.toggle('active', el.dataset.syTab === tab);
     });
     document.querySelectorAll('.sy-section').forEach(function (el) {
@@ -34,7 +34,7 @@ var Shipyard = (function () {
   }
 
   function initSubTabs() {
-    document.querySelectorAll('.sy-subtab').forEach(function (el) {
+    document.querySelectorAll('.st-tab[data-sy-tab]').forEach(function (el) {
       el.addEventListener('click', function () {
         switchSubTab(el.dataset.syTab);
       });

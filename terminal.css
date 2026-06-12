@@ -251,8 +251,8 @@ body::before{
 .st-tab.spacer{flex:0 0 auto;border-bottom:none;cursor:default}
 .st-tab.spacer:hover{color:var(--text-muted)}
 .tr-section{position:relative}
-.tr-info-row{display:flex;gap:8px;margin-bottom:12px;max-height:0;overflow:hidden;opacity:0;transition:max-height .3s,opacity .3s,margin .3s}
-.tr-info-row.show{max-height:60px;opacity:1}
+.tr-info-row{display:flex;gap:8px;margin-bottom:12px}
+.tr-info-val.loading{opacity:.35}
 .tr-info-box{
   flex:1;padding:8px 10px;background:var(--bg-card);border:1px solid var(--bg-hover);
   border-radius:6px;text-align:center;display:flex;flex-direction:column;gap:2px;
