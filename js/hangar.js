@@ -13,6 +13,11 @@ var Hangar = (function () {
   var showFullName = false;     // 名称显示切换
   var _worldSortIdx = 0;        // 世界网格排序索引：0=名称↑,1=名称↓,2=PCU↑...7=价值↓
 
+  // ========== 舰船市场 ==========
+  var shipMarketLoading = false;
+  var shipMarketData = null;     // { availableCoupons, couponValue, serverShips, playerShips }
+  var _shipMarketSortIdx = 0;   // 0=名称↑,1=名称↓,2=售价↑,3=售价↓,4=估价↑,5=估价↓
+
   // ========== 通用执行 ==========
 
   function exec(cmd, okLabel) {
@@ -71,7 +76,7 @@ var Hangar = (function () {
     });
     if (tab === 'my' && !hangarData && !loading) loadHangar();
     if (tab === 'world' && !worldGrids && !loading) loadWorldGrids();
-    if (tab === 'market') { /* 占位 */ }
+    if (tab === 'market' && !shipMarketData && !shipMarketLoading) loadShipMarket();
   }
 
   function initSubTabs() {
@@ -332,6 +337,195 @@ var Hangar = (function () {
     });
   }
 
+  // ========== 舰船市场 ==========
+
+  var SHIP_SORT_KEYS = [
+    { key: 'name', label: '名称' },
+    { key: 'price', label: '售价' },
+    { key: 'valuation', label: '估价' },
+  ];
+
+  function loadShipMarket() {
+    if (shipMarketLoading) return;
+    shipMarketLoading = true;
+    renderShipMarket();
+    exec('!网格 市场', null).then(function (d) {
+      shipMarketData = d;
+      shipMarketLoading = false;
+      renderShipMarket();
+    }).catch(function () {
+      shipMarketData = null;
+      shipMarketLoading = false;
+      renderShipMarket();
+    });
+  }
+
+  function renderShipMarket() {
+    var container = document.getElementById('hm-content');
+    if (!container) return;
+
+    if (!shipMarketData && shipMarketLoading) {
+      container.innerHTML = '<div class="tr-empty">加载中…</div>';
+      return;
+    }
+
+    // 离线 / 加载失败
+    if (!shipMarketData) {
+      container.innerHTML = '<div class="hm-offline">'
+        + '<div class="hm-offline-icon">🔌</div>'
+        + '<div class="hm-offline-text">舰船市场需要您在游戏中在线</div>'
+        + '<div class="hm-offline-hint">请登录游戏后再试</div>'
+        + '<button class="hm-retry-btn" onclick="Hangar.loadShipMarket()">重试</button>'
+        + '</div>';
+      document.getElementById('hm-coupon').style.display = 'none';
+      return;
+    }
+
+    renderShipMarketCoupon();
+
+    var search = (document.getElementById('hm-search').value || '').toLowerCase().trim();
+    var serverShips = (shipMarketData.serverShips || []).slice();
+    var playerShips = (shipMarketData.playerShips || []).slice();
+
+    var filteredServer = search ? serverShips.filter(function (s) { return (s.shipName || '').toLowerCase().indexOf(search) !== -1; }) : serverShips;
+    var filteredPlayer = search ? playerShips.filter(function (s) { return (s.shipName || '').toLowerCase().indexOf(search) !== -1; }) : playerShips;
+
+    var html = '';
+    if (filteredServer.length > 0) {
+      html += '<div class="wh-cat"><div class="wh-cat-h" onclick="var b=this.parentElement.querySelector(\'.wh-cat-body\');var a=this.querySelector(\'.arrow\');b.classList.toggle(\'open\');a.classList.toggle(\'open\')">'
+        + '<span class="arrow open">▸</span>'
+        + '<span class="wh-cat-dot" style="background:var(--jade-200)"></span>'
+        + '<span class="wh-cat-label">服营舰船</span>'
+        + '<span class="wh-cat-count">' + filteredServer.length + ' 艘</span>'
+        + '</div><div class="wh-cat-body open">';
+      applyShipSort(filteredServer).forEach(function (s) { html += renderShipCard(s, 'server'); });
+      html += '</div></div>';
+    }
+    if (filteredPlayer.length > 0) {
+      html += '<div class="wh-cat"><div class="wh-cat-h" onclick="var b=this.parentElement.querySelector(\'.wh-cat-body\');var a=this.querySelector(\'.arrow\');b.classList.toggle(\'open\');a.classList.toggle(\'open\')">'
+        + '<span class="arrow open">▸</span>'
+        + '<span class="wh-cat-dot" style="background:var(--blue-200)"></span>'
+        + '<span class="wh-cat-label">玩家舰船</span>'
+        + '<span class="wh-cat-count">' + filteredPlayer.length + ' 艘</span>'
+        + '</div><div class="wh-cat-body open">';
+      applyShipSort(filteredPlayer).forEach(function (s) { html += renderShipCard(s, 'player'); });
+      html += '</div></div>';
+    }
+    if (!html) {
+      container.innerHTML = '<div class="tr-empty">' + (search ? '没有匹配的舰船' : '暂无舰船在售') + '</div>';
+      return;
+    }
+    container.innerHTML = html;
+  }
+
+  function renderShipMarketCoupon() {
+    var couponEl = document.getElementById('hm-coupon');
+    if (!couponEl) return;
+    var coupons = shipMarketData.availableCoupons || 0;
+    var value = shipMarketData.couponValue || 0;
+    if (coupons <= 0) { couponEl.style.display = 'none'; return; }
+    couponEl.style.display = '';
+    couponEl.innerHTML = '<div class="hm-coupon-bar">'
+      + '<span class="hm-coupon-icon">🎟️</span>'
+      + '<span class="hm-coupon-info">可用折扣券 <strong>' + coupons + '</strong> 张，每张抵扣 <strong>' + UI.fmtCompact(value) + ' SC</strong></span>'
+      + '</div>';
+  }
+
+  function renderShipCard(ship, type) {
+    var priceAfterCoupon = ship.sellPrice;
+    var couponInfo = '';
+    if (type === 'server' && shipMarketData.availableCoupons > 0 && shipMarketData.couponValue > 0) {
+      var discount = Math.min(shipMarketData.availableCoupons * shipMarketData.couponValue, ship.sellPrice);
+      priceAfterCoupon = Math.max(0, ship.sellPrice - discount);
+      if (discount > 0) {
+        couponInfo = '<span class="hm-price-after">券后 ' + UI.fmtCompact(priceAfterCoupon) + ' SC</span>';
+      }
+    }
+    return '<div class="hm-ship-card">'
+      + '<div class="hm-ship-top">'
+      + '<span class="hm-ship-icon">🚀</span>'
+      + '<div class="hm-ship-info">'
+      + '<span class="hm-ship-name">' + escHtml(ship.shipName || '未命名') + '</span>'
+      + '<span class="hm-ship-id">#' + escHtml(String(ship.id)) + '</span>'
+      + '</div>'
+      + '</div>'
+      + '<div class="hm-ship-meta">'
+      + '<span class="hm-ship-val">估价 ' + UI.fmtCompact(ship.valuation || 0) + ' SC</span>'
+      + '<span class="hm-ship-arrow">→</span>'
+      + '<span class="hm-ship-price">售价 ' + UI.fmtCompact(ship.sellPrice || 0) + ' SC</span>'
+      + couponInfo
+      + '</div>'
+      + '<div class="hm-ship-actions">'
+      + '<button class="hm-buy-btn" onclick="Hangar.buyShip(\'' + escAttr(String(ship.id)) + '\',\'' + escAttr(ship.shipName || '') + '\')">购买</button>'
+      + '</div>'
+      + '</div>';
+  }
+
+  function buyShip(id, name) {
+    var ship = findShipById(id);
+    if (!ship) return;
+    var finalPrice = ship.sellPrice;
+    var couponNote = '';
+    if (shipMarketData.availableCoupons > 0 && shipMarketData.couponValue > 0) {
+      var maxDiscount = Math.min(shipMarketData.availableCoupons * shipMarketData.couponValue, ship.sellPrice);
+      finalPrice = Math.max(0, ship.sellPrice - maxDiscount);
+      if (maxDiscount > 0) {
+        couponNote = '\n折扣券: ' + shipMarketData.availableCoupons + ' 张 × ' + UI.fmtCompact(shipMarketData.couponValue) + ' SC = -' + UI.fmtCompact(maxDiscount) + ' SC';
+      }
+    }
+    UI.showConfirmDialog(
+      '购买舰船「' + name + '」？\n售价: ' + UI.fmtCompact(ship.sellPrice) + ' SC' + couponNote + '\n最终价格: ' + UI.fmtCompact(finalPrice) + ' SC',
+      function () {
+        exec('!网格 购买 ' + id, '已购买「' + name + '」').then(function () { loadShipMarket(); }).catch(function () {});
+      }
+    );
+  }
+
+  function findShipById(id) {
+    var all = (shipMarketData.serverShips || []).concat(shipMarketData.playerShips || []);
+    for (var i = 0; i < all.length; i++) {
+      if (String(all[i].id) === String(id)) return all[i];
+    }
+    return null;
+  }
+
+  function cycleShipSort() {
+    _shipMarketSortIdx = (_shipMarketSortIdx + 1) % (SHIP_SORT_KEYS.length * 2);
+    updateShipSortBtn();
+    renderShipMarket();
+  }
+
+  function updateShipSortBtn() {
+    var btn = document.getElementById('hm-sort-btn');
+    if (!btn) return;
+    var asc = _shipMarketSortIdx % 2 === 0;
+    var entry = SHIP_SORT_KEYS[Math.floor(_shipMarketSortIdx / 2)];
+    btn.textContent = entry.label + ' ' + (asc ? '↑' : '↓');
+  }
+
+  function applyShipSort(list) {
+    if (!list || !list.length) return list;
+    var asc = _shipMarketSortIdx % 2 === 0;
+    var key = SHIP_SORT_KEYS[Math.floor(_shipMarketSortIdx / 2)].key;
+    return list.slice().sort(function (a, b) {
+      var va, vb;
+      if (key === 'name') { va = (a.shipName || '').toLowerCase(); vb = (b.shipName || '').toLowerCase(); }
+      else if (key === 'price') { va = a.sellPrice || 0; vb = b.sellPrice || 0; }
+      else if (key === 'valuation') { va = a.valuation || 0; vb = b.valuation || 0; }
+      else return 0;
+      if (va < vb) return asc ? -1 : 1;
+      if (va > vb) return asc ? 1 : -1;
+      return 0;
+    });
+  }
+
+  function initShipMarket() {
+    var sortBtn = document.getElementById('hm-sort-btn');
+    if (sortBtn) sortBtn.addEventListener('click', cycleShipSort);
+    var searchInput = document.getElementById('hm-search');
+    if (searchInput) searchInput.addEventListener('input', function () { renderShipMarket(); });
+  }
+
   // ========== 初始化 ==========
 
   function init() {
@@ -356,6 +550,9 @@ var Hangar = (function () {
     if (saveBtn) saveBtn.addEventListener('click', saveShip);
 
     updateSortBtn();
+
+    // 舰船市场
+    initShipMarket();
   }
 
   // ========== 工具函数 ==========
@@ -377,5 +574,8 @@ var Hangar = (function () {
     loadForceLocal: loadForceLocal,
     saveShip: saveShip,
     saveRemote: saveRemote,
+    // 舰船市场
+    loadShipMarket: loadShipMarket,
+    buyShip: buyShip,
   };
 })();

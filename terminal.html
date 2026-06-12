@@ -112,9 +112,52 @@
       <div id="trade-market-list"></div>
     </div>
 
-    <!-- 合同（占位） -->
+    <!-- 合同 -->
     <div class="tr-section" id="trade-contract" style="display:none">
-      <div class="placeholder"><span class="ph-icon">📜</span><span class="ph-text">合同 — 即将开放</span></div>
+      <div class="tr-modebar">
+        <button class="tr-contract-mode active" data-contract-mode="public">公开合同</button>
+        <button class="tr-contract-mode" data-contract-mode="mine">我的合同</button>
+        <button class="tr-contract-mode" data-contract-mode="lists">我的清单</button>
+        <span class="spacer"></span>
+        <span class="tr-refresh" onclick="Trade.refreshContracts()" title="刷新">↻</span>
+      </div>
+      <input class="wh-search" id="tr-contract-search" type="text" placeholder="搜索…">
+      <div id="trade-contract-list"></div>
+      <!-- 创建清单表单（折叠） -->
+      <div class="ct-create-form" id="ct-create-list-form" style="display:none">
+        <div class="ct-create-h">创建清单</div>
+        <div class="field">
+          <label>清单名称</label>
+          <input id="ct-list-name" type="text" placeholder="例如：料单">
+        </div>
+        <div class="field">
+          <label>物品内容</label>
+          <input id="ct-list-args" type="text" placeholder="钢板=1000 money=50000">
+        </div>
+        <div class="ct-create-hint">格式：物品=数量 空格分隔，money 表示太空货币</div>
+        <div class="ct-create-actions">
+          <button class="ct-create-cancel" onclick="Trade.toggleCreateList()">取消</button>
+          <button class="ct-create-confirm" onclick="Trade.createList()">确认创建</button>
+        </div>
+      </div>
+      <!-- 创建合同选择器（折叠） -->
+      <div class="ct-create-form" id="ct-create-contract-form" style="display:none">
+        <div class="ct-create-h">创建合同</div>
+        <div class="field">
+          <label>付出清单（甲方提供）</label>
+          <select id="ct-contract-list1"></select>
+        </div>
+        <div class="field">
+          <label>索取清单（乙方提供）</label>
+          <select id="ct-contract-list2"></select>
+        </div>
+        <label class="chk-row"><input id="ct-contract-public" type="checkbox"><span>设为公开合同</span></label>
+        <div class="ct-list-preview" id="ct-contract-preview" style="display:none"></div>
+        <div class="ct-create-actions">
+          <button class="ct-create-cancel" onclick="Trade.toggleCreateContract()">取消</button>
+          <button class="ct-create-confirm" onclick="Trade.submitCreateContract()">确认创建</button>
+        </div>
+      </div>
     </div>
   </div>
   <div class="tab-panel" id="panel-shipyard">
@@ -181,7 +224,13 @@
           <div id="ha-world-grids"></div>
         </div>
         <div class="ha-section" id="hangar-market" style="display:none">
-          <div class="placeholder"><span class="ph-icon">📜</span><span class="ph-text">舰船市场 — 即将开放</span></div>
+          <div class="ha-search-row">
+            <input class="wh-search" id="hm-search" type="text" placeholder="搜索船名…" style="margin-bottom:0">
+            <button id="hm-sort-btn" class="ha-sort-btn" title="切换排序">名称 ↓</button>
+            <span class="ha-refresh-inline" onclick="Hangar.loadShipMarket()" title="刷新">↻</span>
+          </div>
+          <div id="hm-coupon" style="display:none"></div>
+          <div id="hm-content"></div>
         </div>
       </div>
   <div class="tab-panel" id="panel-settings">

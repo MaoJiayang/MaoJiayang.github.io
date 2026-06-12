@@ -635,3 +635,149 @@ body::before{
   #tabbar{display:none !important}
   #main{margin-left:180px;padding-bottom:0}
   #login-guide{min-height:calc(100vh - var(--topbar-h))}
+
+/* ========== 合同 & 清单 ========== */
+.tr-contract-mode{
+  flex:1;padding:7px 0;font-size:11px;font-weight:600;text-align:center;
+  background:var(--bg-card);color:var(--text-muted);border:none;
+  cursor:pointer;font-family:inherit;transition:all .15s;
+}
+.tr-contract-mode.active{background:var(--jade-200);color:var(--bg-void)}
+
+/* 合同卡片 */
+.ct-card{
+  background:var(--bg-card);border:1px solid var(--bg-hover);border-radius:6px;
+  padding:12px;margin-bottom:8px;
+}
+.ct-card:hover{background:var(--bg-hover)}
+.ct-header{
+  display:flex;align-items:center;gap:8px;margin-bottom:8px;
+}
+.ct-id-badge{
+  font-family:var(--font-mono);font-size:11px;font-weight:600;
+  color:var(--jade-200);background:rgba(93,221,170,.1);
+  padding:2px 8px;border-radius:3px;flex-shrink:0;
+}
+.ct-owner{font-size:13px;color:var(--text-primary);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ct-badge{font-size:10px;font-weight:600;padding:2px 6px;border-radius:3px;flex-shrink:0}
+.ct-badge-public{background:var(--jade-600);color:var(--jade-100)}
+.ct-badge-private{background:var(--bg-hover);color:var(--text-muted)}
+
+/* 合同付出/索取双栏 */
+.ct-lists{display:flex;gap:8px;margin-bottom:10px}
+.ct-list{flex:1;min-width:0}
+.ct-list-label{font-size:10px;font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.04em}
+.ct-list-offer .ct-list-label{color:var(--jade-200)}
+.ct-list-want .ct-list-label{color:var(--gold-200)}
+.ct-list-items{display:flex;flex-wrap:wrap;gap:4px}
+.ct-list-item{
+  display:inline-flex;align-items:center;gap:3px;
+  background:var(--bg-hover);border-radius:3px;padding:2px 6px;
+  font-size:11px;
+}
+.ct-list-item .wh-card-icon{width:16px;height:16px;border-radius:2px}
+.ct-list-item .wh-card-icon-fb{width:16px;height:16px;border-radius:2px;font-size:10px}
+.ct-list-qty{font-family:var(--font-mono);color:var(--text-primary);font-weight:600}
+.ct-list-empty{font-size:11px;color:var(--text-disabled)}
+
+/* 合同操作按钮 */
+.ct-actions{display:flex;gap:6px}
+.ct-act-btn{
+  flex:1;padding:8px 4px;font-size:12px;font-weight:600;
+  border-radius:4px;border:1px solid var(--bg-hover);
+  background:transparent;color:var(--text-secondary);cursor:pointer;
+  font-family:inherit;min-height:38px;transition:all .12s;
+}
+.ct-act-btn:hover{background:var(--bg-hover);color:var(--text-primary)}
+.ct-act-delete{color:var(--color-error)}
+.ct-act-delete:hover{background:var(--color-error);color:#fff}
+.ct-act-accept{background:var(--jade-200);color:var(--bg-void);border-color:var(--jade-200)}
+.ct-act-accept:hover{opacity:.85}
+.ct-act-create-btn{
+  width:100%;padding:10px;font-size:13px;font-weight:600;
+  background:var(--jade-200);color:var(--bg-void);border:none;
+  border-radius:6px;cursor:pointer;font-family:inherit;
+  margin-bottom:10px;
+}
+
+/* 清单卡片 */
+.ct-list-card{
+  background:var(--bg-card);border:1px solid var(--bg-hover);border-radius:6px;
+  padding:10px 12px;margin-bottom:6px;
+}
+.ct-list-card:hover{background:var(--bg-hover)}
+.ct-list-name{font-size:14px;font-weight:500;color:var(--text-primary);margin-bottom:4px}
+.ct-list-actions{display:flex;gap:6px;margin-top:6px}
+
+/* 创建表单（清单/合同共用） */
+.ct-create-form{
+  background:var(--bg-card);border:1px solid var(--bg-hover);
+  border-radius:6px;padding:14px;margin-bottom:10px;
+}
+.ct-create-h{font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:10px}
+.ct-create-form .field{margin-bottom:10px}
+.ct-create-form label{display:block;font-size:11px;color:var(--text-muted);margin-bottom:3px}
+.ct-create-form input[type=text],.ct-create-form select{
+  width:100%;padding:8px 10px;font-size:13px;
+  border:1px solid var(--bg-hover);border-radius:4px;
+  background:var(--bg-deep);color:var(--text-primary);
+  font-family:inherit;outline:none;
+}
+.ct-create-form input:focus,.ct-create-form select:focus{border-color:var(--jade-400)}
+.ct-create-hint{font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.5}
+.ct-create-actions{display:flex;gap:8px}
+.ct-create-cancel{flex:1;padding:8px;font-size:13px;font-weight:600;background:var(--bg-card);color:var(--text-secondary);border:1px solid var(--bg-hover);border-radius:4px;cursor:pointer;font-family:inherit}
+.ct-create-confirm{flex:1;padding:8px;font-size:13px;font-weight:600;background:var(--jade-200);color:var(--bg-void);border:none;border-radius:4px;cursor:pointer;font-family:inherit}
+.ct-list-preview{font-size:11px;color:var(--text-muted);padding:8px 10px;background:var(--bg-deep);border-radius:4px;margin-bottom:10px;line-height:1.5}
+
+/* ========== 舰船市场 ========== */
+.hm-offline{
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  padding:40px 20px;text-align:center;
+}
+.hm-offline-icon{font-size:40px;opacity:.7}
+.hm-offline-text{font-size:14px;color:var(--text-secondary)}
+.hm-offline-hint{font-size:12px;color:var(--text-muted)}
+.hm-retry-btn{
+  margin-top:8px;padding:10px 24px;font-size:14px;font-weight:600;
+  background:var(--jade-200);color:var(--bg-void);border:none;
+  border-radius:6px;cursor:pointer;font-family:inherit;
+}
+.hm-retry-btn:hover{opacity:.85}
+
+/* 折扣券提示条 */
+.hm-coupon-bar{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 12px;background:var(--bg-card);
+  border:1px solid var(--gold-400);border-radius:6px;
+  margin-bottom:10px;
+}
+.hm-coupon-icon{font-size:20px;flex-shrink:0}
+.hm-coupon-info{font-size:12px;color:var(--text-secondary);line-height:1.4}
+.hm-coupon-info strong{color:var(--gold-200)}
+
+/* 舰船卡片 */
+.hm-ship-card{
+  background:var(--bg-card);border:1px solid var(--bg-hover);
+  border-radius:6px;padding:10px 12px;margin-bottom:6px;
+  display:flex;flex-direction:column;gap:8px;
+}
+.hm-ship-card:hover{background:var(--bg-hover)}
+.hm-ship-top{display:flex;align-items:center;gap:8px}
+.hm-ship-icon{font-size:18px;flex-shrink:0}
+.hm-ship-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.hm-ship-name{font-size:14px;font-weight:500;color:var(--text-primary)}
+.hm-ship-id{font-size:10px;font-family:var(--font-mono);color:var(--text-muted)}
+.hm-ship-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.hm-ship-val{font-size:11px;color:var(--text-muted)}
+.hm-ship-arrow{font-size:11px;color:var(--text-disabled)}
+.hm-ship-price{font-size:13px;font-weight:600;color:var(--jade-200);font-family:var(--font-mono)}
+.hm-price-after{font-size:12px;color:var(--gold-200);font-weight:600;font-family:var(--font-mono)}
+.hm-ship-actions{display:flex;gap:6px}
+.hm-buy-btn{
+  flex:1;padding:10px;font-size:13px;font-weight:600;
+  background:var(--jade-200);color:var(--bg-void);border:none;
+  border-radius:4px;cursor:pointer;font-family:inherit;
+  min-height:40px;transition:opacity .12s;
+}
+.hm-buy-btn:hover{opacity:.85}
