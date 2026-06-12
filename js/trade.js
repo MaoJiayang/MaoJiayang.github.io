@@ -1281,7 +1281,6 @@ var Trade = (function () {
       }
     }, Math.round(dur * 0.7));
   }
-  }
 
   function confirmListBuilder() {
     if (!_lbOverlay) return;
