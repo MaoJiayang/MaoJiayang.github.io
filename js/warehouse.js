@@ -385,6 +385,7 @@ var Warehouse = (function () {
     getCatOrder: function(){ return ['矿石','矿锭','零件','弹药','工具','消耗品','其他']; },
     getItemCategories: function(){ return itemCategories; },
     getCatColor: function(cat){ return catColors[cat] || catColors['其他']; },
+    getOpenCat: function(){ return warehouseOpenCat; },
     enterSelectionMode: enterSelectionMode,
     exitSelectionMode: exitSelectionMode,
   };

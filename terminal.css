@@ -837,10 +837,11 @@ body::before{
 /* 清单构建器中的分类头（压缩版） */
 .lb-cat-h{
   grid-column:1/-1;display:flex;align-items:center;gap:6px;
-  padding:8px 0 4px;font-size:11px;font-weight:600;color:var(--text-muted);
-  cursor:pointer;user-select:none;
+  padding:10px 4px 6px;font-size:12px;font-weight:600;color:var(--text-muted);
+  cursor:pointer;user-select:none;min-height:40px;
 }
-.lb-cat-h .arrow{font-size:9px;transition:transform .2s;color:var(--text-muted)}
+.lb-cat-h:active{background:var(--bg-hover)}
+.lb-cat-h .arrow{font-size:10px;transition:transform .2s;color:var(--text-muted);flex-shrink:0}
 .lb-cat-h .arrow.open{transform:rotate(90deg)}
 .lb-cat-dot{width:6px;height:6px;border-radius:2px;flex-shrink:0}
 .lb-cat-count{font-size:10px;color:var(--text-disabled)}
@@ -873,14 +874,18 @@ body::before{
 .lb-cart-items{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
 .lb-cart-empty{color:var(--text-muted);font-size:12px;padding:4px 0}
 .lb-cart-chip{
-  display:inline-flex;align-items:center;gap:3px;
-  background:var(--bg-hover);border-radius:3px;padding:3px 7px;
-  font-size:11px;cursor:pointer;transition:all .12s;
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--bg-hover);border-radius:6px;padding:8px 12px;
+  font-size:13px;cursor:pointer;transition:all .12s;
+  min-height:40px;
 }
 .lb-cart-chip:hover{background:var(--jade-400);color:var(--bg-void)}
-.lb-cart-chip .lb-chip-qty{font-family:var(--font-mono);font-weight:600}
-.lb-cart-chip .lb-chip-remove{font-size:14px;color:var(--color-error);margin-left:2px;line-height:1}
-.lb-cart-empty{font-size:11px;color:var(--text-disabled)}
+.lb-cart-chip .lb-chip-remove{
+  font-size:16px;color:var(--color-error);line-height:1;
+  width:24px;height:24px;display:flex;align-items:center;justify-content:center;
+  border-radius:50%;transition:background .12s;
+}
+.lb-cart-chip .lb-chip-remove:hover{background:rgba(255,255,255,.1)}
 .lb-cart-money{margin-bottom:10px}
 .lb-cart-money label{font-size:10px;color:var(--text-muted);display:block;margin-bottom:3px}
 .lb-money-row{display:flex;align-items:center;gap:6px}

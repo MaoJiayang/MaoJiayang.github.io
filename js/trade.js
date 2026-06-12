@@ -1111,6 +1111,7 @@ var Trade = (function () {
     var html = '';
     var anyVisible = false;
 
+    var catIdx = 0;
     catOrder.forEach(function (cat) {
       var items = cats[cat];
       if (!items || !items.length) return;
@@ -1120,14 +1121,17 @@ var Trade = (function () {
         visible.push(name);
       });
       if (!visible.length) return;
+      var openCat = Warehouse.getOpenCat();
+      var isOpen = openCat ? cat === openCat : catIdx === 0;
+      catIdx++;
       anyVisible = true;
       html += '<div class="lb-cat-h" onclick="var b=this.nextElementSibling;var a=this.querySelector(\'.arrow\');var o=b.style.display===\'none\';b.style.display=o?\'\':\'none\';a.classList.toggle(\'open\',o)">'
-        + '<span class="arrow open">▸</span>'
+        + '<span class="arrow' + (isOpen ? ' open' : '') + '">▸</span>'
         + '<span class="lb-cat-dot" style="background:' + Warehouse.getCatColor(cat) + '"></span>'
         + '<span class="lb-cat-label">' + escHtml(cat) + '</span>'
         + '<span class="lb-cat-count">' + visible.length + '</span>'
         + '</div>'
-        + '<div class="lb-grid">';
+        + '<div class="lb-grid"' + (isOpen ? '' : ' style="display:none"') + '>';
       visible.forEach(function (name) {
         var qty = _listDraft[name] || 0;
         var stock = Warehouse.getStock(name);
@@ -1161,6 +1165,7 @@ var Trade = (function () {
         }
         renderListBuilderGrid();
         renderListBuilderCart();
+        if (qty > 0) animateItemToCart(name);
       }
     });
     // 预填当前数量
@@ -1193,11 +1198,53 @@ var Trade = (function () {
     names.forEach(function (name) {
       itemsHtml += '<span class="lb-cart-chip" onclick="Trade.removeFromListDraft(\'' + escAttr(name) + '\')">'
         + escHtml(name)
-        + '<span class="lb-chip-qty">×' + UI.fmtCompact(_listDraft[name]) + '</span>'
         + '<span class="lb-chip-remove">×</span>'
         + '</span>';
     });
     _lbOverlay.get('#lb-cart-items').innerHTML = itemsHtml;
+  }
+
+  /** 物品飞入购物车动画 */
+  function animateItemToCart(name) {
+    if (!_lbOverlay) return;
+    // 在网格中找到刚加入的物品卡片图标
+    var cards = _lbOverlay.el.querySelectorAll('.lb-card.selected');
+    var sourceIcon = null;
+    for (var i = 0; i < cards.length; i++) {
+      if (cards[i].textContent.indexOf(name) !== -1) {
+        sourceIcon = cards[i].querySelector('.wh-icon-wrap');
+        break;
+      }
+    }
+    if (!sourceIcon) return;
+    var srcRect = sourceIcon.getBoundingClientRect();
+
+    // 目标：购物车物品区
+    var targetEl = _lbOverlay.get('#lb-cart-items');
+    if (!targetEl) return;
+    var tgtRect = targetEl.getBoundingClientRect();
+
+    // 创建飞行克隆体
+    var flyer = sourceIcon.cloneNode(true);
+    flyer.style.position = 'fixed';
+    flyer.style.zIndex = '999';
+    flyer.style.left = srcRect.left + 'px';
+    flyer.style.top = srcRect.top + 'px';
+    flyer.style.width = srcRect.width + 'px';
+    flyer.style.height = srcRect.height + 'px';
+    flyer.style.margin = '0';
+    flyer.style.pointerEvents = 'none';
+    flyer.style.transition = 'all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)';
+    document.body.appendChild(flyer);
+
+    requestAnimationFrame(function () {
+      flyer.style.left = (tgtRect.left + tgtRect.width / 2 - srcRect.width / 2) + 'px';
+      flyer.style.top = (tgtRect.top + tgtRect.height / 2 - srcRect.height / 2) + 'px';
+      flyer.style.opacity = '0.4';
+      flyer.style.transform = 'scale(0.6)';
+    });
+
+    setTimeout(function () { flyer.remove(); }, 400);
   }
 
   function confirmListBuilder() {
