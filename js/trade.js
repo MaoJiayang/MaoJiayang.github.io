@@ -985,7 +985,7 @@ var Trade = (function () {
           if (l.name && l.name.toLowerCase().indexOf(search) !== -1) return true;
           if (l.items) {
             for (var i = 0; i < l.items.length; i++) {
-              if (l.items[i].subtypeId && l.items[i].subtypeId.toLowerCase().indexOf(search) !== -1) return true;
+              if (l.items[i].name && l.items[i].name.toLowerCase().indexOf(search) !== -1) return true;
             }
           }
           return false;
@@ -1010,12 +1010,12 @@ var Trade = (function () {
     }
     if (l.items) {
       l.items.forEach(function (item) {
-        var iconFile = Warehouse.getIcon(item.subtypeId);
+        var iconFile = Warehouse.getIcon(item.name);
         var iconHtml;
         if (iconFile) {
           iconHtml = '<span class="wh-card-icon si si-' + iconFile + '"></span>';
         } else {
-          var letter = (item.subtypeId || '?').charAt(0);
+          var letter = (item.name || '?').charAt(0);
           iconHtml = '<span class="wh-card-icon-fb" style="background:#253748">' + letter + '</span>';
         }
         parts.push('<span class="ct-list-item">' + iconHtml
