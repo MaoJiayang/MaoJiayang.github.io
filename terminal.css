@@ -454,15 +454,17 @@ body::before{
 /* 世界网格搜索行（搜索框 + 排序按钮 + 刷新） */
 .ha-search-row{display:flex;align-items:center;gap:8px;margin-bottom:12px}
 .ha-search-row .wh-search{flex:1;margin-bottom:0}
-.ha-search-row #ha-sort-btn{position:static;flex-shrink:0}
+.ha-search-row .ha-sort-btn{position:static;flex-shrink:0}
 .ha-refresh-inline{cursor:pointer;font-size:20px;color:var(--text-muted);flex-shrink:0;width:36px;text-align:center;line-height:36px}
 .ha-refresh-inline:hover{color:var(--jade-200)}
 .sy-refresh-inline{cursor:pointer;font-size:16px;color:var(--text-muted);margin-left:4px;vertical-align:-2px}
 .sy-refresh-inline:hover{color:var(--jade-200)}
 #ha-name-toggle{font-size:11px;padding:2px 8px;border-radius:3px;background:var(--bg-card);color:var(--text-muted);border:1px solid var(--bg-hover);cursor:pointer;font-family:inherit;flex-shrink:0}
 #ha-name-toggle:hover{color:var(--text-primary);background:var(--bg-hover)}
-#ha-sort-btn{font-size:12px;padding:2px 8px;border-radius:3px;background:var(--bg-card);color:var(--text-muted);border:1px solid var(--bg-hover);cursor:pointer;font-family:inherit;position:absolute;right:44px;top:0;line-height:32px}
-#ha-sort-btn:hover{color:var(--text-primary);background:var(--bg-hover)}
+.ha-sort-btn{font-size:12px;padding:5px 10px;min-height:32px;border-radius:4px;background:var(--bg-card);color:var(--text-muted);border:1px solid var(--bg-hover);cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s}
+.ha-sort-btn:hover{color:var(--text-primary);background:var(--bg-hover)}
+#ha-sort-btn{position:absolute;right:44px;top:0;line-height:32px}
+#hm-sort-btn{flex-shrink:0}
 
 /* 船坞列表行 */
 .ha-grid-row{display:flex;flex-direction:column;padding:10px 12px;background:var(--bg-card);border-radius:4px;margin-bottom:6px;gap:8px}
