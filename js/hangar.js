@@ -569,9 +569,10 @@ var Hangar = (function () {
   function buyShip(id, name) {
     var ship = findShipById(id);
     if (!ship) return;
+    var isServer = shipFromList(id, shipMarketData.serverShips);
     var finalPrice = ship.sellPrice;
     var couponNote = '';
-    if (shipMarketData.availableCoupons > 0 && shipMarketData.couponValue > 0) {
+    if (isServer && shipMarketData.availableCoupons > 0 && shipMarketData.couponValue > 0) {
       var maxDiscount = Math.min(shipMarketData.availableCoupons * shipMarketData.couponValue, ship.sellPrice);
       finalPrice = Math.max(0, ship.sellPrice - maxDiscount);
       if (maxDiscount > 0) {
@@ -597,6 +598,15 @@ var Hangar = (function () {
       if (String(all[i].id) === String(id)) return all[i];
     }
     return null;
+  }
+
+  /** 检查舰船是否在指定列表中 */
+  function shipFromList(id, list) {
+    if (!list) return false;
+    for (var i = 0; i < list.length; i++) {
+      if (String(list[i].id) === String(id)) return true;
+    }
+    return false;
   }
 
   function cycleShipSort() {
