@@ -9,7 +9,8 @@ var Hangar = (function () {
   var currentSubTab = 'my';
   var hangarData = null;        // { grids: string[], unsyncedGrids: string[] }
   var worldGrids = null;        // GridVO[]
-  var loading = false;
+  var _hangarLoading = false;
+  var _worldLoading = false;
   var showFullName = false;     // 名称显示切换
   var _worldSortIdx = 0;        // 世界网格排序索引：0=名称↑,1=名称↓,2=PCU↑...7=价值↓
 
@@ -165,8 +166,8 @@ var Hangar = (function () {
     document.querySelectorAll('.ha-section').forEach(function (el) {
       el.style.display = el.id === 'hangar-' + tab ? 'block' : 'none';
     });
-    if (tab === 'my' && !hangarData && !loading) loadHangar();
-    if (tab === 'world' && !worldGrids && !loading) loadWorldGrids();
+    if (tab === 'my' && !hangarData && !_hangarLoading) loadHangar();
+    if (tab === 'world' && !worldGrids && !_worldLoading) loadWorldGrids();
     if (tab === 'market' && !shipMarketData && !shipMarketLoading) loadShipMarket();
   }
 
@@ -181,26 +182,26 @@ var Hangar = (function () {
   // ========== 数据加载 ==========
 
   function loadHangar() {
-    if (loading) return;
-    loading = true;
+    if (_hangarLoading) return;
+    _hangarLoading = true;
     renderMy();
     exec('!网格 列表', null).then(function (d) {
       hangarData = d;
-      loading = false;
+      _hangarLoading = false;
       renderMy();
     }).catch(function () {
       hangarData = { grids: [], unsyncedGrids: [] };
-      loading = false;
+      _hangarLoading = false;
       renderMy();
     });
   }
 
   function loadWorldGrids() {
-    if (loading) return;
-    loading = true;
+    if (_worldLoading) return;
+    _worldLoading = true;
     renderWorld();
     SeBridge.getWorldGrids().then(function (r) {
-      loading = false;
+      _worldLoading = false;
       if (r.code === 200 && r.data) {
         worldGrids = r.data;
       } else if (r.code === 200 && r.msg) {
@@ -212,7 +213,7 @@ var Hangar = (function () {
       renderWorld();
     }).catch(function () {
       worldGrids = [];
-      loading = false;
+      _worldLoading = false;
       renderWorld();
     });
   }
@@ -225,7 +226,7 @@ var Hangar = (function () {
 
     var search = (document.getElementById('ha-search') && document.getElementById('ha-search').value || '').toLowerCase().trim();
 
-    if (!hangarData && loading) {
+    if (!hangarData && _hangarLoading) {
       container.innerHTML = '<div class="tr-empty">加载中…</div>';
       return;
     }
@@ -334,7 +335,7 @@ var Hangar = (function () {
 
     var search = (document.getElementById('ha-world-search') && document.getElementById('ha-world-search').value || '').toLowerCase().trim();
 
-    if (!worldGrids && loading) {
+    if (!worldGrids && _worldLoading) {
       container.innerHTML = '<div class="tr-empty">加载中…</div>';
       return;
     }

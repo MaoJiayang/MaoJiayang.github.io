@@ -213,13 +213,21 @@ var SeBridge = (function () {
   // ========== 初始化 ==========
 
   function init(opts) {
-    if (opts.bridgeUrl !== undefined) _bridgeUrl = opts.bridgeUrl;
+    // 桥接地址：显式指定 > 本地自动检测 > 同域 CF Function
+    if (opts.bridgeUrl) {
+      _bridgeUrl = opts.bridgeUrl;
+    } else if (typeof location !== 'undefined' && (location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+      _bridgeUrl = 'http://localhost:3001';
+      console.log('[SeBridge] 本地环境，自动桥接至 ' + _bridgeUrl);
+    }
+    // 否则 _bridgeUrl 保持 ''（走同域 CF Function）
+
     if (opts.rateLimit !== undefined) RATE_LIMIT = opts.rateLimit;
     if (opts.onStatusChange) _onStatusChange = opts.onStatusChange;
 
     // HTTPS 页面不能直连 HTTP 桥接（Mixed Content），自动降级
     if (_bridgeUrl && _bridgeUrl.indexOf('http://') === 0 && typeof location !== 'undefined' && location.protocol === 'https:') {
-      console.warn('桥接地址为 HTTP，HTTPS 页面无法直连，已降级到 CF Function');
+      console.warn('[SeBridge] 桥接地址为 HTTP，HTTPS 页面无法直连，已降级到 CF Function');
       _bridgeUrl = '';
     }
   }

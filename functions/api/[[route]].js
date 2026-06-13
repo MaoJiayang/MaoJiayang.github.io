@@ -147,32 +147,40 @@ async function tcpRequest(host, port, authKey, steamId, command, password, custo
     authKey,
   });
 
-  const socket = connect({ hostname: host, port }, { secureTransport: 'off' });
-  const writer = socket.writable.getWriter();
-  await writer.write(buildFrame(requestJson));
-  writer.releaseLock();
+  let socket;
+  try {
+    socket = connect({ hostname: host, port }, { secureTransport: 'off' });
+    const writer = socket.writable.getWriter();
+    await writer.write(buildFrame(requestJson));
+    writer.releaseLock();
 
-  const responseJson = await readFrame(socket, TIMEOUT_MS);
-  socket.close();
+    const responseJson = await readFrame(socket, TIMEOUT_MS);
 
-  let raw;
-  try { raw = JSON.parse(responseJson); } catch (_) {
-    return { code: 500, msg: 'SE服务器响应异常', data: null };
+    let raw;
+    try { raw = JSON.parse(responseJson); } catch (_) {
+      return { code: 500, msg: 'SE服务器响应异常', data: null };
+    }
+
+    raw = cleanPUA(raw);
+
+    // 归一化响应格式（兼容新旧两种 SE 插件格式）
+    if (raw.code !== undefined) return raw;
+    if (raw.success === true) {
+      let body = raw.bodyJson || '';
+      try { const p = JSON.parse(body); body = typeof p === 'string' ? p : JSON.stringify(p); } catch (_) {}
+      return { code: 200, msg: body, data: null };
+    }
+    if (raw.success === false) {
+      return { code: 400, msg: raw.errorMessage || '未知错误', data: null };
+    }
+    return { code: 500, msg: '无法解析响应', data: null };
+  } catch (e) {
+    return { code: 500, msg: 'TCP 连接失败: ' + (e.message || '未知错误'), data: null };
+  } finally {
+    if (socket) {
+      try { socket.close(); } catch (_) { /* 忽略关闭错误 */ }
+    }
   }
-
-  raw = cleanPUA(raw);
-
-  // 归一化响应格式（兼容新旧两种 SE 插件格式）
-  if (raw.code !== undefined) return raw;
-  if (raw.success === true) {
-    let body = raw.bodyJson || '';
-    try { const p = JSON.parse(body); body = typeof p === 'string' ? p : JSON.stringify(p); } catch (_) {}
-    return { code: 200, msg: body, data: null };
-  }
-  if (raw.success === false) {
-    return { code: 400, msg: raw.errorMessage || '未知错误', data: null };
-  }
-  return { code: 500, msg: '无法解析响应', data: null };
 }
 
 function normalizePath(pathname) {
