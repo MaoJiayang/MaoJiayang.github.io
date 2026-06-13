@@ -423,6 +423,8 @@ var Warehouse = (function () {
     _loOverlay.get('#lo-hint').textContent = fromCache ? '（来自缓存，点 ↻ 刷新）' : '';
     _loOverlay.show();
   }
+
+  function executeAndRefresh(cmd, label) {
     if (!SeBridge.hasCredentials()) { UI.showLoginGuide(); return; }
     UI.executeWithConfirm(cmd, null).then(function () {
       UI.showToast('success', '「' + label + '」已完成');
