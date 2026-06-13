@@ -20,7 +20,9 @@ const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
 
-const PORT = parseInt(process.argv[2], 10) || parseInt(process.env.PORT, 10) || 24007;
+var PORT = parseInt(process.argv[2], 10) || parseInt(process.env.PORT, 10) || 24007;
+var PORT_MAX = PORT + 10;  // 端口被占用时自动递增尝试的上限
+
 const SE_HOST = process.env.SE_HOST || '183.131.51.12';
 const SE_PORT = parseInt(process.env.SE_PORT, 10) || 10086;
 const SE_AUTH_KEY = process.env.SE_AUTH_KEY || '12345';
@@ -51,6 +53,12 @@ const FRONTEND_FILES = [
   'terminal.css',
   'commands.html',
   'version.json',
+  'version-check.js',
+  'items_catalog.json',
+  'commands.json',
+  'config.json',
+  'command-autocomplete.js',
+  'command-executor.js',
   'js/se-bridge.js',
   'js/ui.js',
   'js/warehouse.js',
@@ -58,6 +66,10 @@ const FRONTEND_FILES = [
   'js/hangar.js',
   'js/shipyard.js',
   'js/settings.js',
+  'icons/sprite.css',
+  'icons/sprite.webp',
+  'icons/mapping.json',
+  'icons/tea.jpg',
 ];
 
 // ========== TCP 帧协议 ==========
@@ -177,87 +189,83 @@ function ensureDir(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
-/** 加载本地缓存的 ETag 清单: { "terminal.html": "abc123", ... } */
-function loadManifest() {
-  const p = path.join(CACHE_DIR, 'cache-manifest.json');
-  try { return JSON.parse(fs.readFileSync(p, 'utf-8')); } catch (_) { return {}; }
+/** 从远端读取 version.json 的 v 字段 */
+async function fetchRemoteVersion() {
+  try {
+    const res = await fetch(CF_ORIGIN + '/version.json');
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.v || null;
+  } catch (_) { return null; }
 }
 
-function saveManifest(manifest) {
-  fs.writeFileSync(path.join(CACHE_DIR, 'cache-manifest.json'), JSON.stringify(manifest, null, 2), 'utf-8');
+/** 从缓存读取 version.json 的 v 字段 */
+function cachedVersion() {
+  try {
+    const p = path.join(CACHE_DIR, 'version.json');
+    const data = JSON.parse(fs.readFileSync(p, 'utf-8'));
+    return data.v || null;
+  } catch (_) { return null; }
+}
+
+/** 下载单个文件到缓存 */
+async function downloadFile(file) {
+  const cachePath = path.join(CACHE_DIR, file);
+  const url = CF_ORIGIN + '/' + file;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  ensureDir(path.dirname(cachePath));
+  var ext = path.extname(file).toLowerCase();
+  var isBinary = ['.webp', '.jpg', '.jpeg', '.png', '.ico', '.woff2'].indexOf(ext) !== -1;
+  if (isBinary) {
+    var buf = await res.arrayBuffer();
+    fs.writeFileSync(cachePath, Buffer.from(buf));
+  } else {
+    var text = await res.text();
+    fs.writeFileSync(cachePath, text, 'utf-8');
+  }
 }
 
 async function syncFrontend(forceUpdate) {
   ensureDir(CACHE_DIR);
 
-  const force = forceUpdate || process.argv.includes('--update');
-  console.log('[sync] ' + (force ? '强制更新' : '增量同步') + '，来源: ' + CF_ORIGIN);
+  var force = forceUpdate || process.argv.includes('--update');
+  console.log('[sync] ' + (force ? '强制更新，' : '') + '来源: ' + CF_ORIGIN);
 
-  const manifest = force ? {} : loadManifest();
-  let updated = 0, skipped = 0, errors = 0;
+  // 1. 先查远端版本号
+  var remoteV = null;
+  if (!force) {
+    remoteV = await fetchRemoteVersion();
+    var localV = cachedVersion();
+    if (remoteV && localV && remoteV === localV) {
+      console.log('[sync] 已是最新 (v=' + remoteV.slice(0, 7) + ')，跳过同步');
+      return;
+    }
+    if (remoteV) {
+      console.log('[sync] ' + (localV ? '版本更新: ' + localV.slice(0, 7) + ' → ' + remoteV.slice(0, 7) : '首次安装，全量同步'));
+    }
+  }
 
-  for (const file of FRONTEND_FILES) {
-    const cachePath = path.join(CACHE_DIR, file);
-    const url = CF_ORIGIN + '/' + file;
-
+  // 2. 下载全部文件
+  var updated = 0, errors = 0;
+  for (var i = 0; i < FRONTEND_FILES.length; i++) {
+    var file = FRONTEND_FILES[i];
     try {
-      // 有缓存 → HEAD 拿 ETag，对比本地记录
-      if (!force && fs.existsSync(cachePath)) {
-        try {
-          const headRes = await fetch(url, { method: 'HEAD' });
-          if (headRes.ok) {
-            const newEtag = headRes.headers.get('etag') || '';
-            const oldEtag = manifest[file] || '';
-            if (newEtag && oldEtag === newEtag) {
-              skipped++;
-              continue;  // ETag 未变，跳过
-            }
-          }
-        } catch (_) {
-          // HEAD 失败（无网络）→ 使用缓存，跳过
-          skipped++;
-          continue;
-        }
-      }
-
-      // 无缓存 / ETag 变化 / 强制更新 → GET 下载
-      const getRes = await fetch(url);
-      if (!getRes.ok) {
-        if (fs.existsSync(cachePath)) { skipped++; continue; }
-        console.warn('[sync] 下载失败 (' + getRes.status + '): ' + file);
-        errors++;
-        continue;
-      }
-      const content = await getRes.text();
-      ensureDir(path.dirname(cachePath));
-      fs.writeFileSync(cachePath, content, 'utf-8');
-
-      // 记录 ETag
-      const etag = getRes.headers.get('etag') || '';
-      if (etag) manifest[file] = etag;
-
+      await downloadFile(file);
       updated++;
-      console.log('[sync] 更新: ' + file);
+      console.log('[sync]   ' + (updated < 10 ? ' ' : '') + updated + '/' + FRONTEND_FILES.length + ' ' + file);
     } catch (e) {
-      if (fs.existsSync(cachePath)) {
-        skipped++; // 有缓存，网络不可达 → 使用缓存
+      // 有缓存就沿用，否则报错
+      if (fs.existsSync(path.join(CACHE_DIR, file))) {
+        console.log('[sync]   ~ ' + file + ' (沿用缓存)');
       } else {
-        console.warn('[sync] 错误: ' + file + ' - ' + e.message);
+        console.warn('[sync]   ✗ ' + file + ' - ' + e.message);
         errors++;
       }
     }
   }
 
-  saveManifest(manifest);
-  console.log('[sync] 完成: ' + updated + ' 更新, ' + skipped + ' 跳过, ' + errors + ' 失败');
-
-  // 首次无缓存时检查关键文件
-  const critical = ['terminal.html', 'js/se-bridge.js'];
-  for (const f of critical) {
-    if (!fs.existsSync(path.join(CACHE_DIR, f))) {
-      console.warn('[sync] 警告: 关键文件缺失 ' + f + '，前端可能无法正常加载');
-    }
-  }
+  console.log('[sync] 完成: ' + updated + ' 下载, ' + errors + ' 失败');
 }
 
 // ========== HTTP 路由 ==========
@@ -268,6 +276,9 @@ const MIME = {
   '.js': 'application/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
   '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
   '.woff2': 'font/woff2',
@@ -295,7 +306,11 @@ function readBody(req) {
   });
 }
 
-/** 代理请求到 CF Pages，透传请求体，返回响应 */
+/** 去掉 CF Pages 注入的 Web Analytics 脚本（localhost 下会报 CORS） */
+function stripAnalytics(html) {
+  return html.replace(/<!-- Cloudflare Pages Analytics -->[\s\S]*?<!-- Cloudflare Pages Analytics -->/g, '')
+             .replace(/<script[^>]*cloudflareinsights\.com[^>]*><\/script>/gi, '');
+}
 async function proxyToCF(path, bodyObj) {
   const url = CF_ORIGIN + path;
   const resp = await fetch(url, {
@@ -427,7 +442,7 @@ const server = http.createServer(async (req, res) => {
       if (!ext) {
         const htmlPath = fullPath + '.html';
         if (fs.existsSync(htmlPath)) {
-          const content = fs.readFileSync(htmlPath, 'utf-8');
+          const content = stripAnalytics(fs.readFileSync(htmlPath, 'utf-8'));
           res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
           res.end(content);
           return;
@@ -438,7 +453,9 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    const content = fs.readFileSync(fullPath);
+    var content = fs.readFileSync(fullPath);
+    // HTML 文件：去掉 CF Analytics 脚本，避免 localhost 下 CORS 报错
+    if (ext === '.html') content = stripAnalytics(fs.readFileSync(fullPath, 'utf-8'));
     const headers = { 'Content-Type': mime };
     if (ext === '.html' || ext === '.js' || ext === '.css' || ext === '.json') {
       headers['Cache-Control'] = 'no-cache';
@@ -454,56 +471,107 @@ const server = http.createServer(async (req, res) => {
 
 // ========== 启动 ==========
 
+/** 检查已占用端口上是否跑着我们的服务，是则复用，打开浏览器直接退出 */
+async function reuseIfOurs(port) {
+  try {
+    var resp = await fetch('http://localhost:' + port + '/api/health');
+    var data = await resp.json();
+    if (data && data.code === 200) {
+      console.log('  端口 ' + port + ' 已有运行中的终端，直接复用。');
+      return true;
+    }
+  } catch (_) {}
+  return false;
+}
+
+function tryListen(port) {
+  return new Promise(function (resolve, reject) {
+    server.once('error', function (err) {
+      if (err.code === 'EADDRINUSE') reject(err);
+      else {
+        console.error('  服务器错误: ' + err.message);
+        reject(err);
+      }
+    });
+    server.listen(port, function () {
+      resolve(port);
+    });
+  });
+}
+
+function openBrowser(port) {
+  var targetUrl = 'http://localhost:' + port + '/terminal.html';
+  if (process.platform === 'win32') {
+    exec('start ' + targetUrl, function (err) {
+      if (err) console.log('  请手动打开: ' + targetUrl);
+    });
+  } else if (process.platform === 'darwin') {
+    exec('open "' + targetUrl + '"', function (err) {
+      if (err) console.log('  请手动打开: ' + targetUrl);
+    });
+  } else {
+    exec('xdg-open "' + targetUrl + '"', function (err) {
+      if (err) console.log('  请手动打开: ' + targetUrl);
+    });
+  }
+}
+
 async function start() {
   if (!IS_DEV) {
     await syncFrontend(process.argv.includes('--update'));
   }
 
-  // 监听 server 错误（如端口占用），防止未捕获异常导致闪退
-  server.on('error', function (err) {
-    if (err.code === 'EADDRINUSE') {
-      console.error('');
-      console.error('  ✗ 端口 ' + PORT + ' 已被占用');
-      console.error('    请关闭已运行的终端程序，或将以下地址手动粘贴到浏览器:');
-      console.error('    http://localhost:' + PORT + '/terminal.html');
-      console.error('');
-    } else {
-      console.error('  服务器错误: ' + err.message);
+  // 尝试启动，端口被占用时先检查是否可复用，否则自动递增
+  var started = false;
+  for (var p = PORT; p <= PORT_MAX; p++) {
+    try {
+      var actualPort = await tryListen(p);
+      started = true;
+      console.log('═'.repeat(50));
+      console.log('  伊卡洛斯虚空终端 — ' + (IS_DEV ? '开发模式' : '桌面版'));
+      console.log('═'.repeat(50));
+      console.log('');
+      console.log('  ★ 运行时请勿关闭此窗口 ★');
+      console.log('');
+      console.log('  监听端口 : ' + actualPort);
+      if (actualPort !== PORT) console.log('  （原端口 ' + PORT + ' 已被占用，自动切换）');
+      console.log('  认证代理 : ' + CF_ORIGIN + '/api/*');
+      console.log('  SE 服务器 : ' + SE_HOST + ':' + SE_PORT);
+      console.log('  服务目录 : ' + (IS_DEV ? APP_DIR : CACHE_DIR));
+      console.log('');
+      console.log('  按 Ctrl+C 退出');
+      console.log('═'.repeat(50));
+
+      openBrowser(actualPort);
+      break;
+    } catch (err) {
+      if (err.code === 'EADDRINUSE') {
+        // 端口被占用 → 检查是否是自己的旧实例，是则复用
+        if (await reuseIfOurs(p)) {
+          openBrowser(p);
+          process.exit(0);
+          return;
+        }
+        console.log('  端口 ' + p + ' 已被占用，尝试 ' + (p + 1) + '...');
+      } else {
+        console.error('启动失败: ' + (err && err.message ? err.message : err));
+        console.error('按回车键退出...');
+        process.stdin.resume();
+        process.stdin.once('data', function () { process.exit(1); });
+        return;
+      }
     }
-    console.error('  按回车键退出...');
+  }
+
+  if (!started) {
+    console.error('');
+    console.error('  ✗ 端口 ' + PORT + ' 到 ' + PORT_MAX + ' 全部被占用');
+    console.error('    请关闭后重试，或手动打开: http://localhost:' + PORT + '/terminal.html');
+    console.error('');
+    console.error('按回车键退出...');
     process.stdin.resume();
     process.stdin.once('data', function () { process.exit(1); });
-  });
-
-  server.listen(PORT, function () {
-    console.log('═'.repeat(50));
-    console.log('  伊卡洛斯虚空终端 — ' + (IS_DEV ? '开发模式' : '桌面版'));
-    console.log('═'.repeat(50));
-    console.log('');
-    console.log('  监听端口 : ' + PORT);
-    console.log('  认证代理 : ' + CF_ORIGIN + '/api/*');
-    console.log('  SE 服务器 : ' + SE_HOST + ':' + SE_PORT);
-    console.log('  服务目录 : ' + (IS_DEV ? APP_DIR : CACHE_DIR));
-    console.log('');
-    console.log('  按 Ctrl+C 退出');
-    console.log('═'.repeat(50));
-
-    // 自动打开浏览器（Windows: start 不加引号，URL 不含特殊字符所以安全）
-    var targetUrl = 'http://localhost:' + PORT + '/terminal.html';
-    if (process.platform === 'win32') {
-      exec('start ' + targetUrl, function (err) {
-        if (err) console.log('  请手动打开: ' + targetUrl);
-      });
-    } else if (process.platform === 'darwin') {
-      exec('open "' + targetUrl + '"', function (err) {
-        if (err) console.log('  请手动打开: ' + targetUrl);
-      });
-    } else {
-      exec('xdg-open "' + targetUrl + '"', function (err) {
-        if (err) console.log('  请手动打开: ' + targetUrl);
-      });
-    }
-  });
+  }
 }
 
 start().catch(function (err) {

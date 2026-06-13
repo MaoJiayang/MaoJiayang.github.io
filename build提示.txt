@@ -5,11 +5,15 @@ node server.js
 
 ## EXE 打包（SEA，零额外下载）
 npm install            # 安装 postject（仅首次）
-npm run build
-### → dist/se-terminal.exe（~85MB，自含 Node 运行时）
+npm run build          # 自动清理旧文件 → 构建 → dist/se-terminal.exe（~85MB）
+
+## 测试前清缓存（PowerShell）
+Remove-Item -Recurse -Force $env:LOCALAPPDATA\SE-Terminal\www -ErrorAction SilentlyContinue
 
 ## 启动 bat（不变）
 .\start-local.bat
+
+
 
 ## 指令执行
 

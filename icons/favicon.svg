@@ -1,0 +1,45 @@
+<svg viewBox="-35 -42 70 84" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="gem" cx="42%" cy="35%" r="58%">
+      <stop offset="0%" stop-color="#C0FFF0"/>
+      <stop offset="40%" stop-color="#5DDDAA"/>
+      <stop offset="100%" stop-color="#0B4A30"/>
+    </radialGradient>
+    <radialGradient id="shine" cx="38%" cy="28%" r="38%">
+      <stop offset="0%" stop-color="#fff" stop-opacity="0.65"/>
+      <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- 外六边形 -->
+  <polygon points="0,-34 29,-17 29,17 0,34 -29,17 -29,-17" fill="#071F17" stroke="#0E3828" stroke-width="4" stroke-linejoin="bevel"/>
+  <polygon points="0,-34 29,-17 29,17 0,34 -29,17 -29,-17" fill="none" stroke="#5DDDAA" stroke-width="1.1" stroke-linejoin="bevel" opacity="0.95"/>
+  <!-- 内六边形 -->
+  <polygon points="0,-30 25,-15 25,15 0,30 -25,15 -25,-15" fill="none" stroke="#1B6B4A" stroke-width="0.5" stroke-linejoin="bevel" opacity="0.5"/>
+
+  <!-- 顶部冠饰 -->
+  <path d="M0,-21 L-4.5,-30 L0,-39 L4.5,-30 Z" fill="#071F17" stroke="#5DDDAA" stroke-width="0.9" stroke-linejoin="round"/>
+  <path d="M-4,-24 L-12,-29 L-10,-35 L-2,-27 Z" fill="#071F17" stroke="#5DDDAA" stroke-width="0.8" stroke-linejoin="round" opacity="0.85"/>
+  <path d="M4,-24 L12,-29 L10,-35 L2,-27 Z" fill="#071F17" stroke="#5DDDAA" stroke-width="0.8" stroke-linejoin="round" opacity="0.85"/>
+  <polygon points="0,-27 2.5,-30.5 0,-34 -2.5,-30.5" fill="#5DDDAA" opacity="0.95"/>
+
+  <!-- 金色菱形边框 -->
+  <polygon points="0,-21 21,0 0,21 -21,0" fill="none" stroke="#F0BE3A" stroke-width="0.7" opacity="0.65"/>
+  <polyline points="-3,-19 0,-21 3,-19" fill="none" stroke="#F0BE3A" stroke-width="0.7" opacity="0.65"/>
+  <polyline points="19,-3 21,0 19,3" fill="none" stroke="#F0BE3A" stroke-width="0.7" opacity="0.65"/>
+  <polyline points="-3,19 0,21 3,19" fill="none" stroke="#F0BE3A" stroke-width="0.7" opacity="0.65"/>
+  <polyline points="-19,-3 -21,0 -19,3" fill="none" stroke="#F0BE3A" stroke-width="0.7" opacity="0.65"/>
+
+  <!-- 中心宝石 -->
+  <polygon points="0,-15 14,0 0,15 -14,0" fill="url(#gem)"/>
+  <polygon points="0,-15 14,0 0,15 -14,0" fill="url(#shine)"/>
+  <polygon points="0,-15 14,0 0,15 -14,0" fill="none" stroke="#9FFADA" stroke-width="0.8" opacity="0.9"/>
+  <line x1="0" y1="-15" x2="0" y2="15" stroke="#9FFADA" stroke-width="0.4" opacity="0.3"/>
+  <circle cx="-3.5" cy="-6" r="1.8" fill="#fff" opacity="0.5"/>
+
+  <!-- 底部冠饰 -->
+  <path d="M0,21 L-4.5,28 L0,35 L4.5,28 Z" fill="#071F17" stroke="#5DDDAA" stroke-width="0.85" stroke-linejoin="round" opacity="0.85"/>
+  <path d="M-4,24 L-10,28 L-8,33 L-2,27 Z" fill="#071F17" stroke="#5DDDAA" stroke-width="0.7" stroke-linejoin="round" opacity="0.55"/>
+  <path d="M4,24 L10,28 L8,33 L2,27 Z" fill="#071F17" stroke="#5DDDAA" stroke-width="0.7" stroke-linejoin="round" opacity="0.55"/>
+  <circle cx="0" cy="28" r="1" fill="#5DDDAA" opacity="0.7"/>
+</svg>
