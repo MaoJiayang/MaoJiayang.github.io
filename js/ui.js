@@ -842,6 +842,31 @@ var UI = (function () {
     updateTabDots();
   }
 
+  // ========== Overlay 工厂 ==========
+
+  function createOverlay(id, innerHTML, opts) {
+    opts = opts || {};
+    var wrap = document.createElement('div');
+    wrap.id = id;
+    wrap.className = 'overlay';
+    wrap.innerHTML = '<div class="overlay-pane">' + innerHTML + '</div>';
+    document.body.appendChild(wrap);
+    if (opts.onBackdrop) {
+      wrap.addEventListener('click', function (e) { if (e.target === wrap) opts.onBackdrop(); });
+    }
+    return {
+      show: function () { wrap.classList.add('show'); if (opts.onShow) opts.onShow(); },
+      hide: function () { wrap.classList.remove('show'); if (opts.onHide) opts.onHide(); },
+      on: function (sel, event, fn) {
+        (typeof sel === 'string' ? wrap.querySelectorAll(sel) : [sel]).forEach(function (el) {
+          el.addEventListener(event, fn);
+        });
+      },
+      get: function (sel) { return wrap.querySelector(sel); },
+      el: wrap
+    };
+  }
+
   // ========== 清单选择器 ==========
 
   var _lpPicker = null;
@@ -959,28 +984,7 @@ var UI = (function () {
     // 清单选择器
     openListPicker: openListPicker,
     // Overlay 工厂
-    createOverlay: function (id, innerHTML, opts) {
-      opts = opts || {};
-      var wrap = document.createElement('div');
-      wrap.id = id;
-      wrap.className = 'overlay';
-      wrap.innerHTML = '<div class="overlay-pane">' + innerHTML + '</div>';
-      document.body.appendChild(wrap);
-      if (opts.onBackdrop) {
-        wrap.addEventListener('click', function (e) { if (e.target === wrap) opts.onBackdrop(); });
-      }
-      return {
-        show: function () { wrap.classList.add('show'); if (opts.onShow) opts.onShow(); },
-        hide: function () { wrap.classList.remove('show'); if (opts.onHide) opts.onHide(); },
-        on: function (sel, event, fn) {
-          (typeof sel === 'string' ? wrap.querySelectorAll(sel) : [sel]).forEach(function (el) {
-            el.addEventListener(event, fn);
-          });
-        },
-        get: function (sel) { return wrap.querySelector(sel); },
-        el: wrap
-      };
-    },
+    createOverlay: createOverlay,
     // 步进逻辑
     getMagStep: getMagStep,
     fastStep: fastStep,
