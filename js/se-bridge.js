@@ -83,6 +83,7 @@ var SeBridge = (function () {
           done = true;
           _activeBridge = url;
           console.log('[SeBridge] 竞速结果: ' + (url || 'CF Function'));
+          if (_onStatusChange) _onStatusChange({ bridgeOnline: true, activeBridge: url });
           resolve(url);
         }
       }
