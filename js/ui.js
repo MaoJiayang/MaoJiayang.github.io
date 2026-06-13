@@ -37,11 +37,6 @@ var UI = (function () {
     if (state === 'online') {
       var ab = SeBridge.activeBridge;
       dot.title = ab && ab.indexOf('localhost') !== -1 ? '服务在线 (本地)' : ab ? '服务在线 (桥接)' : '服务在线 (云)';
-      // 同步更新设置页状态文字
-      var st = document.getElementById('st-status');
-      if (st) {
-        st.textContent = dot.title;
-      }
     } else {
       dot.title = state === 'offline' ? '服务离线' : '检测中';
     }
@@ -838,9 +833,9 @@ var UI = (function () {
       if (e.target === this) hideConfirmDialog();
     });
 
-    // 竞速完成后立即重检健康状态
-    SeBridge.init({ onStatusChange: function (st) {
-      if (st.activeBridge !== undefined) pollHealth();
+    // 竞速完成后立即更新连接指示灯
+    SeBridge.init({ onStatusChange: function () {
+      pollHealth();
     }});
 
     // Dots

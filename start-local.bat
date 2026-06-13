@@ -66,4 +66,3 @@ echo.
 echo   Local debug: auto-detects localhost, health-race picks bridge.
 echo   To change bridge port: ?bridge-port=3002 in URL or edit .env.
 echo.
-pause
