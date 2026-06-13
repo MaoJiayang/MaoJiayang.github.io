@@ -4,6 +4,7 @@ import fi.iki.elonen.NanoHTTPD
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import java.io.ByteArrayInputStream
+import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -12,10 +13,17 @@ import java.net.URL
  * /api/ 通配符 -> 桥接逻辑, 其他 -> 静态文件 (assets/www/)
  */
 class HttpServer(
-    private val assets: android.content.res.AssetManager
+    private val context: android.content.Context
 ) : NanoHTTPD(BuildConfig.HTTP_PORT) {
 
+    private val assets = context.assets
     private val cfOrigin = "https://${BuildConfig.CF_PAGES_DOMAIN}"
+
+    /** 优先缓存目录，其次 assets。缓存为空时自动回退。 */
+    private fun wwwDir(): File? {
+        val dir = File(context.filesDir, "www")
+        return if (File(dir, "terminal.html").exists()) dir else null
+    }
 
     override fun serve(session: IHTTPSession): Response {
         if (session.method == Method.OPTIONS) {
@@ -137,9 +145,23 @@ class HttpServer(
     }
 
     private fun streamAsset(assetPath: String): Response {
-        val stream = assets.open(assetPath)
-        val bytes = stream.readBytes()
-        stream.close()
+        // 优先读取缓存目录（同步后），其次 assets
+        val bytes: ByteArray
+        val cacheDir = wwwDir()
+        if (cacheDir != null) {
+            val f = File(cacheDir, assetPath.removePrefix("www/"))
+            if (f.exists()) {
+                bytes = f.readBytes()
+            } else {
+                val stream = assets.open(assetPath)
+                bytes = stream.readBytes()
+                stream.close()
+            }
+        } else {
+            val stream = assets.open(assetPath)
+            bytes = stream.readBytes()
+            stream.close()
+        }
         val mime = mimeType(assetPath)
         val resp = newFixedLengthResponse(Response.Status.OK, mime, ByteArrayInputStream(bytes), bytes.size.toLong())
         resp.addHeader("Access-Control-Allow-Origin", "*")

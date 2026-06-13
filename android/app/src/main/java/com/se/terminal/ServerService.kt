@@ -8,6 +8,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import kotlinx.coroutines.launch
 
 /**
  * Foreground Service — 保活本地 HTTP 服务器。
@@ -41,8 +42,13 @@ class ServerService : Service() {
 
         // 启动 HTTP 服务器
         if (server == null) {
-            server = HttpServer(assets)
+            server = HttpServer(this)
             try { server?.start() } catch (_: Exception) {}
+        }
+
+        // 后台检查更新（不阻塞启动）
+        kotlinx.coroutines.MainScope().launch {
+            SyncManager.sync(this@ServerService)
         }
 
         return START_STICKY
