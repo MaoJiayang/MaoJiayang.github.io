@@ -128,7 +128,7 @@ var Shipyard = (function () {
     // 流水线
     lines.forEach(function (al) {
       var busy = al.currentMission != null;
-      var type = busy ? (al.currentMission.type === 'RECYCLE' ? '♻ 回收' : '🔧 建造') : '';
+      var type = busy ? (al.currentMission.type && al.currentMission.type.indexOf('回收') !== -1 ? '♻ 回收' : '🔧 建造') : '';
       var name = busy ? al.currentMission.gridName : '';
       var statusLabel = busy ? '执行中' : '空闲';
       var statusCls = busy ? 'sy-status-active' : 'sy-status-idle';
@@ -167,7 +167,7 @@ var Shipyard = (function () {
         var hasMsg = m.message && m.message !== 'null';
         html += '<div class="sy-pending-row">'
           + '<div class="sy-pending-info">'
-          + '<span class="sy-mission-type">' + (m.type === 'RECYCLE' ? '♻ 回收' : '🔧 建造') + '</span>'
+          + '<span class="sy-mission-type">' + (m.type && m.type.indexOf('回收') !== -1 ? '♻ 回收' : '🔧 建造') + '</span>'
           + '<span class="sy-mission-name">' + UI.escHtml(m.gridName || '?') + '</span>'
           + (hasMsg ? '<span class="sy-mission-msg">⚠ ' + UI.escHtml(m.message) + '</span>' : '')
           + '</div>'
