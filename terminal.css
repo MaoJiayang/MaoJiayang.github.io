@@ -176,10 +176,16 @@ body::before{
   transition:border-color .2s;
 }
 .wh-search:focus{border-color:var(--jade-400)}
-.wh-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12px;color:var(--text-muted);user-select:none}
+.wh-bar{display:flex;align-items:center;gap:6px;margin-bottom:12px;user-select:none}
 .wh-bar .spacer{flex:1}
-.wh-bar button{font-size:11px;padding:4px 10px;min-height:30px;border-radius:4px;border:1px solid var(--bg-hover);background:var(--bg-card);color:var(--text-secondary);cursor:pointer;font-family:inherit;transition:all .15s}
+.wh-bar button{
+  font-size:12px;padding:6px 12px;min-height:36px;border-radius:5px;
+  border:1px solid var(--bg-hover);background:var(--bg-card);
+  color:var(--text-secondary);cursor:pointer;font-family:inherit;transition:all .12s;
+  white-space:nowrap;
+}
 .wh-bar button:hover{background:var(--bg-hover);color:var(--text-primary)}
+.wh-bar button:active{transform:scale(.96)}
 .wh-bar button.active{border-color:var(--jade-400);color:var(--jade-200);background:var(--bg-panel)}
 .wh-cat{margin-bottom:12px}
 .wh-cat-h{
@@ -959,7 +965,7 @@ body::before{
 .lb-confirm:not(:disabled):hover{opacity:.85}
 
 /* ========== 出售表单 ========== */
-#sell-form-overlay .overlay-pane{padding:20px 16px 24px}
+#sell-form-overlay .overlay-pane,#list-action-overlay .overlay-pane{padding:20px 16px 24px}
 .sf-header{font-size:16px;font-weight:600;margin-bottom:18px;text-align:center;color:var(--text-primary)}
 .sf-field{margin-bottom:14px}
 .sf-label{display:block;font-size:12px;color:var(--text-muted);margin-bottom:6px}

@@ -364,9 +364,41 @@ var Warehouse = (function () {
   function openListOpsPicker(lists) {
     UI.openListPicker('按清单存取', lists, {
       onSelect: function (name) {
-        executeAndRefresh('!仓库 存入清单 ' + name, '按清单存入「' + name + '」');
+        showListAction(name);
       }
     });
+  }
+
+  var _listActionOverlay = null;
+  var _listActionName = '';
+
+  function showListAction(name) {
+    _listActionName = name;
+    if (!_listActionOverlay) {
+      _listActionOverlay = UI.createOverlay('list-action-overlay',
+        '<div class="sf-header">按清单存取</div>' +
+        '<div style="text-align:center;margin-bottom:16px;font-size:14px;color:var(--text-primary)">' +
+          '已选：<strong id="la-name"></strong>' +
+        '</div>' +
+        '<div class="sf-actions">' +
+          '<button class="sf-cancel">取消</button>' +
+          '<button id="la-withdraw" style="flex:1;padding:12px;font-size:14px;font-weight:600;border-radius:6px;border:none;cursor:pointer;font-family:inherit;background:var(--blue-200);color:var(--bg-void)">取出</button>' +
+          '<button class="sf-confirm">存入</button>' +
+        '</div>',
+        { onBackdrop: function () { _listActionOverlay.hide(); } }
+      );
+      _listActionOverlay.on('.sf-cancel', 'click', function () { _listActionOverlay.hide(); });
+      _listActionOverlay.on('#la-withdraw', 'click', function () {
+        _listActionOverlay.hide();
+        executeAndRefresh('!仓库 取出清单 ' + _listActionName, '按清单取出「' + _listActionName + '」');
+      });
+      _listActionOverlay.on('.sf-confirm', 'click', function () {
+        _listActionOverlay.hide();
+        executeAndRefresh('!仓库 存入清单 ' + _listActionName, '按清单存入「' + _listActionName + '」');
+      });
+    }
+    document.getElementById('la-name').textContent = name;
+    _listActionOverlay.show();
   }
 
   function executeAndRefresh(cmd, label) {
