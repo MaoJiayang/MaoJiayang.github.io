@@ -39,29 +39,7 @@ Register-ScheduledTask -TaskName "SE-BridgeServer" -Action $action -Trigger $tri
 
 ## HTTPS（可选）
 
-桥接服务本身仅 HTTP。如需 HTTPS 有两条路：
-
-1. **Cloudflare Tunnel**（零配置，走 CF 边缘）：
-   ```powershell
-   cloudflared.exe tunnel --url http://localhost:10085
-   ```
-   获得 `https://xxx.trycloudflare.com`，CF Dashboard 的 BRIDGE_URL 填这个。
-
-2. **反代 + Let's Encrypt**（需域名，延迟最低）：在桥接前面挂 Caddy/Nginx。
-
-## 健康检查
-
-```
-GET http://你的IP:10085/api/health
-→ { "code": 200, "msg": "ok", "data": { "bridge": "local" } }
-```
-
-## 故障排查
-
-| 现象 | 检查 |
-|------|------|
-| 编译报错 | 确认 .NET Framework 4.0+ 已安装 |
-| 启动后无响应 | Windows 防火墙是否放行 HTTP 端口 |
-| 指令返回 401 | gRPC 端口的 authKey 是否匹配（Constants.cs AuthKey） |
-| 指令返回 503 | 游戏是否已完成加载（gamingStartedDone） |
-| 指令返回"密码校验失败" | 用户密码是否正确 |
+1. 如证书过期，本地运行.\caddy.exe run 
+2. 将C:\Users\Lenovo\AppData\Roaming\Caddy\certificates\acme-v02.api.letsencrypt.org-directory\atomickitty17th.duckdns.org\下的.crt和.key文件拷贝到服务器上的桥接服务同一个目录
+3. 拷贝Caddyfile
+4. 运行桥接服务，然后.\caddy.exe run 
