@@ -899,7 +899,7 @@ var Trade = (function () {
       });
     }
 
-    var html = createBtn;
+    var html = createBtnHtml;
     if (filtered.length === 0) {
       html += '<div class="tr-empty">' + (search ? '没有匹配的合同' : '暂无合同') + '</div>';
     } else {
