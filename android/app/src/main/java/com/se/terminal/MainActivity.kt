@@ -20,6 +20,8 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
+        // 切换回 AppTheme（SplashTheme 仅用于启动瞬间）
+        setTheme(R.style.AppTheme)
         super.onCreate(savedInstanceState)
 
         webView = WebView(this).apply {
