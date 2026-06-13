@@ -766,21 +766,18 @@ body::before{
 .ct-list-name{font-size:14px;font-weight:500;color:var(--text-primary);margin-bottom:4px}
 .ct-list-actions{display:flex;gap:6px;margin-top:6px}
 
-/* 创建表单（清单/合同共用） */
-.ct-create-form{
-  background:var(--bg-card);border:1px solid var(--bg-hover);
-  border-radius:6px;padding:14px;margin-bottom:10px;
-}
-.ct-create-h{font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:10px}
-.ct-create-form .field{margin-bottom:10px}
-.ct-create-form label{display:block;font-size:11px;color:var(--text-muted);margin-bottom:3px}
-.ct-create-form input[type=text]{
+/* 创建合同 overlay */
+#ct-create-overlay .overlay-pane{padding:20px 16px 24px}
+.ct-create-h{font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:16px;text-align:center}
+#ct-create-overlay .field{margin-bottom:10px}
+#ct-create-overlay label{display:block;font-size:11px;color:var(--text-muted);margin-bottom:3px}
+#ct-create-overlay input[type=text]{
   width:100%;padding:8px 10px;font-size:13px;
   border:1px solid var(--bg-hover);border-radius:4px;
   background:var(--bg-deep);color:var(--text-primary);
   font-family:inherit;outline:none;
 }
-.ct-create-form input:focus{border-color:var(--jade-400)}
+#ct-create-overlay input:focus{border-color:var(--jade-400)}
 .ct-create-hint{font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.5}
 .ct-create-actions{display:flex;gap:8px}
 .ct-create-cancel{flex:1;padding:8px;font-size:13px;font-weight:600;background:var(--bg-card);color:var(--text-secondary);border:1px solid var(--bg-hover);border-radius:4px;cursor:pointer;font-family:inherit}

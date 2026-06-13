@@ -852,7 +852,7 @@ var Trade = (function () {
     }
     // 关闭可能打开的表单
     closeListBuilder();
-    document.getElementById('ct-create-contract-form').style.display = 'none';
+    if (_contractFormOverlay) _contractFormOverlay.hide();
     contractData = null;
     loadContracts();
   }
@@ -1309,6 +1309,7 @@ var Trade = (function () {
 
   var _contractList1 = '';
   var _contractList2 = '';
+  var _contractFormOverlay = null;
 
   function getContractLists() {
     if (listData && Array.isArray(listData.lists)) return listData.lists;
@@ -1352,19 +1353,15 @@ var Trade = (function () {
   }
 
   function showCreateContractForm() {
-    var form = document.getElementById('ct-create-contract-form');
-    var isOpen = form.style.display !== 'none';
-    form.style.display = isOpen ? 'none' : 'block';
-    if (!isOpen) {
-      _contractList1 = '';
-      _contractList2 = '';
-      var btn1 = document.getElementById('ct-list-pick1');
-      var btn2 = document.getElementById('ct-list-pick2');
-      if (btn1) { btn1.textContent = '选择清单…'; btn1.classList.remove('selected'); }
-      if (btn2) { btn2.textContent = '选择清单…'; btn2.classList.remove('selected'); }
-      document.getElementById('ct-contract-public').checked = false;
-      document.getElementById('ct-contract-preview').style.display = 'none';
-    }
+    _contractList1 = '';
+    _contractList2 = '';
+    var btn1 = document.getElementById('ct-list-pick1');
+    var btn2 = document.getElementById('ct-list-pick2');
+    if (btn1) { btn1.textContent = '选择清单…'; btn1.classList.remove('selected'); }
+    if (btn2) { btn2.textContent = '选择清单…'; btn2.classList.remove('selected'); }
+    document.getElementById('ct-contract-public').checked = false;
+    document.getElementById('ct-contract-preview').style.display = 'none';
+    _contractFormOverlay.show();
   }
 
   function updateContractPreview() {
@@ -1393,7 +1390,7 @@ var Trade = (function () {
     if (!name1 || !name2) { UI.showToast('error', '请选择两份清单'); return; }
     var cmd = '!合同 创建 ' + name1 + ' ' + name2 + (isPublic ? ' true' : '');
     exec(cmd, '合同已创建').then(function () {
-      document.getElementById('ct-create-contract-form').style.display = 'none';
+      _contractFormOverlay.hide();
       contractData = null;
       loadContracts();
     }).catch(function () {});
@@ -1413,6 +1410,28 @@ var Trade = (function () {
     initShop();
     initMarket();
     initContract();
+
+    // 创建合同 overlay
+    _contractFormOverlay = UI.createOverlay('ct-create-overlay',
+      '<div class="ct-create-h">创建合同</div>' +
+      '<div class="field">' +
+        '<label>付出清单（甲方提供）</label>' +
+        '<button class="ct-list-pick" id="ct-list-pick1" onclick="Trade.pickContractList(\'list1\')">选择清单…</button>' +
+      '</div>' +
+      '<div class="field">' +
+        '<label>索取清单（乙方提供）</label>' +
+        '<button class="ct-list-pick" id="ct-list-pick2" onclick="Trade.pickContractList(\'list2\')">选择清单…</button>' +
+      '</div>' +
+      '<label class="chk-row"><input id="ct-contract-public" type="checkbox"><span>设为公开合同</span></label>' +
+      '<div class="ct-list-preview" id="ct-contract-preview" style="display:none"></div>' +
+      '<div class="ct-create-actions">' +
+        '<button class="ct-create-cancel" id="ct-create-cancel">取消</button>' +
+        '<button class="ct-create-confirm" id="ct-create-confirm">确认创建</button>' +
+      '</div>',
+      { onBackdrop: function () { _contractFormOverlay.hide(); } }
+    );
+    _contractFormOverlay.on('.ct-create-cancel', 'click', function () { _contractFormOverlay.hide(); });
+    _contractFormOverlay.on('.ct-create-confirm', 'click', submitCreateContract);
 
     // TradeSheet 按钮
     document.getElementById('ts-cancel').addEventListener('click', closeTradeSheet);

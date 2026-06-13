@@ -842,6 +842,11 @@ var UI = (function () {
     updateTabDots();
   }
 
+  // ========== 工具函数 ==========
+
+  function escHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function escAttr(s) { return String(s || '').replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+
   // ========== Overlay 工厂 ==========
 
   function createOverlay(id, innerHTML, opts) {
@@ -994,8 +999,8 @@ var UI = (function () {
     fmtPrice: fmtPrice,
     parseCompact: parseCompact,
     // 工具函数
-    escHtml: function (s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); },
-    escAttr: function (s) { return String(s || '').replace(/'/g, "\\'").replace(/"/g, '&quot;'); },
+    escHtml: escHtml,
+    escAttr: escAttr,
     /** 统一滑块同步：设置范围、值、禁用态，并填充已拖动区域 */
     syncSlider: function (slider, value, max, disabled) {
       slider.max = max;
