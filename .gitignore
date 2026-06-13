@@ -5,3 +5,9 @@ node_modules/
 dist/
 *.exe
 sea-prep.blob
+android/.gradle/
+android/.idea/
+android/build/
+android/app/build/
+android/local.properties
+android/app/src/main/assets/www/
