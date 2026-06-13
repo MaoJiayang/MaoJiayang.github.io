@@ -540,6 +540,9 @@ async function start() {
       console.log('  服务目录 : ' + (IS_DEV ? APP_DIR : CACHE_DIR));
       console.log('');
       console.log('  按 Ctrl+C 退出');
+      console.log('');
+      console.log('  如未自动打开，在浏览器中访问:');
+      console.log('  http://localhost:' + actualPort + '/terminal.html');
       console.log('═'.repeat(50));
 
       openBrowser(actualPort);

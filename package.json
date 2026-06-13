@@ -6,10 +6,12 @@
   "bin": "server.js",
   "scripts": {
     "start": "node server.js",
-    "build": "node -e \"try{require('fs').unlinkSync('dist/se-terminal.exe')}catch(_){};try{require('fs').unlinkSync('sea-prep.blob')}catch(_){}\" && node --experimental-sea-config sea-config.json && node -e \"var f=require('fs');f.mkdirSync('dist',{recursive:true});f.copyFileSync(process.execPath,'dist/se-terminal.exe')\" && node node_modules/postject/dist/cli.js dist/se-terminal.exe NODE_SEA_BLOB sea-prep.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2 && node -e \"try{require('fs').unlinkSync('sea-prep.blob')}catch(_){}\""
+    "build": "node -e \"try{require('fs').unlinkSync('dist/se-terminal.exe')}catch(_){};try{require('fs').unlinkSync('sea-prep.blob')}catch(_){}\" && node --experimental-sea-config sea-config.json && node -e \"var f=require('fs');f.mkdirSync('dist',{recursive:true});f.copyFileSync(process.execPath,'dist/se-terminal.exe')\" && node node_modules/postject/dist/cli.js dist/se-terminal.exe NODE_SEA_BLOB sea-prep.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2 && node -e \"try{require('fs').unlinkSync('sea-prep.blob')}catch(_){}\" && node scripts/set-icon.js dist/se-terminal.exe"
   },
   "devDependencies": {
-    "postject": "^1.0.0-alpha.6"
+    "postject": "^1.0.0-alpha.6",
+    "resedit": "^3.0.2",
+    "sharp": "^0.35.1"
   },
   "private": true
 }
