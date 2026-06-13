@@ -275,6 +275,8 @@ body::before{
 /* 共享刷新按钮 */
 .icon-refresh{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;flex-shrink:0;font-size:18px;color:var(--text-muted);cursor:pointer;border-radius:4px;transition:color .15s,background .15s;user-select:none;-webkit-tap-highlight-color:transparent}
 .icon-refresh:hover{color:var(--jade-200);background:var(--bg-hover)}
+.icon-refresh.spinning{animation:spin .8s linear infinite;color:var(--jade-200);pointer-events:none}
+@keyframes spin{to{transform:rotate(360deg)}}
 
 .tr-order-card{
   display:flex;align-items:center;gap:8px;padding:10px;
@@ -955,32 +957,6 @@ body::before{
 .lb-confirm{flex:2;padding:10px;font-size:14px;font-weight:600;background:var(--jade-200);color:var(--bg-void);border:none;border-radius:6px;cursor:pointer;font-family:inherit}
 .lb-confirm:disabled{opacity:.4;cursor:not-allowed}
 .lb-confirm:not(:disabled):hover{opacity:.85}
-
-/* ========== 按清单存取 ========== */
-#list-ops-overlay .overlay-pane{padding:20px 16px 24px}
-.lo-header{display:flex;align-items:center;justify-content:center;gap:8px;font-size:16px;font-weight:600;margin-bottom:18px;color:var(--text-primary)}
-.lo-refresh{font-size:18px;color:var(--text-muted);cursor:pointer;background:none;border:none;width:28px;height:28px;border-radius:50%;line-height:1}
-.lo-refresh:hover{color:var(--text-primary);background:var(--bg-hover)}
-.lo-field{margin-bottom:18px}
-.lo-label{display:block;font-size:12px;color:var(--text-muted);margin-bottom:6px}
-.lo-hint{font-size:11px;color:var(--text-disabled);margin-top:4px}
-.lo-select{
-  width:100%;padding:10px 12px;font-size:14px;
-  border:1px solid var(--bg-hover);border-radius:6px;
-  background:var(--bg-deep);color:var(--text-primary);
-  font-family:inherit;outline:none;cursor:pointer;
-}
-.lo-select:focus{border-color:var(--jade-400)}
-.lo-actions{display:flex;gap:8px}
-.lo-actions button{
-  flex:1;padding:10px;font-size:14px;font-weight:600;
-  border:none;border-radius:6px;cursor:pointer;font-family:inherit;
-}
-.lo-cancel{background:var(--bg-card);color:var(--text-secondary);border:1px solid var(--bg-hover)}
-.lo-deposit{background:var(--jade-200);color:var(--bg-void)}
-.lo-deposit:hover{opacity:.85}
-.lo-withdraw{background:var(--blue-200);color:var(--bg-void)}
-.lo-withdraw:hover{opacity:.85}
 
 /* ========== 出售表单 ========== */
 #sell-form-overlay .overlay-pane{padding:20px 16px 24px}

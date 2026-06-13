@@ -57,10 +57,10 @@ var Warehouse = (function () {
     if (!SeBridge.hasCredentials()) return;
     warehouseLoading = true;
     var btn = document.getElementById('wh-refresh');
-    if (btn) { btn.textContent = '刷新中…'; btn.disabled = true; }
+    if (btn) btn.classList.add('spinning');
     SeBridge.executeCommand('!仓库 列表').then(function(r){
       warehouseLoading = false;
-      if (btn) { btn.textContent = '刷新'; btn.disabled = false; }
+      if (btn) btn.classList.remove('spinning');
       if (r.code === 200 && r.data) {
         warehouseData = { items: r.data.items || {}, steamId: r.data.steamId };
         SeBridge.trackCall();
@@ -77,7 +77,7 @@ var Warehouse = (function () {
       }
     }).catch(function(){
       warehouseLoading = false;
-      if (btn) { btn.textContent = '刷新'; btn.disabled = false; }
+      if (btn) btn.classList.remove('spinning');
       UI.showToast('error', '网络错误，请稍后重试');
     });
   }
@@ -333,33 +333,22 @@ var Warehouse = (function () {
 
   // ========== 按清单存取 ==========
 
-  var _loOverlay = null;
-
   function listOps() {
     if (!SeBridge.hasCredentials()) { UI.showLoginGuide(); return; }
 
     var cached = Trade.getListData();
     if (cached) {
       var lists = extractListNames(cached);
-      if (lists.length > 0) { showListOpsOverlay(lists, true); return; }
+      if (lists.length > 0) { openListOpsPicker(lists); return; }
     }
-    fetchLists(false);
-  }
-
-  function fetchLists(showAfter) {
+    // 无缓存则获取
     UI.executeWithConfirm('!清单 列表', null).then(function (d) {
       var lists = extractListNames(d);
       if (lists.length === 0) {
         UI.showToast('error', '暂无可用的清单，请先在合同面板创建清单');
         return;
       }
-      if (showAfter) {
-        // 刷新 overlay 内的下拉
-        _loOverlay.get('#lo-list').innerHTML = buildListOptions(lists);
-        _loOverlay.get('#lo-hint').textContent = '';
-      } else {
-        showListOpsOverlay(lists, false);
-      }
+      openListOpsPicker(lists);
     }).catch(function () {
       UI.showToast('error', '获取清单列表失败');
     });
@@ -367,61 +356,17 @@ var Warehouse = (function () {
 
   function extractListNames(d) {
     if (!d) return [];
-    if (Array.isArray(d.lists)) return d.lists.map(function (l) { return typeof l === 'string' ? l : l.name; });
-    if (Array.isArray(d)) return d.map(function (l) { return typeof l === 'string' ? l : l.name; });
+    if (Array.isArray(d.lists)) return d.lists.map(function (l) { return typeof l === 'string' ? { name: l } : l; });
+    if (Array.isArray(d)) return d.map(function (l) { return typeof l === 'string' ? { name: l } : l; });
     return [];
   }
 
-  function buildListOptions(lists) {
-    return lists.map(function (name) {
-      return '<option value="' + UI.escAttr(name) + '">' + UI.escHtml(name) + '</option>';
-    }).join('');
-  }
-
-  function showListOpsOverlay(lists, fromCache) {
-    var optionsHtml = buildListOptions(lists);
-
-    if (!_loOverlay) {
-      _loOverlay = UI.createOverlay('list-ops-overlay',
-        '<div class="lo-header">按清单存取'
-        + '<button class="lo-refresh" title="刷新清单列表">↻</button></div>' +
-        '<div class="lo-field">' +
-          '<label class="lo-label">选择清单</label>' +
-          '<select id="lo-list" class="lo-select">' + optionsHtml + '</select>' +
-          '<div id="lo-hint" class="lo-hint"></div>' +
-        '</div>' +
-        '<div class="lo-actions">' +
-          '<button class="lo-cancel">取消</button>' +
-          '<button class="lo-deposit">存入</button>' +
-          '<button class="lo-withdraw">取出</button>' +
-        '</div>',
-        { onBackdrop: function () { _loOverlay.hide(); } }
-      );
-      _loOverlay.on('.lo-cancel', 'click', function () { _loOverlay.hide(); });
-      _loOverlay.on('.lo-refresh', 'click', function () { fetchLists(true); });
-      _loOverlay.on('.lo-deposit', 'click', function () {
-        var name = _loOverlay.get('#lo-list').value;
-        _loOverlay.hide();
-        UI.executeWithConfirm('!仓库 存入清单 ' + name, '按清单存入「' + name + '」').then(function () {
-          UI.showToast('success', '正在按「' + name + '」存入…');
-          setTimeout(load, 1500);
-        }).catch(function () {});
-      });
-      _loOverlay.on('.lo-withdraw', 'click', function () {
-        var name = _loOverlay.get('#lo-list').value;
-        _loOverlay.hide();
-        UI.executeWithConfirm('!仓库 取出清单 ' + name, '按清单取出「' + name + '」').then(function () {
-          UI.showToast('success', '正在按「' + name + '」取出…');
-          setTimeout(load, 1500);
-        }).catch(function () {});
-      });
-    } else {
-      // 更新下拉列表
-      _loOverlay.get('#lo-list').innerHTML = optionsHtml;
-    }
-    // 缓存提示
-    _loOverlay.get('#lo-hint').textContent = fromCache ? '（来自缓存，点 ↻ 刷新）' : '';
-    _loOverlay.show();
+  function openListOpsPicker(lists) {
+    UI.openListPicker('按清单存取', lists, {
+      onSelect: function (name) {
+        executeAndRefresh('!仓库 存入清单 ' + name, '按清单存入「' + name + '」');
+      }
+    });
   }
 
   function executeAndRefresh(cmd, label) {
