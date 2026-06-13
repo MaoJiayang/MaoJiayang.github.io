@@ -22,7 +22,7 @@ var Trade = (function () {
   // ========== 合同 & 清单面板 ==========
   var contractMode = 'public';     // 'public' | 'mine' | 'lists'
   var contractLoading = false;
-  var contractData = null;         // { contracts: [...] } 或 { lists: [...] }
+  var contractCache = {};          // { public: data, mine: data, lists: data } 按子tab独立缓存
   var listData = null;             // 清单缓存 { lists: [...] }（供创建合同选择）
   var _listDraft = {};             // 清单构建器草稿 { itemName: qty }
   var _listBuilderVisible = false;
@@ -68,7 +68,7 @@ var Trade = (function () {
     });
     if (tab === 'shop' && !bankInfo) loadShop();
     if (tab === 'market' && !marketDataCache && !marketLoading) loadMarket();
-    if (tab === 'contract' && !contractData && !contractLoading) loadContracts();
+    if (tab === 'contract' && !contractCache[contractMode] && !contractLoading) loadContracts();
   }
 
   function initSubTabs() {
@@ -816,28 +816,28 @@ var Trade = (function () {
     if (contractLoading) return;
     contractLoading = true;
     renderContracts();
+    var mode = contractMode;
     var cmd;
-    if (contractMode === 'lists') {
+    if (mode === 'lists') {
       cmd = '!清单 列表';
-    } else if (contractMode === 'mine') {
+    } else if (mode === 'mine') {
       cmd = '!合同 我的列表';
     } else {
       cmd = '!合同 列表';
     }
     exec(cmd, null).then(function (d) {
-      contractData = d;
+      contractCache[mode] = d;
       contractLoading = false;
-      // 清单数据同时缓存供创建合同使用
-      if (contractMode === 'lists') listData = d;
+      if (mode === 'lists') listData = d;
       renderContracts();
     }).catch(function () {
-      contractData = null;
+      contractCache[mode] = null;
       contractLoading = false;
       renderContracts();
     });
   }
 
-  function refreshContracts() { contractData = null; loadContracts(); }
+  function refreshContracts() { contractCache[contractMode] = null; loadContracts(); }
 
   function switchContractMode(mode) {
     if (mode === contractMode) return;
@@ -845,16 +845,18 @@ var Trade = (function () {
     document.querySelectorAll('.tr-contract-mode').forEach(function (el) {
       el.classList.toggle('active', el.dataset.contractMode === mode);
     });
-    // 更新搜索框占位
     var searchEl = document.getElementById('tr-contract-search');
     if (searchEl) {
       searchEl.placeholder = mode === 'lists' ? '搜索清单…' : '搜索合同中的物品…';
     }
-    // 关闭可能打开的表单
     closeListBuilder();
     if (_contractFormOverlay) _contractFormOverlay.hide();
-    contractData = null;
-    loadContracts();
+    // 有缓存直接用，没缓存才加载
+    if (contractCache[mode]) {
+      renderContracts();
+    } else {
+      loadContracts();
+    }
   }
 
   // ========== 合同渲染 ==========
@@ -863,22 +865,22 @@ var Trade = (function () {
     var container = document.getElementById('trade-contract-list');
     if (!container) return;
 
-    if (!contractData && contractLoading) {
-      container.innerHTML = '<div class="tr-empty">加载中…</div>';
+    var createBtnHtml = contractMode === 'mine'
+      ? '<button class="ct-act-create-btn block" onclick="Trade.toggleCreateContract()">+ 创建合同</button>' : '';
+
+    if (!contractCache[contractMode] && contractLoading) {
+      container.innerHTML = createBtnHtml + '<div class="tr-empty">加载中…</div>';
       return;
     }
 
     if (contractMode === 'lists') { renderLists(container); return; }
 
     var search = (document.getElementById('tr-contract-search').value || '').toLowerCase().trim();
-    var contracts = contractData && Array.isArray(contractData.contracts) ? contractData.contracts : [];
-
-    // "我的合同"模式显示创建按钮
-    var createBtn = contractMode === 'mine' && contracts.length >= 0
-      ? '<button class="ct-act-create-btn" onclick="Trade.toggleCreateContract()">+ 创建合同</button>' : '';
+    var cd = contractCache[contractMode];
+    var contracts = cd && Array.isArray(cd.contracts) ? cd.contracts : [];
 
     if (contracts.length === 0) {
-      container.innerHTML = createBtn + '<div class="tr-empty">暂无合同</div>';
+      container.innerHTML = createBtnHtml + '<div class="tr-empty">暂无合同</div>';
       return;
     }
 
@@ -978,9 +980,10 @@ var Trade = (function () {
 
   function renderLists(container) {
     var search = (document.getElementById('tr-contract-search').value || '').toLowerCase().trim();
-    var lists = contractData && Array.isArray(contractData.lists) ? contractData.lists : [];
+    var cd = contractCache[contractMode];
+    var lists = cd && Array.isArray(cd.lists) ? cd.lists : [];
 
-    var html = '<button class="ct-act-create-btn" onclick="Trade.openListBuilder()">+ 创建清单</button>';
+    var html = '<button class="ct-act-create-btn block" onclick="Trade.openListBuilder()">+ 创建清单</button>';
 
     if (lists.length === 0) {
       html += '<div class="tr-empty">暂无清单</div>';
@@ -1291,7 +1294,7 @@ var Trade = (function () {
     var args = parts.join(' ');
     exec('!清单 创建 ' + name + ' "' + args + '"', '已创建清单「' + name + '」').then(function () {
       closeListBuilder();
-      contractData = null;
+      contractCache[contractMode] = null;
       loadContracts();
     }).catch(function () {});
   }
@@ -1299,7 +1302,7 @@ var Trade = (function () {
   function deleteList(name) {
     UI.showConfirmDialog('确定要删除清单「' + name + '」吗？', function () {
       exec('!清单 删除 ' + name, '已删除清单「' + name + '」').then(function () {
-        contractData = null;
+        contractCache[contractMode] = null;
         loadContracts();
       }).catch(function () {});
     });
@@ -1391,7 +1394,7 @@ var Trade = (function () {
     var cmd = '!合同 创建 ' + name1 + ' ' + name2 + (isPublic ? ' true' : '');
     exec(cmd, '合同已创建').then(function () {
       _contractFormOverlay.hide();
-      contractData = null;
+      contractCache[contractMode] = null;
       loadContracts();
     }).catch(function () {});
   }

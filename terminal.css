@@ -281,8 +281,8 @@ body::before{
 /* 共享刷新按钮 */
 .icon-refresh{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;flex-shrink:0;font-size:18px;color:var(--text-muted);cursor:pointer;border-radius:4px;transition:color .15s,background .15s;user-select:none;-webkit-tap-highlight-color:transparent}
 .icon-refresh:hover{color:var(--jade-200);background:var(--bg-hover)}
-.icon-refresh.spinning{animation:spin .8s linear infinite;color:var(--jade-200);pointer-events:none}
-@keyframes spin{to{transform:rotate(360deg)}}
+.icon-refresh.spinning{color:var(--jade-200);pointer-events:none;animation:pulse .8s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35}}
 
 .tr-order-card{
   display:flex;align-items:center;gap:8px;padding:10px;
@@ -759,11 +759,13 @@ body::before{
 .ct-act-accept{background:var(--jade-200);color:var(--bg-void);border-color:var(--jade-200)}
 .ct-act-accept:hover{opacity:.85}
 .ct-act-create-btn{
-  width:100%;padding:10px;font-size:13px;font-weight:600;
+  padding:5px 10px;font-size:11px;font-weight:600;
   background:var(--jade-200);color:var(--bg-void);border:none;
-  border-radius:6px;cursor:pointer;font-family:inherit;
-  margin-bottom:10px;
+  border-radius:4px;cursor:pointer;font-family:inherit;
+  white-space:nowrap;
 }
+.ct-act-create-btn:hover{opacity:.85}
+.ct-act-create-btn.block{display:block;width:100%;padding:10px;font-size:13px;border-radius:6px;margin-bottom:10px}
 
 /* 清单卡片 */
 .ct-list-card{
