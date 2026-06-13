@@ -27,6 +27,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Web.Script.Serialization;
 
@@ -147,7 +148,8 @@ namespace BridgeServer
                     // 读取帧: [4字节BE长度] + [UTF-8 JSON]
                     var responseJson = ReadFrame(stream);
 
-                    // 归一化响应格式（兼容新旧两种 SE 插件格式）
+                    // 清洗 PUA 字符 + 归一化响应格式
+                    responseJson = CleanPUA(responseJson);
                     return NormalizeResponse(responseJson);
                 }
             }
@@ -238,6 +240,16 @@ namespace BridgeServer
                 return "{\"code\":500,\"msg\":\"SE 服务器响应异常\",\"data\":null}";
             }
         }
+
+        /// <summary>
+        /// 清洗 PUA 区字符（U+E000~U+F8FF），与 CF Worker 的 cleanPUA 行为一致。
+        /// SE 服务器在玩家 displayName 前附加 U+E030（游戏中渲染为电脑图标）。
+        /// </summary>
+        static string CleanPUA(string input)
+        {
+            if (string.IsNullOrEmpty(input)) return input;
+            return Regex.Replace(input, @"[-]", "");
+        }
     }
 
     // ========== HTTP 服务（基于 TcpListener，无需管理员权限）==========
@@ -305,6 +317,13 @@ namespace BridgeServer
                         // 简单 HTTP 请求解析（只处理首个请求，不处理 keep-alive）
                         var request = ReadHttpRequest(stream);
                         if (request == null) return;
+
+                        // CORS 预检
+                        if (request.Method == "OPTIONS")
+                        {
+                            SendOptionsResponse(stream);
+                            return;
+                        }
 
                         var response = Route(request);
                         SendHttpResponse(stream, response);
@@ -432,17 +451,22 @@ namespace BridgeServer
             stream.Flush();
         }
 
+        void SendOptionsResponse(NetworkStream stream)
+        {
+            var resp = Encoding.ASCII.GetBytes(
+                "HTTP/1.1 204 No Content\r\n" +
+                "Access-Control-Allow-Origin: *\r\n" +
+                "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n" +
+                "Access-Control-Allow-Headers: Content-Type, Authorization\r\n" +
+                "Connection: close\r\n\r\n");
+            stream.Write(resp, 0, resp.Length);
+            stream.Flush();
+        }
+
         // ---- 路由 ----
 
         string Route(HttpRequest req)
         {
-            // CORS 预检
-            if (req.Method == "OPTIONS")
-            {
-                SendHttpResponse((NetworkStream)null, 204, "");
-                return "";
-            }
-
             var path = req.Path;
             // 去掉查询参数
             var qIdx = path.IndexOf('?');
@@ -468,6 +492,11 @@ namespace BridgeServer
             if (path == "/api/command/execute" || path == "/command/execute")
             {
                 return HandleExecute(req.Body);
+            }
+
+            if (path == "/api/grid/world-grids" || path == "/grid/world-grids")
+            {
+                return HandleWorldGrids(req.Body);
             }
 
             return JsonError(404, "未知接口: " + path);
@@ -545,6 +574,72 @@ namespace BridgeServer
 
                 // 发送 TCP 帧 → gRPC
                 var response = TcpFrameClient.SendRequest(_cfg.GrpcHost, _cfg.GrpcPort, requestJson);
+                return response;
+            }
+            catch (Exception ex)
+            {
+                return JsonError(400, "请求格式错误: " + ex.Message);
+            }
+        }
+
+        string HandleWorldGrids(string bodyJson)
+        {
+            try
+            {
+                var dict = _json.Deserialize<Dictionary<string, object>>(bodyJson);
+                if (!dict.ContainsKey("steamId") || !dict.ContainsKey("gamePassword"))
+                {
+                    return JsonError(400, "缺少必要参数: steamId, gamePassword");
+                }
+
+                var steamId = dict["steamId"].ToString();
+                var password = dict["gamePassword"].ToString();
+
+                // 构造 RpcCommand（空指令，仅凭据）
+                var innerJson = _json.Serialize(new Dictionary<string, object>
+                {
+                    { "steamId", steamId },
+                    { "command", "" },
+                    { "gamePassword", password },
+                    { "forcePlayerOnline", false },
+                    { "dontSendToGameScreen", true },
+                });
+
+                // 构造 RequestMessage（使用专用路径）
+                var requestJson = _json.Serialize(new Dictionary<string, object>
+                {
+                    { "path", "/getWorldGridsBySteamId" },
+                    { "bodyJson", innerJson },
+                    { "authKey", _cfg.AuthKey },
+                });
+
+                var response = TcpFrameClient.SendRequest(_cfg.GrpcHost, _cfg.GrpcPort, requestJson);
+
+                // 与 CF Worker 一致：如果 data 为空但 msg 是 JSON 数组，解析到 data
+                try
+                {
+                    var respDict = _json.Deserialize<Dictionary<string, object>>(response);
+                    if (respDict.ContainsKey("code") && Convert.ToInt32(respDict["code"]) == 200)
+                    {
+                        var hasData = respDict.ContainsKey("data") && respDict["data"] != null;
+                        if (!hasData && respDict.ContainsKey("msg"))
+                        {
+                            var msg = (respDict["msg"] ?? "").ToString();
+                            try
+                            {
+                                var parsed = _json.DeserializeObject(msg);
+                                if (parsed is Array)
+                                {
+                                    respDict["data"] = parsed;
+                                    response = _json.Serialize(respDict);
+                                }
+                            }
+                            catch { /* msg 不是 JSON 数组，保持原样 */ }
+                        }
+                    }
+                }
+                catch { /* 响应解析失败，返回原始响应 */ }
+
                 return response;
             }
             catch (Exception ex)

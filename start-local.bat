@@ -63,7 +63,7 @@ echo.
 echo   Frontend : http://localhost:5500/commands.html
 echo   Terminal : http://localhost:5500/terminal.html
 echo.
-echo   Local debug: no code change needed.
-echo   Auto-detects localhost and bridges to :3001.
+echo   Local debug: auto-detects localhost, health-race picks bridge.
+echo   To change bridge port: ?bridge-port=3002 in URL or edit .env.
 echo.
 pause

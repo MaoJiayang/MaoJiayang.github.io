@@ -267,11 +267,10 @@ var CmdExec = (function () {
     if (!dot || !text) return;
     if (online === true) {
       dot.className = 'conn-dot online';
-      if (SeBridge.bridgeUrl && SeBridge.bridgeUrl.indexOf('localhost') === -1) {
-        text.textContent = '服务在线(桥接)';
-      } else {
-        text.textContent = '服务在线(云)';
-      }
+      var ab = SeBridge.activeBridge;
+      if (ab && ab.indexOf('localhost') !== -1) text.textContent = '服务在线(本地)';
+      else if (ab) text.textContent = '服务在线(桥接)';
+      else text.textContent = '服务在线(云)';
     } else if (online === false) {
       dot.className = 'conn-dot offline';
       text.textContent = '服务离线';

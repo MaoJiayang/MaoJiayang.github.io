@@ -34,7 +34,12 @@ var UI = (function () {
   function setConnDot(state) {
     var dot = document.getElementById('conn-dot');
     dot.className = 'conn-dot' + (state ? ' ' + state : '');
-    dot.title = state === 'online' ? '服务在线' : state === 'offline' ? '服务离线' : '检测中';
+    if (state === 'online') {
+      var ab = SeBridge.activeBridge;
+      dot.title = ab && ab.indexOf('localhost') !== -1 ? '服务在线 (本地)' : ab ? '服务在线 (桥接)' : '服务在线 (云)';
+    } else {
+      dot.title = state === 'offline' ? '服务离线' : '检测中';
+    }
   }
 
   function pollHealth() {

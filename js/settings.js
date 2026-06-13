@@ -95,7 +95,14 @@ var Settings = (function () {
     var statusEl = document.getElementById('st-status');
     if (statusEl) {
       var dot = document.getElementById('conn-dot');
-      statusEl.textContent = dot && dot.classList.contains('online') ? '● 在线' : dot && dot.classList.contains('offline') ? '● 离线' : '检测中';
+      var label = dot && dot.classList.contains('online') ? '● 在线' : dot && dot.classList.contains('offline') ? '● 离线' : '检测中';
+      if (dot && dot.classList.contains('online')) {
+        var ab = SeBridge.activeBridge;
+        if (ab && ab.indexOf('localhost') !== -1) label += ' (本地)';
+        else if (ab) label += ' (桥接)';
+        else label += ' (云)';
+      }
+      statusEl.textContent = label;
     }
     var gaugeEl = document.getElementById('st-gauge');
     if (gaugeEl) gaugeEl.textContent = SeBridge.getRemainingCalls() + ' / ' + SeBridge.getRateLimit() + ' 次/分钟';

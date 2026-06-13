@@ -21,7 +21,8 @@ var SeBridge = (function () {
   var CRED_KEY = 'se_credentials';
   var CALL_KEY = 'se_call_times';
   var RATE_LIMIT = 20;          // 默认每分钟调用限制
-  var _bridgeUrl = '';
+  var _bridgeUrl = '';          // 配置的桥接地址（候选）
+  var _activeBridge = null;     // 竞速选出的实际使用的桥接（null=未选, ''=CF）
   var _bridgeDown = false;
   var _memCreds = null;
   var _onStatusChange = null;   // 状态变化回调（供 UI 层注册）
@@ -70,17 +71,60 @@ var SeBridge = (function () {
 
   // ========== 桥接通信 ==========
 
+  /** 向两个候选端点同时发送 health check，选最快的那个 */
+  function resolveBridge() {
+    if (_activeBridge !== null) return Promise.resolve(_activeBridge);
+
+    console.log('[SeBridge] 桥接竞速中...');
+    return new Promise(function (resolve) {
+      var done = false;
+      function pick(url) {
+        if (!done && url !== null) {
+          done = true;
+          _activeBridge = url;
+          console.log('[SeBridge] 竞速结果: ' + (url || 'CF Function'));
+          resolve(url);
+        }
+      }
+
+      // 候选1: CF Function（始终参与）
+      fetch('/api/health')
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) { pick(d && d.code === 200 ? '' : null); })
+        .catch(function () {});
+
+      // 候选2: 桥接服务器（如果配置了）
+      if (_bridgeUrl) {
+        fetch(_bridgeUrl + '/api/health')
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (d) { pick(d && d.code === 200 ? _bridgeUrl : null); })
+          .catch(function () { pick(null); });  // 报错 → 直接出局
+      }
+
+      // 超时兜底（2 秒后若尚未选定，CF 胜出）
+      setTimeout(function () { pick(''); }, 2000);
+    });
+  }
+
   function callBridge(method, path, body) {
+    // 桥接尚未选定 → 等待竞速完成
+    if (_activeBridge === null) {
+      return resolveBridge().then(function () {
+        return callBridge(method, path, body);
+      });
+    }
+
+    var url = _activeBridge + path;
     var headers = {};
     if (body) headers['Content-Type'] = 'application/json';
 
     var opts = { method: method, headers: headers };
     if (body) opts.body = JSON.stringify(body);
 
-    return fetch(_bridgeUrl + path, opts)
+    return fetch(url, opts)
       .then(function (r) {
         if (!r.ok) throw new Error('BRIDGE_HTTP_' + r.status);
-        if (_bridgeDown && _bridgeUrl) {
+        if (_bridgeDown && _activeBridge) {
           _bridgeDown = false;
           if (_onStatusChange) _onStatusChange({ bridgeOnline: true });
         }
@@ -89,12 +133,12 @@ var SeBridge = (function () {
       .catch(function (err) {
         if (err.message && err.message.indexOf('BRIDGE_HTTP_') === 0) throw err;
 
-        // 网络错误 + 远程桥接 → 降级到同域 CF Function
-        if (_bridgeUrl && _bridgeUrl.indexOf('localhost') === -1) {
+        // 网络错误 + 非本地桥接 → 降级到同域 CF Function
+        if (_activeBridge && _activeBridge.indexOf('localhost') === -1) {
           if (!_bridgeDown) {
             _bridgeDown = true;
             if (_onStatusChange) _onStatusChange({ bridgeOnline: false });
-            console.warn('桥接服务不可用，降级到 CF Function');
+            console.warn('[SeBridge] 桥接不可用，降级到 CF Function');
           }
           var fbOpts = { method: method, headers: {} };
           if (body) { fbOpts.headers['Content-Type'] = 'application/json'; fbOpts.body = JSON.stringify(body); }
@@ -110,8 +154,25 @@ var SeBridge = (function () {
       });
   }
 
+  /** 认证请求，与指令请求走同一个竞速选出的桥接 */
+  function callAuth(method, path, body) {
+    if (_activeBridge === null) {
+      return resolveBridge().then(function () {
+        return callAuth(method, path, body);
+      });
+    }
+    var headers = {};
+    if (body) headers['Content-Type'] = 'application/json';
+    var opts = { method: method, headers: headers };
+    if (body) opts.body = JSON.stringify(body);
+    return fetch(_activeBridge + path, opts).then(function (r) {
+      if (!r.ok) throw new Error('AUTH_HTTP_' + r.status);
+      return r.json();
+    });
+  }
+
   function verifyCredentials(steamId, password) {
-    return callBridge('POST', '/api/command/verify', {
+    return callAuth('POST', '/api/command/verify', {
       steamId: steamId,
       gamePassword: password,
     });
@@ -128,8 +189,8 @@ var SeBridge = (function () {
   }
 
   function checkBridgeHealth() {
-    var url = _bridgeUrl ? _bridgeUrl + '/api/health' : '/api/health';
-    return fetch(url)
+    var base = _activeBridge !== null ? _activeBridge : '';
+    return fetch(base + '/api/health')
       .then(function (r) { return r.ok ? r.json() : null; })
       .catch(function () { return null; });
   }
@@ -139,7 +200,7 @@ var SeBridge = (function () {
   function syncUser() {
     var creds = getCredentials();
     if (!creds) return Promise.reject(new Error('NOT_LOGGED_IN'));
-    return callBridge('POST', '/api/user/sync', {
+    return callAuth('POST', '/api/user/sync', {
       steamId: creds.steamId,
       gamePassword: creds.gamePassword,
     });
@@ -213,11 +274,12 @@ var SeBridge = (function () {
   // ========== 初始化 ==========
 
   function init(opts) {
-    // 桥接地址：显式指定 > 本地自动检测 > 同域 CF Function
+    // 桥接地址：显式指定 > URL参数 > 本地自动检测 > 同域 CF Function
     if (opts.bridgeUrl) {
       _bridgeUrl = opts.bridgeUrl;
     } else if (typeof location !== 'undefined' && (location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
-      _bridgeUrl = 'http://localhost:3001';
+      var qs = new URLSearchParams(location.search);
+      _bridgeUrl = 'http://localhost:' + (qs.get('bridge-port') || '3001');
       console.log('[SeBridge] 本地环境，自动桥接至 ' + _bridgeUrl);
     }
     // 否则 _bridgeUrl 保持 ''（走同域 CF Function）
@@ -229,6 +291,13 @@ var SeBridge = (function () {
     if (_bridgeUrl && _bridgeUrl.indexOf('http://') === 0 && typeof location !== 'undefined' && location.protocol === 'https:') {
       console.warn('[SeBridge] 桥接地址为 HTTP，HTTPS 页面无法直连，已降级到 CF Function');
       _bridgeUrl = '';
+    }
+
+    // 预热：有桥接候选时后台竞速 health check，无候选直连 CF
+    if (_bridgeUrl) {
+      resolveBridge();
+    } else {
+      _activeBridge = '';
     }
   }
 
@@ -266,5 +335,6 @@ var SeBridge = (function () {
     // 桥接状态（只读）
     get bridgeDown() { return _bridgeDown; },
     get bridgeUrl() { return _bridgeUrl; },
+    get activeBridge() { return _activeBridge; },
   };
 })();

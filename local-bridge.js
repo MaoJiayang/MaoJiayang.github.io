@@ -59,6 +59,18 @@ function readFrame(socket, timeoutMs) {
   });
 }
 
+// ---- PUA 字符清洗（与 CF Worker cleanPUA 行为一致）----
+function cleanPUA(obj) {
+  if (typeof obj === 'string') return obj.replace(/[-]/g, '');
+  if (Array.isArray(obj)) return obj.map(cleanPUA);
+  if (obj && typeof obj === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(obj)) out[k] = cleanPUA(v);
+    return out;
+  }
+  return obj;
+}
+
 function tcpRequest(host, port, authKey, steamId, command, password, customPath) {
   return new Promise((resolve) => {
     const innerBody = JSON.stringify({
@@ -85,16 +97,17 @@ function tcpRequest(host, port, authKey, steamId, command, password, customPath)
         .then((json) => {
           try {
             const raw = JSON.parse(json);
-            // 归一化——与 CF Worker 同款逻辑
-            if (raw.code !== undefined) { resolve(raw); return; }
-            if (raw.success === true) {
-              let body = raw.bodyJson || '';
+            // PUA 清洗 + 归一化——与 CF Worker 同款逻辑
+            const cleaned = cleanPUA(raw);
+            if (cleaned.code !== undefined) { resolve(cleaned); return; }
+            if (cleaned.success === true) {
+              let body = cleaned.bodyJson || '';
               try { const p = JSON.parse(body); body = typeof p === 'string' ? p : JSON.stringify(p); } catch (_) {}
               resolve({ code: 200, msg: body, data: null });
               return;
             }
-            if (raw.success === false) {
-              resolve({ code: 400, msg: raw.errorMessage || '未知错误', data: null });
+            if (cleaned.success === false) {
+              resolve({ code: 400, msg: cleaned.errorMessage || '未知错误', data: null });
               return;
             }
             resolve({ code: 500, msg: '无法解析响应', data: null });
@@ -243,9 +256,9 @@ server.listen(PORT, () => {
   console.log('');
   console.log('  使用方法:');
   console.log('  1. 启动静态文件服务器: start-local.bat');
-  console.log('  2. 在 terminal.html 中临时修改:');
-  console.log(`     SeBridge.init({ bridgeUrl: 'http://localhost:${PORT}' });`);
-  console.log('  3. 浏览器打开 http://localhost:5500/terminal.html');
+  console.log('  2. 浏览器打开 http://localhost:5500/terminal.html');
+  console.log('     （本地环境自动检测桥接，无需改代码）');
+  console.log(`  3. 若需改桥接端口: http://localhost:5500/terminal.html?bridge-port=${PORT}`);
   console.log('');
   console.log('  所有请求将通过本桥接直连 SE 服务器，绕过 CF Function。');
   console.log('═'.repeat(50));
