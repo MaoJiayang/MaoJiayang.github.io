@@ -842,6 +842,80 @@ var UI = (function () {
     updateTabDots();
   }
 
+  // ========== 清单选择器 ==========
+
+  var _lpPicker = null;
+  var _lpItems = [];
+  var _lpOnSelect = null;
+  var _lpSelected = null;
+  var _lpTimer = null;
+
+  function openListPicker(title, items, opts) {
+    opts = opts || {};
+    _lpItems = items || [];
+    _lpOnSelect = opts.onSelect || null;
+    _lpSelected = opts.selected || null;
+
+    if (!_lpPicker) {
+      _lpPicker = createOverlay('list-picker-overlay',
+        '<div class="lp-header" id="lp-header"></div>' +
+        '<input class="lp-search" id="lp-search" type="text" placeholder="搜索…">' +
+        '<div class="lp-list" id="lp-list"></div>',
+        { onBackdrop: function () { _lpPicker.hide(); } }
+      );
+      _lpPicker.on('#lp-search', 'input', function () {
+        clearTimeout(_lpTimer);
+        _lpTimer = setTimeout(renderListPicker, 200);
+      });
+    }
+
+    document.getElementById('lp-header').textContent = title;
+    document.getElementById('lp-search').value = '';
+    renderListPicker();
+    _lpPicker.show();
+    setTimeout(function () { document.getElementById('lp-search').focus(); }, 150);
+  }
+
+  function renderListPicker() {
+    var query = (document.getElementById('lp-search').value || '').toLowerCase().trim();
+    var listEl = document.getElementById('lp-list');
+    var filtered = _lpItems;
+    if (query) {
+      filtered = _lpItems.filter(function (item) {
+        return (item.name || '').toLowerCase().indexOf(query) !== -1;
+      });
+    }
+
+    if (filtered.length === 0) {
+      listEl.innerHTML = '<div class="lp-empty">' + (query ? '无匹配清单' : '暂无可选清单') + '</div>';
+      return;
+    }
+
+    var html = '';
+    filtered.forEach(function (item) {
+      var isSel = _lpSelected === item.name;
+      var meta = '';
+      if (item.money > 0) meta += '<span>' + fmtCompact(item.money) + ' SC</span>';
+      if (item.items && item.items.length > 0) meta += '<span>' + item.items.length + ' 种物品</span>';
+      html += '<div class="lp-item' + (isSel ? ' selected' : '') + '" data-lp-name="' + escAttr(item.name) + '">' +
+        '<span class="lp-item-name">' + escHtml(item.name || '') + '</span>' +
+        (meta ? '<span class="lp-item-meta">' + meta + '</span>' : '') +
+        '</div>';
+    });
+    listEl.innerHTML = html;
+
+    // 绑定点击
+    var items = listEl.querySelectorAll('.lp-item');
+    for (var i = 0; i < items.length; i++) {
+      items[i].addEventListener('click', function () {
+        var name = this.getAttribute('data-lp-name');
+        _lpSelected = name;
+        if (_lpOnSelect) _lpOnSelect(name);
+        _lpPicker.hide();
+      });
+    }
+  }
+
   return {
     // Toast
     showToast: showToast,
@@ -882,6 +956,8 @@ var UI = (function () {
     onExtraFocus: onExtraFocus,
     onExtraBlur: onExtraBlur,
     switchQSheetMode: switchQSheetMode,
+    // 清单选择器
+    openListPicker: openListPicker,
     // Overlay 工厂
     createOverlay: function (id, innerHTML, opts) {
       opts = opts || {};

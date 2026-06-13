@@ -65,6 +65,7 @@
     <div class="wh-bar" id="wh-bar" style="display:none">
       <button onclick="Warehouse.saveAllNoArg()">存入全部</button>
       <button id="wh-refresh" onclick="Warehouse.load()">刷新</button>
+      <button onclick="Warehouse.listOps()">按清单…</button>
       <span class="spacer"></span>
       <button id="wh-showall-btn" onclick="Warehouse.toggleShowAll()">显示未拥有</button>
       <button id="wh-fmt-btn" onclick="Warehouse.toggleNumFmt()">简洁</button>
@@ -125,12 +126,12 @@
       <div class="ct-create-form" id="ct-create-contract-form" style="display:none">
         <div class="ct-create-h">创建合同</div>
         <div class="field">
-          <label for="ct-contract-list1">付出清单（甲方提供）</label>
-          <select id="ct-contract-list1"></select>
+          <label>付出清单（甲方提供）</label>
+          <button class="ct-list-pick" id="ct-list-pick1" onclick="Trade.pickContractList('list1')">选择清单…</button>
         </div>
         <div class="field">
-          <label for="ct-contract-list2">索取清单（乙方提供）</label>
-          <select id="ct-contract-list2"></select>
+          <label>索取清单（乙方提供）</label>
+          <button class="ct-list-pick" id="ct-list-pick2" onclick="Trade.pickContractList('list2')">选择清单…</button>
         </div>
         <label class="chk-row"><input id="ct-contract-public" type="checkbox"><span>设为公开合同</span></label>
         <div class="ct-list-preview" id="ct-contract-preview" style="display:none"></div>

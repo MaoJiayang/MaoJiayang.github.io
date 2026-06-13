@@ -1307,10 +1307,39 @@ var Trade = (function () {
 
   // ========== 创建合同 ==========
 
+  var _contractList1 = '';
+  var _contractList2 = '';
+
+  function getContractLists() {
+    if (listData && Array.isArray(listData.lists)) return listData.lists;
+    // 兼容不同响应格式
+    if (listData && Array.isArray(listData)) return listData;
+    return [];
+  }
+
+  function pickContractList(which) {
+    var lists = getContractLists();
+    if (lists.length === 0) {
+      UI.showToast('error', '暂无可选清单，请先创建清单');
+      return;
+    }
+    var title = which === 'list1' ? '付出清单（甲方）' : '索取清单（乙方）';
+    var current = which === 'list1' ? _contractList1 : _contractList2;
+    UI.openListPicker(title, lists, {
+      selected: current,
+      onSelect: function (name) {
+        if (which === 'list1') _contractList1 = name;
+        else _contractList2 = name;
+        var btnId = which === 'list1' ? 'ct-list-pick1' : 'ct-list-pick2';
+        var btn = document.getElementById(btnId);
+        if (btn) { btn.textContent = name; btn.classList.add('selected'); }
+        updateContractPreview();
+      }
+    });
+  }
+
   function toggleCreateContract() {
-    // 确保有清单缓存
     if (!listData) {
-      // 静默加载清单
       exec('!清单 列表', null).then(function (d) {
         listData = d;
         showCreateContractForm();
@@ -1327,28 +1356,22 @@ var Trade = (function () {
     var isOpen = form.style.display !== 'none';
     form.style.display = isOpen ? 'none' : 'block';
     if (!isOpen) {
-      var lists = listData && Array.isArray(listData.lists) ? listData.lists : [];
-      var sel1 = document.getElementById('ct-contract-list1');
-      var sel2 = document.getElementById('ct-contract-list2');
-      var opts = '<option value="">— 选择清单 —</option>';
-      lists.forEach(function (l) {
-        opts += '<option value="' + UI.escAttr(l.name || '') + '">' + UI.escHtml(l.name || '') + '</option>';
-      });
-      sel1.innerHTML = opts;
-      sel2.innerHTML = opts;
+      _contractList1 = '';
+      _contractList2 = '';
+      var btn1 = document.getElementById('ct-list-pick1');
+      var btn2 = document.getElementById('ct-list-pick2');
+      if (btn1) { btn1.textContent = '选择清单…'; btn1.classList.remove('selected'); }
+      if (btn2) { btn2.textContent = '选择清单…'; btn2.classList.remove('selected'); }
       document.getElementById('ct-contract-public').checked = false;
       document.getElementById('ct-contract-preview').style.display = 'none';
-      // 选择变化时预览
-      sel1.onchange = updateContractPreview;
-      sel2.onchange = updateContractPreview;
     }
   }
 
   function updateContractPreview() {
-    var name1 = document.getElementById('ct-contract-list1').value;
-    var name2 = document.getElementById('ct-contract-list2').value;
+    var name1 = _contractList1;
+    var name2 = _contractList2;
     var preview = document.getElementById('ct-contract-preview');
-    var lists = listData && Array.isArray(listData.lists) ? listData.lists : [];
+    var lists = getContractLists();
     var l1 = null, l2 = null;
     lists.forEach(function (l) { if (l.name === name1) l1 = l; if (l.name === name2) l2 = l; });
     if (!l1 && !l2) { preview.style.display = 'none'; return; }
@@ -1364,8 +1387,8 @@ var Trade = (function () {
   }
 
   function submitCreateContract() {
-    var name1 = document.getElementById('ct-contract-list1').value;
-    var name2 = document.getElementById('ct-contract-list2').value;
+    var name1 = _contractList1;
+    var name2 = _contractList2;
     var isPublic = document.getElementById('ct-contract-public').checked;
     if (!name1 || !name2) { UI.showToast('error', '请选择两份清单'); return; }
     var cmd = '!合同 创建 ' + name1 + ' ' + name2 + (isPublic ? ' true' : '');
@@ -1451,6 +1474,8 @@ var Trade = (function () {
     confirmListBuilder: confirmListBuilder, renderListBuilderGrid: renderListBuilderGrid,
     updateListBuilderMoney: updateListBuilderMoney,
     deleteList: deleteList, toggleCreateContract: toggleCreateContract,
+    pickContractList: pickContractList,
     submitCreateContract: submitCreateContract,
+    getListData: function () { return listData; },
   };
 })();

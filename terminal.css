@@ -774,13 +774,13 @@ body::before{
 .ct-create-h{font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:10px}
 .ct-create-form .field{margin-bottom:10px}
 .ct-create-form label{display:block;font-size:11px;color:var(--text-muted);margin-bottom:3px}
-.ct-create-form input[type=text],.ct-create-form select{
+.ct-create-form input[type=text]{
   width:100%;padding:8px 10px;font-size:13px;
   border:1px solid var(--bg-hover);border-radius:4px;
   background:var(--bg-deep);color:var(--text-primary);
   font-family:inherit;outline:none;
 }
-.ct-create-form input:focus,.ct-create-form select:focus{border-color:var(--jade-400)}
+.ct-create-form input:focus{border-color:var(--jade-400)}
 .ct-create-hint{font-size:11px;color:var(--text-muted);margin-bottom:10px;line-height:1.5}
 .ct-create-actions{display:flex;gap:8px}
 .ct-create-cancel{flex:1;padding:8px;font-size:13px;font-weight:600;background:var(--bg-card);color:var(--text-secondary);border:1px solid var(--bg-hover);border-radius:4px;cursor:pointer;font-family:inherit}
@@ -959,6 +959,32 @@ body::before{
 .lb-confirm:disabled{opacity:.4;cursor:not-allowed}
 .lb-confirm:not(:disabled):hover{opacity:.85}
 
+/* ========== 按清单存取 ========== */
+#list-ops-overlay .overlay-pane{padding:20px 16px 24px}
+.lo-header{display:flex;align-items:center;justify-content:center;gap:8px;font-size:16px;font-weight:600;margin-bottom:18px;color:var(--text-primary)}
+.lo-refresh{font-size:18px;color:var(--text-muted);cursor:pointer;background:none;border:none;width:28px;height:28px;border-radius:50%;line-height:1}
+.lo-refresh:hover{color:var(--text-primary);background:var(--bg-hover)}
+.lo-field{margin-bottom:18px}
+.lo-label{display:block;font-size:12px;color:var(--text-muted);margin-bottom:6px}
+.lo-hint{font-size:11px;color:var(--text-disabled);margin-top:4px}
+.lo-select{
+  width:100%;padding:10px 12px;font-size:14px;
+  border:1px solid var(--bg-hover);border-radius:6px;
+  background:var(--bg-deep);color:var(--text-primary);
+  font-family:inherit;outline:none;cursor:pointer;
+}
+.lo-select:focus{border-color:var(--jade-400)}
+.lo-actions{display:flex;gap:8px}
+.lo-actions button{
+  flex:1;padding:10px;font-size:14px;font-weight:600;
+  border:none;border-radius:6px;cursor:pointer;font-family:inherit;
+}
+.lo-cancel{background:var(--bg-card);color:var(--text-secondary);border:1px solid var(--bg-hover)}
+.lo-deposit{background:var(--jade-200);color:var(--bg-void)}
+.lo-deposit:hover{opacity:.85}
+.lo-withdraw{background:var(--blue-200);color:var(--bg-void)}
+.lo-withdraw:hover{opacity:.85}
+
 /* ========== 出售表单 ========== */
 #sell-form-overlay .overlay-pane{padding:20px 16px 24px}
 .sf-header{font-size:16px;font-weight:600;margin-bottom:18px;text-align:center;color:var(--text-primary)}
@@ -997,3 +1023,36 @@ body::before{
 .sf-cancel{background:var(--bg-hover);color:var(--text-muted)}
 .sf-confirm{background:var(--jade-200);color:var(--bg-void)}
 .sf-confirm:active{opacity:.85}
+
+/* ========== 清单选择触发器 ========== */
+.ct-list-pick{
+  width:100%;padding:9px 12px;font-size:14px;text-align:left;
+  border:1px solid var(--bg-hover);border-radius:4px;
+  background:var(--bg-deep);color:var(--text-muted);
+  font-family:inherit;cursor:pointer;outline:none;
+  transition:border-color .2s,color .2s;
+}
+.ct-list-pick:hover,.ct-list-pick:focus{border-color:var(--jade-400)}
+.ct-list-pick.selected{color:var(--text-primary)}
+
+/* ========== 清单选择器 Bottom Sheet ========== */
+#list-picker-overlay .overlay-pane{padding:0;overflow:hidden}
+.lp-search{
+  width:100%;padding:10px 16px;font-size:14px;
+  border:none;border-bottom:1px solid var(--bg-hover);
+  background:var(--bg-deep);color:var(--text-primary);
+  font-family:inherit;outline:none;
+}
+.lp-search:focus{border-bottom-color:var(--jade-400)}
+.lp-list{max-height:60vh;max-height:60dvh;overflow-y:auto;padding:4px 0}
+.lp-item{
+  padding:12px 16px;cursor:pointer;font-size:14px;color:var(--text-primary);
+  transition:background .12s;display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid rgba(255,255,255,.03);
+}
+.lp-item:active{background:var(--bg-hover)}
+.lp-item.selected{background:rgba(93,221,170,.08);color:var(--jade-200)}
+.lp-item-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lp-item-meta{font-size:11px;color:var(--text-muted);flex-shrink:0;display:flex;gap:8px}
+.lp-empty{padding:32px 16px;text-align:center;font-size:13px;color:var(--text-muted)}
+.lp-header{padding:16px 16px 12px;font-size:15px;font-weight:600;color:var(--text-primary);text-align:center}
