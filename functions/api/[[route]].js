@@ -279,10 +279,23 @@ export async function onRequestGet({ request }) {
   const path = normalizePath(new URL(request.url).pathname);
 
   if (path === '/api/health') {
-    return Response.json({ code: 200, msg: 'ok', data: { bridge: 'cloudflare' } });
+    return new Response(JSON.stringify({ code: 200, msg: 'ok', data: { bridge: 'cloudflare' } }), {
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    });
   }
 
-  return Response.json({ code: 404, msg: '未知接口' }, { status: 404 });
+  return new Response(JSON.stringify({ code: 404, msg: '未知接口' }), {
+    status: 404,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+    },
+  });
 }
 
 export async function onRequestPost({ request, env }) {

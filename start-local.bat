@@ -17,22 +17,16 @@ if exist "%~dp0.env" (
     echo [info] .env not found
 )
 
-:: Python HTTP frontend
-python --version >nul 2>&1
+:: Node.js check
+node --version >nul 2>&1
 if errorlevel 1 (
-    echo [warn] Python not found, trying py launcher...
-    py --version >nul 2>&1
-    if errorlevel 1 (
-        echo [error] Python not available
-        goto done
-    )
-    set PYTHON=py
-) else (
-    set PYTHON=python
+    echo [error] Node.js not found - install from https://nodejs.org
+    goto done
 )
 
-echo [start] HTTP frontend :5500
-start "SE-Frontend" cmd /k "cd /d %~dp0 && !PYTHON! -m http.server 5500"
+:: Unified server (frontend + bridge + auth proxy)
+echo [start] Unified server :24007
+start "SE-Server" cmd /k "cd /d %~dp0 && node server.js 24007"
 
 :: Semantic search (optional)
 if defined CF_ACCOUNT_ID (
@@ -46,23 +40,11 @@ if defined CF_ACCOUNT_ID (
     echo [skip] Semantic search - CF_ACCOUNT_ID not set
 )
 
-:: Local bridge (optional)
-if defined SE_HOST (
-    if defined SE_PORT (
-        echo [start] Local bridge :3001
-        start "SE-Bridge" cmd /k "cd /d %~dp0 && node local-bridge.js 3001"
-    ) else (
-        echo [skip] Local bridge - SE_PORT not set
-    )
-) else (
-    echo [skip] Local bridge - SE_HOST not set
-)
-
 :done
 echo.
-echo   Frontend : http://localhost:5500/commands.html
-echo   Terminal : http://localhost:5500/terminal.html
+echo   Terminal : http://localhost:24007/terminal.html
+echo   Commands : http://localhost:24007/commands.html
 echo.
-echo   Local debug: auto-detects localhost, health-race picks bridge.
-echo   To change bridge port: ?bridge-port=3002 in URL or edit .env.
+echo   server.js handles frontend + TCP bridge + auth proxy in one process.
+echo   Change port: node server.js PORT   or   set PORT=XXXX in .env
 echo.

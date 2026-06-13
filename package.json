@@ -1,0 +1,15 @@
+{
+  "name": "se-terminal-desktop",
+  "version": "1.0.0",
+  "description": "伊卡洛斯虚空终端 — 桌面版（统一服务器：前端 + TCP 桥接 + 认证代理）",
+  "main": "server.js",
+  "bin": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build": "node --experimental-sea-config sea-config.json && node -e \"var f=require('fs');f.mkdirSync('dist',{recursive:true});f.copyFileSync(process.execPath,'dist/se-terminal.exe')\" && node node_modules/postject/dist/cli.js dist/se-terminal.exe NODE_SEA_BLOB sea-prep.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2 && del sea-prep.blob"
+  },
+  "devDependencies": {
+    "postject": "^1.0.0-alpha.6"
+  },
+  "private": true
+}

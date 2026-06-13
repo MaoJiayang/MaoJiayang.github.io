@@ -26,6 +26,7 @@ var SeBridge = (function () {
   var _bridgeDown = false;
   var _memCreds = null;
   var _onStatusChange = null;   // 状态变化回调（供 UI 层注册）
+  var _authUrl = '';             // 认证端点（健康竞速候选1），''=同源 CF
 
   // ========== 凭据管理 ==========
 
@@ -88,8 +89,8 @@ var SeBridge = (function () {
         }
       }
 
-      // 候选1: CF Function（始终参与）
-      fetch('/api/health')
+      // 候选1: CF Function / 认证端点（_authUrl 为空时走同域相对路径）
+      fetch((_authUrl || '') + '/api/health')
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (d) { pick(d && d.code === 200 ? '' : null); })
         .catch(function () {});
@@ -280,10 +281,19 @@ var SeBridge = (function () {
       _bridgeUrl = opts.bridgeUrl;
     } else if (typeof location !== 'undefined' && (location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
       var qs = new URLSearchParams(location.search);
-      _bridgeUrl = 'http://localhost:' + (qs.get('bridge-port') || '3001');
+      _bridgeUrl = 'http://localhost:' + (qs.get('bridge-port') || '24007');
       console.log('[SeBridge] 本地环境，自动桥接至 ' + _bridgeUrl);
     }
     // 否则 _bridgeUrl 保持 ''（走同域 CF Function）
+
+    // 认证端点：显式指定 > 本地自动检测（指回 CF Pages） > 同域
+    if (opts.authUrl) {
+      _authUrl = opts.authUrl;
+    } else if (typeof location !== 'undefined' && (location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+      _authUrl = 'https://atomickitty17th.pages.dev';
+      console.log('[SeBridge] 本地环境，认证走 ' + _authUrl);
+    }
+    // 否则 _authUrl 保持 ''（同域 CF）
 
     if (opts.rateLimit !== undefined) RATE_LIMIT = opts.rateLimit;
     if (opts.onStatusChange) _onStatusChange = opts.onStatusChange;
@@ -337,5 +347,6 @@ var SeBridge = (function () {
     get bridgeDown() { return _bridgeDown; },
     get bridgeUrl() { return _bridgeUrl; },
     get activeBridge() { return _activeBridge; },
+    get authUrl() { return _authUrl; },
   };
 })();
