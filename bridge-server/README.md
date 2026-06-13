@@ -12,7 +12,7 @@
 C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /out:BridgeServer.exe /r:System.Web.Extensions.dll BridgeServer.cs
 
 # 启动
-BridgeServer.exe --http-port 10085 --grpc-port 10086
+.\BridgeServer.exe --http-port 10085 --grpc-port 10086
 ```
 
 ## 配置
