@@ -403,11 +403,9 @@ var Warehouse = (function () {
 
   function executeAndRefresh(cmd, label) {
     if (!SeBridge.hasCredentials()) { UI.showLoginGuide(); return; }
-    UI.executeWithConfirm(cmd, null).then(function () {
-      UI.showToast('success', '「' + label + '」已完成');
+    UI.executeWithConfirm(cmd, label).then(function () {
       setTimeout(load, 1500);
     }).catch(function (err) {
-      // executeWithConfirm 已处理限流/确认弹窗/错误 Toast
       if (err === 'RATE_LIMITED') return;
       setTimeout(load, 1500);
     });
