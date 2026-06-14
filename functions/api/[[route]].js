@@ -1,24 +1,17 @@
 /**
  * CF Pages Function: /api/* 统一处理
  *
- * 认证 + D1 操作在 CF 侧完成。指令执行 / 世界网格可转发到服务端桥接，
- * 由桥接处理限流/封禁/TCP通信。未配置 BRIDGE_URL 时回退到直接 TCP。
- *
- * 协议: 4字节 Big-Endian 长度前缀 + UTF-8 JSON
+ * D1 操作（封禁/同步）+ 转发到服务端桥接。CF 查好 D1 用户状态后通过
+ * TCP 帧协议直连桥接（绕过 CF fetch 裸 IP 限制），桥接统一处理限流与 SE 通信。
  *
  * 环境变量（在 CF Dashboard → Pages → Settings → Environment variables 中配置）:
- *   SE_HOST       — SE 服务器地址（BRIDGE_URL 配置后仅作回退）
- *   SE_PORT       — SE 服务器端口
- *   SE_AUTH_KEY   — 认证密钥
  *   SE_BLACKLIST  — 禁止执行指令的 SteamID，逗号分隔
  *   SE_ADMIN_KEY  — 管理密钥，供 bridge-server 调用 admin 端点
- *   BRIDGE_URL    — (可选) 服务端桥接地址，如 http://183.131.51.12:10085
+ *   BRIDGE_URL    — 服务端桥接地址（设置后启用桥接路径）
+ *   BRIDGE_TCP_PORT — 桥接 TCP 端口（默认 10087）
  */
 import { connect } from 'cloudflare:sockets';
 
-const DEFAULT_HOST = '127.0.0.1';
-const DEFAULT_PORT = 1;
-const DEFAULT_AUTH_KEY = 'change-me';
 const TIMEOUT_MS = 10000;
 
 // ---- D1 用户表初始化 ----
@@ -60,31 +53,8 @@ async function checkBanned(steamId, db) {
   return null;
 }
 
-/** 递归清除所有字符串值中的 Unicode 私有使用区字符（U+E000~U+F8FF） */
-function cleanPUA(obj) {
-  if (typeof obj === 'string') return obj.replace(/[-]/g, '');
-  if (Array.isArray(obj)) return obj.map(cleanPUA);
-  if (obj && typeof obj === 'object') {
-    const out = {};
-    for (const [k, v] of Object.entries(obj)) out[k] = cleanPUA(v);
-    return out;
-  }
-  return obj;
-}
-
-/** 从 known_ip JSON 数组中取最新 IP */
-function latestIp(knownIpJson) {
-  try {
-    var ips = JSON.parse(knownIpJson || '[]');
-    return (Array.isArray(ips) && ips.length > 0) ? ips[0] : '';
-  } catch (_) { return ''; }
-}
-
 function getConfig(env) {
   return {
-    host: env.SE_HOST || DEFAULT_HOST,
-    port: parseInt(env.SE_PORT || DEFAULT_PORT, 10),
-    authKey: env.SE_AUTH_KEY || DEFAULT_AUTH_KEY,
     blacklist: new Set(
       (env.SE_BLACKLIST || '')
         .split(',')
@@ -133,65 +103,11 @@ async function readFrame(socket, timeoutMs) {
   }
 }
 
-/**
- * 发送 TCP 帧到 SE 服务器，返回归一化后的响应
- */
-async function tcpRequest(host, port, authKey, steamId, command, password, customPath) {
-  const innerBody = JSON.stringify({
-    steamId,
-    command,
-    gamePassword: password,
-    forcePlayerOnline: false,
-    dontSendToGameScreen: true,
-  });
-
-  const requestJson = JSON.stringify({
-    path: customPath || '/command',
-    bodyJson: innerBody,
-    authKey,
-  });
-
-  let socket;
-  try {
-    socket = connect({ hostname: host, port }, { secureTransport: 'off' });
-    const writer = socket.writable.getWriter();
-    await writer.write(buildFrame(requestJson));
-    writer.releaseLock();
-
-    const responseJson = await readFrame(socket, TIMEOUT_MS);
-
-    let raw;
-    try { raw = JSON.parse(responseJson); } catch (_) {
-      return { code: 500, msg: 'SE服务器响应异常', data: null };
-    }
-
-    raw = cleanPUA(raw);
-
-    // 归一化响应格式（兼容新旧两种 SE 插件格式）
-    if (raw.code !== undefined) return raw;
-    if (raw.success === true) {
-      let body = raw.bodyJson || '';
-      try { const p = JSON.parse(body); body = typeof p === 'string' ? p : JSON.stringify(p); } catch (_) {}
-      return { code: 200, msg: body, data: null };
-    }
-    if (raw.success === false) {
-      return { code: 400, msg: raw.errorMessage || '未知错误', data: null };
-    }
-    return { code: 500, msg: '无法解析响应', data: null };
-  } catch (e) {
-    return { code: 500, msg: 'TCP 连接失败: ' + (e.message || '未知错误'), data: null };
-  } finally {
-    if (socket) {
-      try { socket.close(); } catch (_) { /* 忽略关闭错误 */ }
-    }
-  }
-}
-
 function normalizePath(pathname) {
   return pathname.replace(/\/$/, '') || '/api';
 }
 
-// ---- 通过 TCP 直连桥接服务器（绕过 CF fetch 裸 IP 限制） ----
+// ---- 桥接 TCP 通信 ----
 
 /**
  * 从 D1 查用户状态，供 TCP 帧附带传给桥接。
@@ -219,7 +135,7 @@ async function getUserStateForBridge(steamId, env) {
 
 /**
  * 通过 TCP 帧协议直连桥接服务器，附带 userState。
- * 与 tcpRequest 使用相同的 connect() + buildFrame/readFrame 基础设施。
+ * 使用 connect() + buildFrame/readFrame 与桥接通信。
  */
 async function tcpToBridge(host, port, authKey, steamId, command, password, customPath, userState) {
   let socket;
@@ -272,6 +188,14 @@ function checkAdminKey(request, env) {
     return Response.json({ code: 401, msg: '鉴权失败' }, { status: 401 });
   }
   return null;  // 通过
+}
+
+/** 从 known_ip JSON 数组中取最新 IP */
+function latestIp(knownIpJson) {
+  try {
+    var ips = JSON.parse(knownIpJson || '[]');
+    return (Array.isArray(ips) && ips.length > 0) ? ips[0] : '';
+  } catch (_) { return ''; }
 }
 
 // ---- Admin 端点 ----
@@ -400,94 +324,6 @@ async function handleAdminSync(body, env) {
   }
 }
 
-/**
- * /api/user/sync — 验证游戏密码 + 记录/更新用户
- * 入参: { steamId, gamePassword }
- * 返回: { code, msg, data: { steamId, loginAt, knownIp, attrs } }
- */
-async function handleUserSync(body, env, cfg, request) {
-  if (!body.steamId || !body.gamePassword) {
-    return Response.json({ code: 400, msg: '缺少 steamId 或 gamePassword' }, { status: 400 });
-  }
-  if (cfg.blacklist.has(String(body.steamId))) {
-    return Response.json({ code: 401, msg: '验证失败' }, { status: 401 });
-  }
-  const banCheck = await checkBanned(body.steamId, env.LOG_DB);
-  if (banCheck) return banCheck;
-
-  // 通过 SE 服务器验证密码（改用 myinfo 可获得玩家名称）
-  const result = await tcpRequest(cfg.host, cfg.port, cfg.authKey, body.steamId, '!info myinfo', body.gamePassword);
-
-  if (result.code !== 200) {
-    return Response.json(result);
-  }
-
-  // 验证通过 → 写入 D1
-  try {
-    await ensureUserTable(env.LOG_DB);
-    const now = new Date().toISOString();
-    const ip = request.headers.get('CF-Connecting-IP') || '';
-    const defaultAttrs = JSON.stringify({ rateLimit: 20, banned: false });
-    const displayName = (result.data && result.data.displayName) || '';
-
-    // 合并 known_ip 数组：新 IP 插到头部，去重，截 10 条
-    const existing = await env.LOG_DB.prepare(
-      'SELECT steam_id, attrs, known_ip FROM users WHERE steam_id = ?'
-    ).bind(String(body.steamId)).first();
-
-    var mergedIp;
-    if (existing) {
-      var ips = [];
-      try { ips = JSON.parse(existing.known_ip || '[]'); } catch (_) { ips = []; }
-      if (!Array.isArray(ips)) ips = [];
-      ips = ips.filter(function (v) { return v !== ip; });
-      ips.unshift(ip);
-      if (ips.length > 10) ips = ips.slice(0, 10);
-      mergedIp = JSON.stringify(ips);
-
-      await env.LOG_DB.prepare(
-        'UPDATE users SET known_ip = ?, login_at = ? WHERE steam_id = ?'
-      ).bind(mergedIp, now, String(body.steamId)).run();
-    } else {
-      mergedIp = JSON.stringify([ip]);
-      await env.LOG_DB.prepare(
-        'INSERT INTO users (steam_id, attrs, known_ip, login_at, created_at) VALUES (?, ?, ?, ?, ?)'
-      ).bind(String(body.steamId), defaultAttrs, mergedIp, now, now).run();
-    }
-
-    // 读取当前 attrs，检查 displayName 是否需要更新
-    if (existing && displayName) {
-      const attrs = JSON.parse(existing.attrs || '{}');
-      if (attrs.displayName !== displayName) {
-        attrs.displayName = displayName;
-        await env.LOG_DB.prepare(
-          'UPDATE users SET attrs = ? WHERE steam_id = ?'
-        ).bind(JSON.stringify(attrs), String(body.steamId)).run();
-      }
-    }
-
-    // 读取更新后的记录
-    const row = await env.LOG_DB.prepare(
-      'SELECT steam_id, attrs, known_ip, login_at, created_at FROM users WHERE steam_id = ?'
-    ).bind(String(body.steamId)).first();
-
-    return Response.json({
-      code: 200,
-      msg: 'ok',
-      data: {
-        steamId: row.steam_id,
-        loginAt: row.login_at,
-        knownIp: latestIp(row.known_ip),
-        attrs: JSON.parse(row.attrs || '{}'),
-      },
-    });
-  } catch (e) {
-    console.error('user/sync D1 write failed:', e?.message);
-    // D1 写入失败不影响登录，仍然返回成功
-    return Response.json({ code: 200, msg: 'ok（用户记录未保存）', data: { steamId: String(body.steamId) } });
-  }
-}
-
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   const path = normalizePath(url.pathname);
@@ -561,6 +397,12 @@ export async function onRequestPost({ request, env }) {
     return handleAdminSync(body, env);
   }
 
+  // ---- 所有指令路径统一转发到桥接 ----
+
+  const bridgeHost = env.SE_HOST || '183.131.51.12';
+  const bridgeTcpPort = parseInt(env.BRIDGE_TCP_PORT || '10087', 10);
+  const bridgeAuthKey = env.SE_ADMIN_KEY || '';
+
   if (path === '/api/command/verify') {
     if (!body.steamId || !body.gamePassword) {
       return Response.json({ code: 400, msg: '缺少 steamId 或 gamePassword' }, { status: 400 });
@@ -570,8 +412,9 @@ export async function onRequestPost({ request, env }) {
     }
     const banCheck = await checkBanned(body.steamId, env.LOG_DB);
     if (banCheck) return banCheck;
-    const result = await tcpRequest(cfg.host, cfg.port, cfg.authKey, body.steamId, '!info myinfo', body.gamePassword);
-    return Response.json(result);
+    const result = await tcpToBridge(bridgeHost, bridgeTcpPort, bridgeAuthKey,
+      body.steamId, '!info myinfo', body.gamePassword, null, null);
+    return Response.json(result, { status: result.code === 200 ? 200 : (result.code > 0 ? result.code : 500) });
   }
 
   if (path === '/api/command/execute') {
@@ -584,29 +427,25 @@ export async function onRequestPost({ request, env }) {
     const banCheck2 = await checkBanned(body.steamId, env.LOG_DB);
     if (banCheck2) return banCheck2;
 
-    // 优先通过 TCP 直连桥接（CF 已查好 D1 用户状态附在帧中，桥接无需回调查 CF）
-    if (env.BRIDGE_URL) {
-      const bridgeHost = env.SE_HOST || '183.131.51.12';
-      const bridgeTcpPort = parseInt(env.BRIDGE_TCP_PORT || '10087', 10);
-      const userState = await getUserStateForBridge(body.steamId, env);
-      if (userState) {
-        const tcpResult = await tcpToBridge(bridgeHost, bridgeTcpPort, env.SE_ADMIN_KEY || env.SE_AUTH_KEY || 'change-me',
-          body.steamId, body.command, body.gamePassword, null, userState);
-        return Response.json(tcpResult, { status: tcpResult.code === 200 ? 200 : (tcpResult.code > 0 ? tcpResult.code : 500) });
-      }
-      // userState 查不到（D1 故障）→ 仍然尝试 TCP 到桥接，桥接自行兜底
-      const tcpResult = await tcpToBridge(bridgeHost, bridgeTcpPort, env.SE_ADMIN_KEY || env.SE_AUTH_KEY || 'change-me',
-        body.steamId, body.command, body.gamePassword, null, null);
-      return Response.json(tcpResult, { status: tcpResult.code === 200 ? 200 : (tcpResult.code > 0 ? tcpResult.code : 500) });
-    }
-
-    // 回退：直接 TCP 连 SE（BRIDGE_URL 未配置时）
-    const result = await tcpRequest(cfg.host, cfg.port, cfg.authKey, body.steamId, body.command, body.gamePassword);
-    return Response.json(result);
+    const userState = await getUserStateForBridge(body.steamId, env);
+    const result = await tcpToBridge(bridgeHost, bridgeTcpPort, bridgeAuthKey,
+      body.steamId, body.command, body.gamePassword, null, userState);
+    return Response.json(result, { status: result.code === 200 ? 200 : (result.code > 0 ? result.code : 500) });
   }
 
   if (path === '/api/user/sync') {
-    return handleUserSync(body, env, cfg, request);
+    if (!body.steamId || !body.gamePassword) {
+      return Response.json({ code: 400, msg: '缺少 steamId 或 gamePassword' }, { status: 400 });
+    }
+    if (cfg.blacklist.has(String(body.steamId))) {
+      return Response.json({ code: 401, msg: '验证失败' }, { status: 401 });
+    }
+    const banCheck = await checkBanned(body.steamId, env.LOG_DB);
+    if (banCheck) return banCheck;
+    // 桥接处理 TCP 验证 + 回调 CF admin 写 D1
+    const result = await tcpToBridge(bridgeHost, bridgeTcpPort, bridgeAuthKey,
+      body.steamId, '!info myinfo', body.gamePassword, null, null);
+    return Response.json(result, { status: result.code === 200 ? 200 : (result.code > 0 ? result.code : 500) });
   }
 
   if (path === '/api/grid/world-grids') {
@@ -618,29 +457,10 @@ export async function onRequestPost({ request, env }) {
     }
     const banCheck3 = await checkBanned(body.steamId, env.LOG_DB);
     if (banCheck3) return banCheck3;
-
-    // 优先通过 TCP 直连桥接
-    if (env.BRIDGE_URL) {
-      const bridgeHost = env.SE_HOST || '183.131.51.12';
-      const bridgeTcpPort = parseInt(env.BRIDGE_TCP_PORT || '10087', 10);
-      const userState = await getUserStateForBridge(body.steamId, env);
-      const tcpResult = await tcpToBridge(bridgeHost, bridgeTcpPort, env.SE_ADMIN_KEY || env.SE_AUTH_KEY || 'change-me',
-        body.steamId, '', body.gamePassword, '/getWorldGridsBySteamId', userState);
-      return Response.json(tcpResult, { status: tcpResult.code === 200 ? 200 : (tcpResult.code > 0 ? tcpResult.code : 500) });
-    }
-
-    // 回退：直接 TCP 连 SE
-    const result = await tcpRequest(cfg.host, cfg.port, cfg.authKey, body.steamId, '', body.gamePassword, '/getWorldGridsBySteamId');
-    // 服务端将 GridVO[] 序列化到 msg 字段，解析为 data
-    if (result.code === 200 && result.msg) {
-      try {
-        const parsed = JSON.parse(result.msg);
-        if (Array.isArray(parsed)) {
-          result.data = parsed;
-        }
-      } catch (_) { /* msg 不是 JSON，保持原样 */ }
-    }
-    return Response.json(result);
+    const userState = await getUserStateForBridge(body.steamId, env);
+    const result = await tcpToBridge(bridgeHost, bridgeTcpPort, bridgeAuthKey,
+      body.steamId, '', body.gamePassword, '/getWorldGridsBySteamId', userState);
+    return Response.json(result, { status: result.code === 200 ? 200 : (result.code > 0 ? result.code : 500) });
   }
 
   return Response.json({ code: 404, msg: '未知接口' }, { status: 404 });
