@@ -524,6 +524,7 @@ input {
   <button class="btn" onclick="setLimit()">设置限流</button>
   <button class="btn" onclick="clearCache()">清除过期缓存</button>
   <button class="btn" onclick="refreshAll()">刷新所有缓存</button>
+  <label class="btn" style="cursor:pointer"><input type="checkbox" checked onchange="toggleAutoRefresh(this)" style="margin-right:4px">自动刷新 <span id="refreshBadge">10s</span></label>
 </div>
 <div class="result" id="msg"></div>
 
@@ -554,18 +555,44 @@ ${users.map((u) => `<tr>
 </table>
 
 <script>
+var AUTO_REFRESH_SEC = 10;
+var autoTimer = null;
+var countdown = AUTO_REFRESH_SEC;
+var tickTimer = null;
+function startAutoRefresh() {
+  countdown = AUTO_REFRESH_SEC;
+  updateBadge();
+  tickTimer = setInterval(function() {
+    countdown--;
+    updateBadge();
+    if (countdown <= 0) { location.reload(); }
+  }, 1000);
+}
+function stopAutoRefresh() {
+  if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
+  if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
+  document.getElementById('refreshBadge').textContent = 'OFF';
+}
+function updateBadge() { document.getElementById('refreshBadge').textContent = countdown + 's'; }
+function toggleAutoRefresh(cb) {
+  if (cb.checked) { startAutoRefresh(); }
+  else { stopAutoRefresh(); }
+}
+// 默认开启
+document.addEventListener('DOMContentLoaded', function() { startAutoRefresh(); });
+
 async function api(method, url, body) {
-  const opts = { method, headers: {} };
+  var opts = { method: method, headers: {} };
   if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
-  const r = await fetch(url, opts);
+  var r = await fetch(url, opts);
   return r.json();
 }
-function msg(text) { document.getElementById('msg').textContent = text; setTimeout(() => { document.getElementById('msg').textContent = ''; }, 3000); }
+function msg(text) { document.getElementById('msg').textContent = text; setTimeout(function() { document.getElementById('msg').textContent = ''; }, 3000); }
 function setLimit() {
-  const sid = document.getElementById('steamIdInput').value.trim();
-  const lim = document.getElementById('limitInput').value;
+  var sid = document.getElementById('steamIdInput').value.trim();
+  var lim = document.getElementById('limitInput').value;
   if (!sid || !lim) { msg('请填写 SteamID 和限流值'); return; }
-  api('POST', '/admin/api/set-limit', { steamId: sid, rateLimit: parseInt(lim) }).then(d => { msg(d.msg); location.reload(); });
+  api('POST', '/admin/api/set-limit', { steamId: sid, rateLimit: parseInt(lim) }).then(function(d) { msg(d.msg); location.reload(); });
 }
 function clearCache() { api('POST', '/admin/api/clear-cache').then(d => { msg(d.msg); location.reload(); }); }
 function refreshAll() { api('POST', '/admin/api/refresh-all').then(d => { msg(d.msg); location.reload(); }); }
@@ -760,8 +787,17 @@ const server = http.createServer(async (req, res) => {
       const result = await tcpRequest(config.seHost, config.sePort, config.seAuthKey,
         body.steamId, '!info myinfo', body.gamePassword);
 
-      // 验证通过后异步回调 CF 写入 D1（不阻塞响应，D1 写延迟不影响登录体验）
+      // 异步回调 CF 写 D1，同时从缓存补充 attrs 给客户端（不阻塞）
       if (result.code === 200) {
+        // 优先从已有缓存取 attrs（同步，不阻塞），命中则客户端立即可显示正确配额
+        const cached = userCache.get(String(body.steamId));
+        if (cached) {
+          result.data = Object.assign({}, result.data, {
+            attrs: { rateLimit: cached.rateLimit, banned: cached.banned, displayName: cached.displayName },
+          });
+        }
+
+        // 异步刷新 D1（不阻塞响应）
         const displayName = (result.data && result.data.displayName) || '';
         syncUserToCF(body.steamId, displayName, '').then((cfResult) => {
           if (cfResult && cfResult.code === 200 && cfResult.data && cfResult.data.attrs) {
