@@ -324,6 +324,43 @@ async function handleAdminSync(body, env) {
   }
 }
 
+/**
+ * POST /api/admin/user/update
+ * 供 bridge-server 管理界面调用，更新用户 attrs（限流值/封禁状态）到 D1
+ */
+async function handleAdminUpdate(body, env) {
+  if (!body.steamId) {
+    return Response.json({ code: 400, msg: '缺少 steamId' }, { status: 400 });
+  }
+  try {
+    const db = env.LOG_DB;
+    if (!db) return Response.json({ code: 502, msg: 'D1 未绑定' }, { status: 502 });
+    await ensureUserTable(db);
+
+    const existing = await db.prepare(
+      'SELECT attrs FROM users WHERE steam_id = ?'
+    ).bind(String(body.steamId)).first();
+
+    const attrs = existing ? JSON.parse(existing.attrs || '{}') : {};
+    if (typeof body.rateLimit === 'number') attrs.rateLimit = body.rateLimit;
+    if (typeof body.banned === 'boolean') attrs.banned = body.banned;
+
+    if (existing) {
+      await db.prepare('UPDATE users SET attrs = ? WHERE steam_id = ?')
+        .bind(JSON.stringify(attrs), String(body.steamId)).run();
+    } else {
+      const now = new Date().toISOString();
+      await db.prepare(
+        'INSERT INTO users (steam_id, attrs, known_ip, login_at, created_at) VALUES (?, ?, ?, ?, ?)'
+      ).bind(String(body.steamId), JSON.stringify(attrs), '[]', now, now).run();
+    }
+    return Response.json({ code: 200, msg: 'ok', data: { attrs } });
+  } catch (e) {
+    console.error('admin/user/update D1 failed:', e?.message);
+    return Response.json({ code: 502, msg: 'D1 写入失败' }, { status: 502 });
+  }
+}
+
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   const path = normalizePath(url.pathname);
@@ -395,6 +432,12 @@ export async function onRequestPost({ request, env }) {
     const authErr = checkAdminKey(request, env);
     if (authErr) return authErr;
     return handleAdminSync(body, env);
+  }
+
+  if (path === '/api/admin/user/update') {
+    const authErr = checkAdminKey(request, env);
+    if (authErr) return authErr;
+    return handleAdminUpdate(body, env);
   }
 
   // ---- 所有指令路径统一转发到桥接 ----

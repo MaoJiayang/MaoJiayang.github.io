@@ -398,6 +398,46 @@ function recordCall(steamId) {
   }
 }
 
+/**
+ * 回调 CF admin 端点更新用户 attrs（限流值/封禁状态），同步到 D1。
+ */
+async function updateUserD1(steamId, attrs) {
+  return new Promise((resolve) => {
+    const url = config.cfAdminUrl + '/api/admin/user/update';
+    const parsed = new URL(url);
+    const body = JSON.stringify(Object.assign({ steamId }, attrs));
+
+    const opts = {
+      hostname: parsed.hostname,
+      port: parsed.port || (parsed.protocol === 'https:' ? 443 : 80),
+      path: parsed.pathname,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Admin-Key': config.cfAdminKey,
+        'Content-Length': Buffer.byteLength(body),
+      },
+      timeout: 8000,
+    };
+
+    const req = (parsed.protocol === 'https:' ? require('https') : require('http')).request(opts, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          resolve(json && json.code === 200);
+        } catch (_) { resolve(false); }
+      });
+    });
+
+    req.on('error', () => { resolve(false); });
+    req.on('timeout', () => { req.destroy(); resolve(false); });
+    req.write(body);
+    req.end();
+  });
+}
+
 // ========== 缓存淘汰 ==========
 
 function cleanupCache() {
@@ -646,19 +686,17 @@ async function handleAdminAPI(pathname, body, remoteAddr) {
     if (!steamId || typeof rateLimit !== 'number') {
       return { status: 400, body: { code: 400, msg: '缺少参数' } };
     }
+    // 1. 更新本地缓存
     const entry = userCache.get(steamId);
-    if (entry) {
-      entry.rateLimit = rateLimit;
-    } else {
-      userCache.set(steamId, {
-        rateLimit,
-        banned: false,
-        displayName: '',
-        cachedAt: Date.now(),
-        lastAccess: Date.now(),
-      });
-    }
-    return { status: 200, body: { code: 200, msg: '限流值已设为 ' + rateLimit } };
+    if (entry) { entry.rateLimit = rateLimit; }
+    else { userCache.set(steamId, { rateLimit, banned: false, displayName: '', cachedAt: Date.now(), lastAccess: Date.now() }); }
+
+    // 2. 同步到 D1
+    const d1Result = await updateUserD1(steamId, { rateLimit });
+    const msg = d1Result ? '限流值已设为 ' + rateLimit + ' (D1 已同步)' : '限流值已设为 ' + rateLimit + ' (仅缓存)';
+    console.log('[bridge] ADMIN set-limit ' + steamId + ' → ' + rateLimit + (d1Result ? ' [D1 OK]' : ' [D1 FAIL]'));
+    addLog(steamId, 'admin:set-limit→' + rateLimit, d1Result ? 200 : 206, 0);
+    return { status: 200, body: { code: 200, msg } };
   }
 
   if (pathname === '/admin/api/clear-cache') {
@@ -706,16 +744,18 @@ async function handleAdminAPI(pathname, body, remoteAddr) {
   if (pathname === '/admin/api/set-banned') {
     const { steamId, banned } = body;
     if (!steamId || typeof banned !== 'boolean') return { status: 400, body: { code: 400, msg: '缺少 steamId 或 banned' } };
+    // 1. 更新本地缓存
     const entry = userCache.get(steamId);
-    if (entry) {
-      entry.banned = banned;
-    } else {
-      userCache.set(steamId, {
-        rateLimit: 20, banned: banned, displayName: '',
-        cachedAt: Date.now(), lastAccess: Date.now(),
-      });
-    }
-    return { status: 200, body: { code: 200, msg: steamId + (banned ? ' 已封禁' : ' 已解封') } };
+    if (entry) { entry.banned = banned; }
+    else { userCache.set(steamId, { rateLimit: 20, banned, displayName: '', cachedAt: Date.now(), lastAccess: Date.now() }); }
+
+    // 2. 同步到 D1
+    const d1Result = await updateUserD1(steamId, { banned });
+    const action = banned ? '封禁' : '解封';
+    const msg = steamId + (d1Result ? ' 已' + action + ' (D1 已同步)' : ' 已' + action + ' (仅缓存)');
+    console.log('[bridge] ADMIN ' + action + ' ' + steamId + (d1Result ? ' [D1 OK]' : ' [D1 FAIL]'));
+    addLog(steamId, 'admin:' + action, d1Result ? 200 : 206, 0);
+    return { status: 200, body: { code: 200, msg } };
   }
 
   // 获取缓存数据（供管理界面 AJAX 用，目前内嵌 HTML 无需 AJAX）
