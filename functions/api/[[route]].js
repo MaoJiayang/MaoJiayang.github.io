@@ -137,7 +137,7 @@ async function getUserStateForBridge(steamId, env) {
  * 通过 TCP 帧协议直连桥接服务器，附带 userState。
  * 使用 connect() + buildFrame/readFrame 与桥接通信。
  */
-async function tcpToBridge(host, port, authKey, steamId, command, password, customPath, userState) {
+async function tcpToBridge(host, port, authKey, steamId, command, password, customPath, userState, type) {
   let socket;
   try {
     const frame = {
@@ -147,6 +147,7 @@ async function tcpToBridge(host, port, authKey, steamId, command, password, cust
       gamePassword: password,
       path: customPath || '/command',
       userState,
+      type: type || 'command',   // 'sync' | 'verify' | 'command'
     };
     const requestJson = JSON.stringify(frame);
 
@@ -455,8 +456,9 @@ export async function onRequestPost({ request, env }) {
     }
     const banCheck = await checkBanned(body.steamId, env.LOG_DB);
     if (banCheck) return banCheck;
+    const userState = await getUserStateForBridge(body.steamId, env);
     const result = await tcpToBridge(bridgeHost, bridgeTcpPort, bridgeAuthKey,
-      body.steamId, '!info myinfo', body.gamePassword, null, null);
+      body.steamId, '!info myinfo', body.gamePassword, null, userState, 'verify');
     return Response.json(result, { status: result.code === 200 ? 200 : (result.code > 0 ? result.code : 500) });
   }
 
@@ -485,9 +487,9 @@ export async function onRequestPost({ request, env }) {
     }
     const banCheck = await checkBanned(body.steamId, env.LOG_DB);
     if (banCheck) return banCheck;
-    // 桥接处理 TCP 验证 + 回调 CF admin 写 D1
+    const userState = await getUserStateForBridge(body.steamId, env);
     const result = await tcpToBridge(bridgeHost, bridgeTcpPort, bridgeAuthKey,
-      body.steamId, '!info myinfo', body.gamePassword, null, null);
+      body.steamId, '!info myinfo', body.gamePassword, null, userState, 'sync');
     return Response.json(result, { status: result.code === 200 ? 200 : (result.code > 0 ? result.code : 500) });
   }
 

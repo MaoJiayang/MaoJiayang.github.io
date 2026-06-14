@@ -1083,12 +1083,17 @@ async function handleCfTcpFrame(frame) {
     console.log('[bridge] CF 同步用户 ' + steamId + ' (limit=' + us.rateLimit + ', banned=' + us.banned + ')');
   }
 
-  // 3. 获取用户状态（优先走刚写入的缓存）
-  const userState = userCache.get(steamId);
+  // 3. 获取用户状态：优先缓存，其次 CF 附带 userState，最后兜底懒加载
+  let userState = userCache.get(steamId);
   if (!userState) {
-    addLog(steamId, 'cf-' + pathLabel, 503, Date.now() - t0);
-    console.warn('[bridge] CF TCP: ' + steamId + ' 无缓存且未附带 userState，拒绝');
-    return { code: 503, msg: '用户状态不可用', data: null };
+    console.log('[bridge] [兜底] CF 未带 userState 且缓存未命中，懒加载 ' + steamId);
+    userState = await getUserState(steamId);
+    if (!userState) {
+      addLog(steamId, 'cf-' + pathLabel, 503, Date.now() - t0);
+      console.warn('[bridge] CF TCP: ' + steamId + ' 兜底懒加载也失败，拒绝');
+      return { code: 503, msg: '服务暂不可用', data: null };
+    }
+    console.log('[bridge] [兜底] ' + steamId + ' 懒加载成功');
   }
 
   // 4. 封禁检查
@@ -1108,7 +1113,26 @@ async function handleCfTcpFrame(frame) {
   const result = await tcpRequest(config.seHost, config.sePort, config.seAuthKey,
     steamId, frame.command || '', frame.gamePassword || '', frame.path);
 
-  // 7. 特殊处理 world-grids
+  // 7. sync 类型：验证通过后异步写 D1
+  if (frame.type === 'sync' && result.code === 200) {
+    const displayName = (result.data && result.data.displayName) || '';
+    syncUserToCF(steamId, displayName, '').then((cfResult) => {
+      if (cfResult && cfResult.code === 200 && cfResult.data && cfResult.data.attrs) {
+        const attrs = cfResult.data.attrs;
+        const existing = userCache.get(steamId);
+        userCache.set(steamId, {
+          rateLimit: attrs.rateLimit || 20,
+          banned: attrs.banned === true,
+          displayName: attrs.displayName || '',
+          cachedAt: Date.now(),
+          lastAccess: existing ? existing.lastAccess : Date.now(),
+        });
+        console.log('[bridge] CF sync ' + steamId + ' D1 写入完成 (limit=' + attrs.rateLimit + ')');
+      }
+    }).catch(() => {});
+  }
+
+  // 8. 特殊处理 world-grids
   if (frame.path === '/getWorldGridsBySteamId' && result.code === 200 && result.msg) {
     try {
       const parsed = JSON.parse(result.msg);
@@ -1117,7 +1141,7 @@ async function handleCfTcpFrame(frame) {
   }
 
   recordCall(steamId);
-  addLog(steamId, 'cf-' + pathLabel, result.code, Date.now() - t0);
+  addLog(steamId, 'cf-' + (frame.type === 'sync' ? 'sync' : pathLabel), result.code, Date.now() - t0);
   return result;
 }
 
