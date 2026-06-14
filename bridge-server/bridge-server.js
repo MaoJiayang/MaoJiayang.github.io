@@ -829,14 +829,24 @@ const server = http.createServer(async (req, res) => {
       const result = await tcpRequest(config.seHost, config.sePort, config.seAuthKey,
         body.steamId, '!info myinfo', body.gamePassword);
 
-      // 异步回调 CF 写 D1，同时从缓存补充 attrs 给客户端（不阻塞）
+      // 异步回调 CF 写 D1，同时确保用户已缓存（避免紧接着的 execute 503）
       if (result.code === 200) {
-        // 优先从已有缓存取 attrs（同步，不阻塞），命中则客户端立即可显示正确配额
         const cached = userCache.get(String(body.steamId));
         if (cached) {
+          // 已有缓存：直接补充 attrs 给客户端
           result.data = Object.assign({}, result.data, {
             attrs: { rateLimit: cached.rateLimit, banned: cached.banned, displayName: cached.displayName },
           });
+        } else {
+          // 首次登录：写默认值到缓存，防止 execute 时缓存未命中调 CF 超时 → 503
+          userCache.set(String(body.steamId), {
+            rateLimit: 20, banned: false, displayName: '',
+            cachedAt: Date.now(), lastAccess: Date.now(),
+          });
+          result.data = Object.assign({}, result.data, {
+            attrs: { rateLimit: 20, banned: false, displayName: '' },
+          });
+          console.log('[bridge] 用户 ' + body.steamId + ' 首次缓存（sync，默认值）');
         }
 
         // 异步刷新 D1（不阻塞响应）
