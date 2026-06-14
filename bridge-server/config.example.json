@@ -6,6 +6,5 @@
   "seAuthKey": "114514",
   "cfAdminUrl": "https://atomickitty17th.pages.dev",
   "cfAdminKey": "atuh-45646",
-  "cacheTtlSec": 60,
   "cacheMaxIdleSec": 86400
 }

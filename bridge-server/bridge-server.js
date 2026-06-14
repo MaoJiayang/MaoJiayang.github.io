@@ -27,8 +27,7 @@ const DEFAULT_CONFIG = {
   seAuthKey: '',
   cfAdminUrl: 'https://atomickitty17th.pages.dev',
   cfAdminKey: '',
-  cacheTtlSec: 60,
-  cacheMaxIdleSec: 86400,
+  cacheMaxIdleSec: 86400,   // 缓存淘汰：超此时长无请求即删除（1天）
 };
 
 // ---- 模式检测 ----
@@ -83,6 +82,20 @@ const rateWindows = new Map();
 // 最近请求日志（最多 50 条）
 const recentLogs = [];
 const MAX_LOGS = 50;
+
+// 完整日志文件流（追加模式）
+const LOG_FILE = path.join(IS_SEA ? path.dirname(process.execPath) : __dirname, 'bridge-server.log');
+let logStream = null;
+function ensureLogStream() {
+  if (!logStream) {
+    logStream = fs.createWriteStream(LOG_FILE, { flags: 'a' });
+    logStream.on('error', () => {});
+  }
+}
+function closeLogStream() {
+  if (logStream) { try { logStream.end(); } catch (_) {}; logStream = null; }
+}
+
 let startTime = Date.now();
 
 // ========== TCP 帧协议 ==========
@@ -307,20 +320,13 @@ async function syncUserToCF(steamId, displayName, knownIp) {
 }
 
 /**
- * 获取用户状态：缓存命中直接用，过期异步刷新，未命中同步拉取
+ * 获取用户状态：缓存命中直接用（不自动刷新，变更从管理界面手动触发），
+ * 未命中则同步从 CF 拉取。
  */
 async function getUserState(steamId) {
   const cached = userCache.get(steamId);
-  const now = Date.now();
-
   if (cached) {
-    cached.lastAccess = now;
-    const ageSec = (now - cached.cachedAt) / 1000;
-    if (ageSec < config.cacheTtlSec) {
-      return cached; // 命中且未过期
-    }
-    // 过期：返回旧数据，后台异步刷新
-    refreshUserCache(steamId);
+    cached.lastAccess = Date.now();
     return cached;
   }
 
@@ -331,15 +337,15 @@ async function getUserState(steamId) {
       rateLimit: data.rateLimit || 20,
       banned: data.banned === true,
       displayName: data.displayName || '',
-      cachedAt: now,
-      lastAccess: now,
+      cachedAt: Date.now(),
+      lastAccess: Date.now(),
     };
     userCache.set(steamId, entry);
     console.log('[bridge] 用户 ' + steamId + ' 已缓存 (limit=' + entry.rateLimit + ', banned=' + entry.banned + ')');
     return entry;
   }
 
-  // CF 不可达 + 无缓存：拒绝请求，不放行未验证用户
+  // CF 不可达 + 无缓存：拒绝请求
   console.warn('[bridge] CF 不可达，无法验证用户 ' + steamId + '，拒绝请求');
   return null;
 }
@@ -413,14 +419,19 @@ setInterval(cleanupCache, 10 * 60 * 1000);
 // ========== 请求日志 ==========
 
 function addLog(steamId, path, status, elapsedMs) {
-  recentLogs.unshift({
+  const entry = {
     time: new Date().toISOString(),
     steamId: String(steamId),
     path,
     status,
     elapsed: elapsedMs,
-  });
+  };
+  recentLogs.unshift(entry);
   if (recentLogs.length > MAX_LOGS) recentLogs.pop();
+
+  // 追加到日志文件（JSON Lines，每行一条）
+  ensureLogStream();
+  logStream.write(JSON.stringify(entry) + '\n');
 }
 
 // ========== HTTP 辅助方法 ==========
@@ -543,13 +554,17 @@ ${users.map((u) => `<tr>
   <td>${u.lastAccess}</td>
   <td>
     <button class="btn" style="padding:4px 8px;font-size:11px" onclick="refreshUser('${u.steamId}')">刷新</button>
+    <button class="btn" style="padding:4px 8px;font-size:11px" onclick="toggleBanned('${u.steamId}', ${u.banned})">${u.banned ? '解封' : '封禁'}</button>
     <button class="btn" style="padding:4px 8px;font-size:11px" onclick="clearUser('${u.steamId}')">清除</button>
   </td>
 </tr>`).join('\n')}
 </tbody>
 </table>
 
-<h2>最近请求</h2>
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+<h2 style="margin:0">最近请求</h2>
+<button class="btn" onclick="clearLogs()">清屏</button>
+</div>
 <table>
 <thead><tr><th>时间</th><th>SteamID</th><th>路径</th><th>状态</th><th>耗时</th></tr></thead>
 <tbody>${logs}</tbody>
@@ -599,6 +614,12 @@ function clearCache() { api('POST', '/admin/api/clear-cache').then(d => { msg(d.
 function refreshAll() { api('POST', '/admin/api/refresh-all').then(d => { msg(d.msg); location.reload(); }); }
 function refreshUser(sid) { api('POST', '/admin/api/refresh-user', { steamId: sid }).then(d => { msg(d.msg); location.reload(); }); }
 function clearUser(sid) { api('POST', '/admin/api/clear-user', { steamId: sid }).then(d => { msg(d.msg); location.reload(); }); }
+function clearLogs() { api('POST', '/admin/api/clear-logs').then(d => { msg(d.msg); location.reload(); }); }
+function toggleBanned(sid, cur) {
+  var action = cur ? '解封' : '封禁';
+  if (!confirm('确定要' + action + ' ' + sid + ' 吗？')) return;
+  api('POST', '/admin/api/set-banned', { steamId: sid, banned: !cur }).then(d => { msg(d.msg); location.reload(); });
+}
 </script>
 </body>
 </html>`;
@@ -675,6 +696,26 @@ async function handleAdminAPI(pathname, body, remoteAddr) {
     userCache.delete(steamId);
     rateWindows.delete(steamId);
     return { status: 200, body: { code: 200, msg: '已清除 ' + steamId } };
+  }
+
+  if (pathname === '/admin/api/clear-logs') {
+    recentLogs.length = 0;
+    return { status: 200, body: { code: 200, msg: '日志已清屏' } };
+  }
+
+  if (pathname === '/admin/api/set-banned') {
+    const { steamId, banned } = body;
+    if (!steamId || typeof banned !== 'boolean') return { status: 400, body: { code: 400, msg: '缺少 steamId 或 banned' } };
+    const entry = userCache.get(steamId);
+    if (entry) {
+      entry.banned = banned;
+    } else {
+      userCache.set(steamId, {
+        rateLimit: 20, banned: banned, displayName: '',
+        cachedAt: Date.now(), lastAccess: Date.now(),
+      });
+    }
+    return { status: 200, body: { code: 200, msg: steamId + (banned ? ' 已封禁' : ' 已解封') } };
   }
 
   // 获取缓存数据（供管理界面 AJAX 用，目前内嵌 HTML 无需 AJAX）
@@ -950,7 +991,7 @@ server.listen(config.port, () => {
   console.log('[bridge] SE 服务器: ' + config.seHost + ':' + config.sePort);
   console.log('[bridge] CF 管理端点: ' + config.cfAdminUrl);
   console.log('[bridge] 管理界面: http://localhost:' + config.port + '/admin');
-  console.log('[bridge] 缓存 TTL: ' + config.cacheTtlSec + 's | 淘汰空闲: ' + config.cacheMaxIdleSec + 's');
+  console.log('[bridge] 淘汰空闲: ' + config.cacheMaxIdleSec + 's');
 });
 
 server.on('error', (e) => {
@@ -1062,6 +1103,11 @@ function startCfTcpListener() {
     console.log('[bridge] CF TCP 端口: ' + config.tcpPort);
   });
 }
+
+// 退出时关闭日志文件
+process.on('exit', closeLogStream);
+process.on('SIGINT', () => { closeLogStream(); process.exit(0); });
+process.on('SIGTERM', () => { closeLogStream(); process.exit(0); });
 
 // 启动 CF TCP 监听器
 startCfTcpListener();
