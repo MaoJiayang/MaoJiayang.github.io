@@ -21,6 +21,7 @@ const { URL } = require('url');
 // ---- 默认配置 ----
 const DEFAULT_CONFIG = {
   port: 10085,
+  tcpPort: 10087,           // CF Function 直连 TCP 端口（绕过 CF fetch IP 限制）
   seHost: '127.0.0.1',
   sePort: 10086,
   seAuthKey: '',
@@ -956,6 +957,111 @@ server.on('error', (e) => {
   if (e.code === 'EADDRINUSE') {
     console.error('[bridge] 端口 ' + config.port + ' 已被占用');
   }
-  console.error('[bridge] 启动失败: ' + e.message);
+  console.error('[bridge] HTTP 启动失败: ' + e.message);
   process.exit(1);
 });
+
+// ========== CF TCP 监听（网页端专用，绕过 Cloudflare fetch IP 限制） ==========
+
+/**
+ * 处理 CF Function 通过 TCP 直连发来的指令帧。
+ * CF 已查好 D1 用户状态附带在帧中，桥接直接使用无需回调查 CF。
+ */
+async function handleCfTcpFrame(frame) {
+  const steamId = String(frame.steamId || '');
+  const t0 = Date.now();
+  const pathLabel = frame.path || '/command';
+
+  // 1. 校验 authKey
+  if (frame.authKey !== config.cfAdminKey) {
+    addLog(steamId, 'cf-tcp', 401, Date.now() - t0);
+    return { code: 401, msg: '鉴权失败', data: null };
+  }
+
+  // 2. CF 附带 userState → 直接写入缓存（免跨境 HTTP 回调查询）
+  if (frame.userState && typeof frame.userState.rateLimit === 'number') {
+    const us = frame.userState;
+    const existing = userCache.get(steamId);
+    userCache.set(steamId, {
+      rateLimit: us.rateLimit || 20,
+      banned: us.banned === true,
+      displayName: us.displayName || '',
+      cachedAt: Date.now(),
+      lastAccess: existing ? existing.lastAccess : Date.now(),
+    });
+    console.log('[bridge] CF 同步用户 ' + steamId + ' (limit=' + us.rateLimit + ', banned=' + us.banned + ')');
+  }
+
+  // 3. 获取用户状态（优先走刚写入的缓存）
+  const userState = userCache.get(steamId);
+  if (!userState) {
+    addLog(steamId, 'cf-' + pathLabel, 503, Date.now() - t0);
+    console.warn('[bridge] CF TCP: ' + steamId + ' 无缓存且未附带 userState，拒绝');
+    return { code: 503, msg: '用户状态不可用', data: null };
+  }
+
+  // 4. 封禁检查
+  if (userState.banned) {
+    addLog(steamId, 'cf-' + pathLabel, 403, Date.now() - t0);
+    return { code: 403, msg: '您的账号已被禁用', data: null };
+  }
+
+  // 5. 限流检查
+  const rateCheck = checkRateLimit(steamId, userState);
+  if (rateCheck.limited) {
+    addLog(steamId, 'cf-' + pathLabel, 429, Date.now() - t0);
+    return { code: 429, msg: '请求过于频繁，请等待 ' + rateCheck.resetSeconds + ' 秒', data: null };
+  }
+
+  // 6. 执行指令到 SE
+  const result = await tcpRequest(config.seHost, config.sePort, config.seAuthKey,
+    steamId, frame.command || '', frame.gamePassword || '', frame.path);
+
+  // 7. 特殊处理 world-grids
+  if (frame.path === '/getWorldGridsBySteamId' && result.code === 200 && result.msg) {
+    try {
+      const parsed = JSON.parse(result.msg);
+      if (Array.isArray(parsed)) result.data = parsed;
+    } catch (_) {}
+  }
+
+  recordCall(steamId);
+  addLog(steamId, 'cf-' + pathLabel, result.code, Date.now() - t0);
+  return result;
+}
+
+/**
+ * 启动 CF 专用 TCP 监听器。
+ * 复用现有 TCP 帧协议（4B BE 长度 + UTF-8 JSON）。
+ */
+function startCfTcpListener() {
+  const tcpServer = net.createServer((socket) => {
+    socket.setTimeout(TIMEOUT_MS);
+
+    readFrame(socket, TIMEOUT_MS)
+      .then(async (json) => {
+        let frame;
+        try { frame = JSON.parse(json); } catch (_) {
+          socket.end(buildFrame(JSON.stringify({ code: 400, msg: '帧格式错误', data: null })));
+          return;
+        }
+        const response = await handleCfTcpFrame(frame);
+        try { socket.end(buildFrame(JSON.stringify(response))); } catch (_) {}
+      })
+      .catch((e) => {
+        console.warn('[bridge] CF TCP 读取失败: ' + (e.message || ''));
+        try { socket.destroy(); } catch (_) {}
+      });
+  });
+
+  tcpServer.on('error', (e) => {
+    console.error('[bridge] CF TCP 端口 ' + config.tcpPort + ' 错误: ' + e.message);
+  });
+
+  tcpServer.listen(config.tcpPort, () => {
+    console.log('[bridge] CF TCP 端口: ' + config.tcpPort);
+  });
+}
+
+// 启动 CF TCP 监听器
+startCfTcpListener();

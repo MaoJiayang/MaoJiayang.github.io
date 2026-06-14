@@ -191,6 +191,69 @@ function normalizePath(pathname) {
   return pathname.replace(/\/$/, '') || '/api';
 }
 
+// ---- 通过 TCP 直连桥接服务器（绕过 CF fetch 裸 IP 限制） ----
+
+/**
+ * 从 D1 查用户状态，供 TCP 帧附带传给桥接。
+ * bridge-server 收到后直接使用，无需再跨境 HTTP 回调 CF。
+ */
+async function getUserStateForBridge(steamId, env) {
+  try {
+    const db = env.LOG_DB;
+    if (!db) return null;
+    await ensureUserTable(db);
+    const row = await db.prepare(
+      'SELECT attrs FROM users WHERE steam_id = ?'
+    ).bind(String(steamId)).first();
+    if (!row) return { rateLimit: 20, banned: false, displayName: '' };
+    const attrs = JSON.parse(row.attrs || '{}');
+    return {
+      rateLimit: attrs.rateLimit || 20,
+      banned: attrs.banned === true,
+      displayName: attrs.displayName || '',
+    };
+  } catch (_) {
+    return null;  // D1 故障时由桥接自行兜底
+  }
+}
+
+/**
+ * 通过 TCP 帧协议直连桥接服务器，附带 userState。
+ * 与 tcpRequest 使用相同的 connect() + buildFrame/readFrame 基础设施。
+ */
+async function tcpToBridge(host, port, authKey, steamId, command, password, customPath, userState) {
+  let socket;
+  try {
+    const frame = {
+      authKey,
+      steamId,
+      command,
+      gamePassword: password,
+      path: customPath || '/command',
+      userState,
+    };
+    const requestJson = JSON.stringify(frame);
+
+    socket = connect({ hostname: host, port }, { secureTransport: 'off' });
+    const writer = socket.writable.getWriter();
+    await writer.write(buildFrame(requestJson));
+    writer.releaseLock();
+
+    const responseJson = await readFrame(socket, TIMEOUT_MS);
+
+    let raw;
+    try { raw = JSON.parse(responseJson); } catch (_) {
+      return { code: 500, msg: '桥接响应异常', data: null };
+    }
+    // 桥接直接返回归一化后的 { code, msg, data }，无需再处理
+    return raw;
+  } catch (e) {
+    return { code: 500, msg: '桥接 TCP 失败: ' + (e.message || '未知错误'), data: null };
+  } finally {
+    if (socket) { try { socket.close(); } catch (_) {} }
+  }
+}
+
 // ---- Admin 端点鉴权 ----
 
 /**
@@ -521,24 +584,23 @@ export async function onRequestPost({ request, env }) {
     const banCheck2 = await checkBanned(body.steamId, env.LOG_DB);
     if (banCheck2) return banCheck2;
 
-    // 优先转发到服务端桥接（限流/封禁/配额由桥接统一处理）
+    // 优先通过 TCP 直连桥接（CF 已查好 D1 用户状态附在帧中，桥接无需回调查 CF）
     if (env.BRIDGE_URL) {
-      try {
-        const resp = await fetch(env.BRIDGE_URL + '/api/command/execute', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-        const data = await resp.json();
-        return Response.json(data, { status: resp.status });
-      } catch (e) {
-        console.warn('[execute] 桥接不可达，回退直连 TCP: ' + (e.message || ''));
+      const bridgeHost = env.SE_HOST || '183.131.51.12';
+      const bridgeTcpPort = parseInt(env.BRIDGE_TCP_PORT || '10087', 10);
+      const userState = await getUserStateForBridge(body.steamId, env);
+      if (userState) {
+        const tcpResult = await tcpToBridge(bridgeHost, bridgeTcpPort, env.SE_ADMIN_KEY || env.SE_AUTH_KEY || 'change-me',
+          body.steamId, body.command, body.gamePassword, null, userState);
+        return Response.json(tcpResult, { status: tcpResult.code === 200 ? 200 : (tcpResult.code > 0 ? tcpResult.code : 500) });
       }
-    } else {
-      console.log('[execute] BRIDGE_URL 未配置，直连 TCP');
+      // userState 查不到（D1 故障）→ 仍然尝试 TCP 到桥接，桥接自行兜底
+      const tcpResult = await tcpToBridge(bridgeHost, bridgeTcpPort, env.SE_ADMIN_KEY || env.SE_AUTH_KEY || 'change-me',
+        body.steamId, body.command, body.gamePassword, null, null);
+      return Response.json(tcpResult, { status: tcpResult.code === 200 ? 200 : (tcpResult.code > 0 ? tcpResult.code : 500) });
     }
 
-    // 回退：直接 TCP 连 SE（桥接未配置或不可达时）
+    // 回退：直接 TCP 连 SE（BRIDGE_URL 未配置时）
     const result = await tcpRequest(cfg.host, cfg.port, cfg.authKey, body.steamId, body.command, body.gamePassword);
     return Response.json(result);
   }
@@ -557,21 +619,14 @@ export async function onRequestPost({ request, env }) {
     const banCheck3 = await checkBanned(body.steamId, env.LOG_DB);
     if (banCheck3) return banCheck3;
 
-    // 优先转发到服务端桥接
+    // 优先通过 TCP 直连桥接
     if (env.BRIDGE_URL) {
-      try {
-        const resp = await fetch(env.BRIDGE_URL + '/api/grid/world-grids', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-        const data = await resp.json();
-        return Response.json(data, { status: resp.status });
-      } catch (e) {
-        console.warn('[world-grids] 桥接不可达，回退直连 TCP: ' + (e.message || ''));
-      }
-    } else {
-      console.log('[world-grids] BRIDGE_URL 未配置，直连 TCP');
+      const bridgeHost = env.SE_HOST || '183.131.51.12';
+      const bridgeTcpPort = parseInt(env.BRIDGE_TCP_PORT || '10087', 10);
+      const userState = await getUserStateForBridge(body.steamId, env);
+      const tcpResult = await tcpToBridge(bridgeHost, bridgeTcpPort, env.SE_ADMIN_KEY || env.SE_AUTH_KEY || 'change-me',
+        body.steamId, '', body.gamePassword, '/getWorldGridsBySteamId', userState);
+      return Response.json(tcpResult, { status: tcpResult.code === 200 ? 200 : (tcpResult.code > 0 ? tcpResult.code : 500) });
     }
 
     // 回退：直接 TCP 连 SE

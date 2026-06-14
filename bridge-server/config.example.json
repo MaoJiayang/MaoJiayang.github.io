@@ -1,5 +1,6 @@
 {
   "port": 10085,
+  "tcpPort": 10087,
   "seHost": "127.0.0.1",
   "sePort": 10086,
   "seAuthKey": "114514",
