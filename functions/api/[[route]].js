@@ -531,9 +531,11 @@ export async function onRequestPost({ request, env }) {
         });
         const data = await resp.json();
         return Response.json(data, { status: resp.status });
-      } catch (_) {
-        // 桥接不可达 → 回退到直接 TCP
+      } catch (e) {
+        console.warn('[execute] 桥接不可达，回退直连 TCP: ' + (e.message || ''));
       }
+    } else {
+      console.log('[execute] BRIDGE_URL 未配置，直连 TCP');
     }
 
     // 回退：直接 TCP 连 SE（桥接未配置或不可达时）
@@ -565,9 +567,11 @@ export async function onRequestPost({ request, env }) {
         });
         const data = await resp.json();
         return Response.json(data, { status: resp.status });
-      } catch (_) {
-        // 桥接不可达 → 回退到直接 TCP
+      } catch (e) {
+        console.warn('[world-grids] 桥接不可达，回退直连 TCP: ' + (e.message || ''));
       }
+    } else {
+      console.log('[world-grids] BRIDGE_URL 未配置，直连 TCP');
     }
 
     // 回退：直接 TCP 连 SE

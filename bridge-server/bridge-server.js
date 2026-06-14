@@ -760,24 +760,25 @@ const server = http.createServer(async (req, res) => {
       const result = await tcpRequest(config.seHost, config.sePort, config.seAuthKey,
         body.steamId, '!info myinfo', body.gamePassword);
 
-      // 验证通过后回调 CF 写入 D1
+      // 验证通过后异步回调 CF 写入 D1（不阻塞响应，D1 写延迟不影响登录体验）
       if (result.code === 200) {
         const displayName = (result.data && result.data.displayName) || '';
-        const cfResult = await syncUserToCF(body.steamId, displayName, '');
-        // 从 CF 返回中提取 attrs 写入缓存
-        if (cfResult && cfResult.code === 200 && cfResult.data && cfResult.data.attrs) {
-          const attrs = cfResult.data.attrs;
-          const existing = userCache.get(body.steamId);
-          userCache.set(String(body.steamId), {
-            rateLimit: attrs.rateLimit || 20,
-            banned: attrs.banned === true,
-            displayName: attrs.displayName || '',
-            cachedAt: Date.now(),
-            lastAccess: existing ? existing.lastAccess : Date.now(),
-          });
-          // 把 attrs 合并到返回值中给客户端
-          result.data = Object.assign({}, result.data, { attrs: attrs });
-        }
+        syncUserToCF(body.steamId, displayName, '').then((cfResult) => {
+          if (cfResult && cfResult.code === 200 && cfResult.data && cfResult.data.attrs) {
+            const attrs = cfResult.data.attrs;
+            const existing = userCache.get(body.steamId);
+            userCache.set(String(body.steamId), {
+              rateLimit: attrs.rateLimit || 20,
+              banned: attrs.banned === true,
+              displayName: attrs.displayName || '',
+              cachedAt: Date.now(),
+              lastAccess: existing ? existing.lastAccess : Date.now(),
+            });
+            console.log('[bridge] 用户 ' + body.steamId + ' D1 同步完成 (limit=' + attrs.rateLimit + ')');
+          }
+        }).catch((e) => {
+          console.warn('[bridge] 用户 ' + body.steamId + ' D1 同步失败: ' + (e && e.message || ''));
+        });
       }
 
       addLog(steamId, 'sync', result.code, Date.now() - t0);
