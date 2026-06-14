@@ -1,15 +1,18 @@
 /**
  * CF Pages Function: /api/* 统一处理
  *
- * 桥接浏览器请求到 SE Torch 服务器（原始 TCP 帧协议）
+ * 认证 + D1 操作在 CF 侧完成。指令执行 / 世界网格可转发到服务端桥接，
+ * 由桥接处理限流/封禁/TCP通信。未配置 BRIDGE_URL 时回退到直接 TCP。
+ *
  * 协议: 4字节 Big-Endian 长度前缀 + UTF-8 JSON
  *
  * 环境变量（在 CF Dashboard → Pages → Settings → Environment variables 中配置）:
- *   SE_HOST       — SE 服务器地址
+ *   SE_HOST       — SE 服务器地址（BRIDGE_URL 配置后仅作回退）
  *   SE_PORT       — SE 服务器端口
  *   SE_AUTH_KEY   — 认证密钥
- *   SE_BLACKLIST  — 禁止执行指令的 SteamID，逗号分隔，如 "76561199251433037,76561198248299872"
- *   SE_ADMIN_KEY  — (Phase 1 新增) 管理密钥，供 bridge-server 调用 admin 端点
+ *   SE_BLACKLIST  — 禁止执行指令的 SteamID，逗号分隔
+ *   SE_ADMIN_KEY  — 管理密钥，供 bridge-server 调用 admin 端点
+ *   BRIDGE_URL    — (可选) 服务端桥接地址，如 http://183.131.51.12:10085
  */
 import { connect } from 'cloudflare:sockets';
 
@@ -438,9 +441,31 @@ export async function onRequestGet({ request, env }) {
   }
 
   if (path === '/api/health') {
-    return new Response(JSON.stringify({ code: 200, msg: 'ok', data: { bridge: 'cloudflare' } }), {
+    const bridgeUrl = env.BRIDGE_URL || '';
+    const steamId = url.searchParams.get('steamId') || '';
+    const healthPath = steamId ? '/api/health?steamId=' + steamId : '/api/health';
+
+    let bridgeStatus = { bridge: 'not-configured' };
+    if (bridgeUrl) {
+      try {
+        const resp = await fetch(bridgeUrl + healthPath);
+        if (resp.ok) {
+          const data = await resp.json();
+          bridgeStatus = { bridge: 'ok', rateLimit: data.data && data.data.rateLimit || undefined };
+        } else {
+          bridgeStatus = { bridge: 'down' };
+        }
+      } catch (_) {
+        bridgeStatus = { bridge: 'down' };
+      }
+    }
+
+    return Response.json({
+      code: 200,
+      msg: bridgeStatus.bridge === 'down' ? 'degraded' : 'ok',
+      data: Object.assign({ cfFunction: 'ok' }, bridgeStatus),
+    }, {
       headers: {
-        'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
@@ -495,6 +520,23 @@ export async function onRequestPost({ request, env }) {
     }
     const banCheck2 = await checkBanned(body.steamId, env.LOG_DB);
     if (banCheck2) return banCheck2;
+
+    // 优先转发到服务端桥接（限流/封禁/配额由桥接统一处理）
+    if (env.BRIDGE_URL) {
+      try {
+        const resp = await fetch(env.BRIDGE_URL + '/api/command/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await resp.json();
+        return Response.json(data, { status: resp.status });
+      } catch (_) {
+        // 桥接不可达 → 回退到直接 TCP
+      }
+    }
+
+    // 回退：直接 TCP 连 SE（桥接未配置或不可达时）
     const result = await tcpRequest(cfg.host, cfg.port, cfg.authKey, body.steamId, body.command, body.gamePassword);
     return Response.json(result);
   }
@@ -512,6 +554,23 @@ export async function onRequestPost({ request, env }) {
     }
     const banCheck3 = await checkBanned(body.steamId, env.LOG_DB);
     if (banCheck3) return banCheck3;
+
+    // 优先转发到服务端桥接
+    if (env.BRIDGE_URL) {
+      try {
+        const resp = await fetch(env.BRIDGE_URL + '/api/grid/world-grids', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await resp.json();
+        return Response.json(data, { status: resp.status });
+      } catch (_) {
+        // 桥接不可达 → 回退到直接 TCP
+      }
+    }
+
+    // 回退：直接 TCP 连 SE
     const result = await tcpRequest(cfg.host, cfg.port, cfg.authKey, body.steamId, '', body.gamePassword, '/getWorldGridsBySteamId');
     // 服务端将 GridVO[] 序列化到 msg 字段，解析为 data
     if (result.code === 200 && result.msg) {

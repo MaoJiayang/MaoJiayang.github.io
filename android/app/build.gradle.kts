@@ -14,10 +14,8 @@ android {
         versionCode = 1
         versionName = "1.0.0"
 
-        // 桥接配置（与 server.js 默认值保持一致）
-        buildConfigField("String", "SE_HOST", "\"183.131.51.12\"")
-        buildConfigField("int", "SE_PORT", "10086")
-        buildConfigField("String", "SE_AUTH_KEY", "\"12345\"")
+        // 桥接配置（全部指令经服务端桥接，客户端不持密钥）
+        buildConfigField("String", "BRIDGE_URL", "\"http://183.131.51.12:10085\"")
         buildConfigField("String", "CF_PAGES_DOMAIN", "\"atomickitty17th.pages.dev\"")
         buildConfigField("int", "HTTP_PORT", "24007")
     }

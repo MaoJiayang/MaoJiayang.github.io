@@ -32,6 +32,34 @@ npm run build          # → dist/se-terminal.exe（~85MB）
 Remove-Item -Recurse -Force $env:LOCALAPPDATA\SE-Terminal\www -ErrorAction SilentlyContinue
 ```
 
+## 🔗 服务端桥接 EXE
+
+部署在游戏服务器上，作为所有客户端的**唯一安全边界**（限流 / 封禁 / TCP 通信）：
+
+```bash
+npm run build:bridge             # → dist/se-bridge-server.exe
+```
+
+**部署到游戏服务器**：
+
+1. 复制 `dist/se-bridge-server.exe` 到服务器
+2. 复制 `bridge-server/config.example.json` 为同目录 `config.json`，填写实际密钥
+3. 双击 EXE 运行（控制台窗口不可关闭）
+4. 浏览器打开 `http://localhost:10085/admin` 可看管理界面
+
+**config.json 字段**：
+
+| 字段 | 说明 |
+|------|------|
+| `port` | 桥接监听端口，默认 10085 |
+| `seHost` | SE 服务器地址（同机=127.0.0.1） |
+| `sePort` | SE 服务器端口 |
+| `seAuthKey` | SE TCP 认证密钥 |
+| `cfAdminUrl` | CF Pages 地址 |
+| `cfAdminKey` | 调用 CF admin 端点的密钥，与 CF Dashboard `SE_ADMIN_KEY` 一致 |
+| `cacheTtlSec` | 用户状态缓存刷新间隔，默认 60 |
+| `cacheMaxIdleSec` | 缓存淘汰：超此时长无请求即删除，默认 86400（1天） |
+
 ## 📱 Android APK
 
 ```bash
@@ -82,6 +110,7 @@ node test-search.js "保存飞船"    # 本地测试
 
 | 文件 | 说明 |
 |------|------|
+| `bridge-server/bridge-server.js` | Node.js 服务端桥接（安全边界，部署在游戏服务器） |
 | `server.js` | Node.js 客户端桥接（Dev + EXE） |
 | `android/` | Kotlin 客户端桥接（APK） |
 | `functions/api/[[route]].js` | CF 云端桥接（认证 + 指令 fallback） |
@@ -113,7 +142,8 @@ node test-search.js "保存飞船"    # 本地测试
 | `SE_PORT` | SE 服务器端口 |
 | `SE_AUTH_KEY` | 认证密钥 |
 | `SE_BLACKLIST` | 封禁 SteamID，逗号分隔 |
-| `BRIDGE_URL` | ⚠️ 已退役，可删除 |
+| `SE_ADMIN_KEY` | 管理密钥，供 bridge-server 校验身份 |
+| `BRIDGE_URL` | 服务端桥接地址（Phase 3 启用，如 `http://183.131.51.12:10085`） |
 
 **Pages → Settings → Functions → AI bindings**（语义搜索）：
 

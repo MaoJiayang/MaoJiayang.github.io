@@ -6,7 +6,7 @@
  *   - 桥接 HTTP 通信（本地桥接 / CF Function 降级）
  *   - 指令执行 + 密码验证
  *   - 用户同步（/api/user/sync → D1）
- *   - 客户端限流（sessionStorage，默认 20次/分钟）
+ *   - 限流显示（配额值从服务端获取，客户端不作强制拦截）
  *
  * 用法:
  *   SeBridge.init({ bridgeUrl: 'http://localhost:3001' });
@@ -19,8 +19,9 @@ var SeBridge = (function () {
   'use strict';
 
   var CRED_KEY = 'se_credentials';
-  var CALL_KEY = 'se_call_times';
-  var RATE_LIMIT = 20;          // 默认每分钟调用限制
+  var RATE_LIMIT = 20;          // 默认每分钟调用限制（syncUser 后由服务端覆盖）
+  var _rateRemaining = 20;      // 当前窗口剩余次数（由健康检查/响应头更新）
+  var _rateResetSeconds = 0;    // 距离窗口重置的秒数
   var _bridgeUrl = '';          // 配置的桥接地址（候选）
   var _activeBridge = null;     // 竞速选出的实际使用的桥接（null=未选, ''=CF）
   var _bridgeDown = false;
@@ -57,7 +58,6 @@ var SeBridge = (function () {
 
   function clearCredentials() {
     try { localStorage.removeItem(CRED_KEY); } catch (_) { /* */ }
-    try { sessionStorage.removeItem(CALL_KEY); } catch (_) { /* */ }
     _memCreds = null;
   }
 
@@ -125,6 +125,12 @@ var SeBridge = (function () {
 
     return fetch(url, opts)
       .then(function (r) {
+        // 从响应头读取限流信息（bridge-server 在 200/429 响应中均会带）
+        var remaining = r.headers.get('X-RateLimit-Remaining');
+        var reset = r.headers.get('X-RateLimit-Reset');
+        if (remaining !== null) _rateRemaining = parseInt(remaining, 10);
+        if (reset !== null) _rateResetSeconds = parseInt(reset, 10);
+
         if (!r.ok) throw new Error('BRIDGE_HTTP_' + r.status);
         if (_bridgeDown && _activeBridge) {
           _bridgeDown = false;
@@ -146,6 +152,10 @@ var SeBridge = (function () {
           if (body) { fbOpts.headers['Content-Type'] = 'application/json'; fbOpts.body = JSON.stringify(body); }
           return fetch(path, fbOpts)
             .then(function (r) {
+              var remaining = r.headers.get('X-RateLimit-Remaining');
+              var reset = r.headers.get('X-RateLimit-Reset');
+              if (remaining !== null) _rateRemaining = parseInt(remaining, 10);
+              if (reset !== null) _rateResetSeconds = parseInt(reset, 10);
               if (!r.ok) throw new Error('BRIDGE_HTTP_' + r.status);
               return r.json();
             })
@@ -190,10 +200,28 @@ var SeBridge = (function () {
     });
   }
 
-  function checkBridgeHealth() {
+  /**
+   * 桥接健康检查，同时更新用户配额状态。
+   * @param {string} [steamId] - 可选，传入则查询该用户的限流配额
+   */
+  function checkBridgeHealth(steamId) {
     var base = _activeBridge !== null ? _activeBridge : '';
-    return fetch(base + '/api/health')
-      .then(function (r) { return r.ok ? r.json() : null; })
+    var healthUrl = base + '/api/health';
+    if (steamId) healthUrl += '?steamId=' + encodeURIComponent(steamId);
+    return fetch(healthUrl)
+      .then(function (r) {
+        if (!r.ok) return null;
+        return r.json();
+      })
+      .then(function (data) {
+        if (data && data.data && data.data.rateLimit) {
+          var rl = data.data.rateLimit;
+          _rateRemaining = rl.remaining;
+          _rateResetSeconds = rl.resetSeconds;
+          if (rl.limit) RATE_LIMIT = rl.limit;
+        }
+        return data;
+      })
       .catch(function () { return null; });
   }
 
@@ -205,6 +233,13 @@ var SeBridge = (function () {
     return callAuth('POST', '/api/user/sync', {
       steamId: creds.steamId,
       gamePassword: creds.gamePassword,
+    }).then(function (r) {
+      // 同步服务端返回的限流配额
+      if (r.data && r.data.attrs && typeof r.data.attrs.rateLimit === 'number') {
+        RATE_LIMIT = r.data.attrs.rateLimit;
+        _rateRemaining = Math.max(0, RATE_LIMIT - 1); // 同步刚消耗了一次
+      }
+      return r;
     });
   }
 
@@ -217,52 +252,27 @@ var SeBridge = (function () {
     return callBridge('POST', '/api/grid/world-grids', {
       steamId: creds.steamId,
       gamePassword: creds.gamePassword,
-    }).then(function (r) {
-      // API 调用计入限流
-      trackCall();
-      return r;
     });
   }
 
-  // ========== 客户端限流 ==========
+  // ========== 客户端限流显示（服务端强制，客户端仅展示） ==========
 
-  function loadCallTimes() {
-    try {
-      var raw = sessionStorage.getItem(CALL_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (_) { return []; }
-  }
-
-  function saveCallTimes(times) {
-    try { sessionStorage.setItem(CALL_KEY, JSON.stringify(times)); } catch (_) { /* */ }
-  }
-
-  function purgeCallTimes() {
-    var cutoff = Date.now() - 60000;
-    var times = loadCallTimes().filter(function (t) { return t > cutoff; });
-    saveCallTimes(times);
-    return times;
-  }
-
+  /** @deprecated 服务端强制执行限流，客户端不再拦截，始终返回 false */
   function isRateLimited() {
-    return purgeCallTimes().length >= RATE_LIMIT;
+    return false;
   }
 
+  /** @deprecated 服务端计数，客户端不再需要 */
   function trackCall() {
-    var times = loadCallTimes();
-    times.push(Date.now());
-    saveCallTimes(times);
-    return times.length;
+    // no-op
   }
 
   function getRemainingCalls() {
-    return Math.max(0, RATE_LIMIT - purgeCallTimes().length);
+    return _rateRemaining;
   }
 
   function getResetSeconds() {
-    var times = purgeCallTimes();
-    if (times.length === 0) return 0;
-    return Math.max(0, Math.ceil((times[0] + 60000 - Date.now()) / 1000));
+    return _rateResetSeconds;
   }
 
   function getRateLimit() {
@@ -271,6 +281,13 @@ var SeBridge = (function () {
 
   function setRateLimit(n) {
     if (typeof n === 'number' && n > 0) RATE_LIMIT = n;
+  }
+
+  /** 手动更新限流状态（供 UI 层在特殊场景下使用） */
+  function updateRateState(remaining, limit, resetSeconds) {
+    if (typeof remaining === 'number') _rateRemaining = remaining;
+    if (typeof limit === 'number') RATE_LIMIT = limit;
+    if (typeof resetSeconds === 'number') _rateResetSeconds = resetSeconds;
   }
 
   // ========== 初始化 ==========
@@ -296,6 +313,7 @@ var SeBridge = (function () {
     // 否则 _authUrl 保持 ''（同域 CF）
 
     if (opts.rateLimit !== undefined) RATE_LIMIT = opts.rateLimit;
+    _rateRemaining = RATE_LIMIT;
     if (opts.onStatusChange) _onStatusChange = opts.onStatusChange;
 
     // HTTPS 页面不能直连 HTTP 桥接（Mixed Content），自动降级
@@ -335,13 +353,14 @@ var SeBridge = (function () {
     // 世界网格
     getWorldGrids: getWorldGrids,
 
-    // 限流
+    // 限流（服务端强制，客户端仅展示）
     isRateLimited: isRateLimited,
     trackCall: trackCall,
     getRemainingCalls: getRemainingCalls,
     getResetSeconds: getResetSeconds,
     getRateLimit: getRateLimit,
     setRateLimit: setRateLimit,
+    updateRateState: updateRateState,
 
     // 桥接状态（只读）
     get bridgeDown() { return _bridgeDown; },

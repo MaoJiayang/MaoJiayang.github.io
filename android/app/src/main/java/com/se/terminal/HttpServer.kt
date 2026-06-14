@@ -1,7 +1,6 @@
 package com.se.terminal
 
 import fi.iki.elonen.NanoHTTPD
-import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import java.io.ByteArrayInputStream
 import java.io.File
@@ -9,14 +8,15 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * NanoHTTPD 本地服务器 — 路由表与 server.js 保持一致。
- * /api/ 通配符 -> 桥接逻辑, 其他 -> 静态文件 (assets/www/)
+ * NanoHTTPD 本地服务器 — 所有 API 请求转发到服务端桥接。
+ * 桥接服务处理 TCP、限流、封禁——客户端不持有任何敏感信息。
  */
 class HttpServer(
     private val context: android.content.Context
 ) : NanoHTTPD(BuildConfig.HTTP_PORT) {
 
     private val assets = context.assets
+    private val bridgeUrl = BuildConfig.BRIDGE_URL
     private val cfOrigin = "https://${BuildConfig.CF_PAGES_DOMAIN}"
 
     /** 优先缓存目录，其次 assets。缓存为空时自动回退。 */
@@ -37,11 +37,28 @@ class HttpServer(
 
         return try {
             when {
-                path == "/api/health" -> handleHealth()
-                path == "/api/command/verify" && method == Method.POST -> handleAuth(session, "/api/command/verify")
-                path == "/api/user/sync" && method == Method.POST -> handleAuth(session, "/api/user/sync")
-                path == "/api/command/execute" && method == Method.POST -> handleExecute(session)
-                path == "/api/grid/world-grids" && method == Method.POST -> handleWorldGrids(session)
+                path == "/api/health" -> {
+                    // 携带 steamId 查询参数透传到桥接（配额查询）
+                    val steamId = session.parameters["steamId"]?.firstOrNull()
+                    val healthPath = if (steamId != null) "/api/health?steamId=$steamId" else "/api/health"
+                    proxyToBridge("GET", healthPath, null)
+                }
+                path == "/api/command/verify" && method == Method.POST -> {
+                    val body = parseBody(session) ?: return jsonError(400, "缺少必要参数")
+                    proxyToBridge("POST", "/api/command/verify", body)
+                }
+                path == "/api/user/sync" && method == Method.POST -> {
+                    val body = parseBody(session) ?: return jsonError(400, "缺少 steamId 或 gamePassword")
+                    proxyToBridge("POST", "/api/user/sync", body)
+                }
+                path == "/api/command/execute" && method == Method.POST -> {
+                    val body = parseBody(session) ?: return jsonError(400, "缺少必要参数")
+                    proxyToBridge("POST", "/api/command/execute", body)
+                }
+                path == "/api/grid/world-grids" && method == Method.POST -> {
+                    val body = parseBody(session) ?: return jsonError(400, "缺少 steamId 或 gamePassword")
+                    proxyToBridge("POST", "/api/grid/world-grids", body)
+                }
                 method == Method.GET || method == Method.HEAD -> serveAsset(path)
                 else -> jsonError(404, "未知接口")
             }
@@ -50,57 +67,29 @@ class HttpServer(
         }
     }
 
-    // ---- API ----
-
-    private fun handleHealth() = jsonOk(mapOf("code" to 200, "msg" to "server ok"))
-
-    private fun handleAuth(session: IHTTPSession, apiPath: String): Response {
-        val body = parseBody(session) ?: return jsonError(400, "缺少必要参数")
-        return proxyPost(apiPath, body)
-    }
-
-    private fun handleExecute(session: IHTTPSession): Response = runBlocking {
-        val body = parseBody(session) ?: return@runBlocking jsonError(400, "缺少必要参数")
-        val r = TcpBridge.tcpRequest(
-            BuildConfig.SE_HOST, BuildConfig.SE_PORT, BuildConfig.SE_AUTH_KEY,
-            body.optString("steamId"), body.optString("command"), body.optString("gamePassword")
-        )
-        jsonOk(mapOf("code" to r.code, "msg" to r.msg, "data" to (r.data ?: JSONObject.NULL)))
-    }
-
-    private fun handleWorldGrids(session: IHTTPSession): Response = runBlocking {
-        val body = parseBody(session) ?: return@runBlocking jsonError(400, "缺少 steamId 或 gamePassword")
-        val r = TcpBridge.tcpRequest(
-            BuildConfig.SE_HOST, BuildConfig.SE_PORT, BuildConfig.SE_AUTH_KEY,
-            body.optString("steamId"), "", body.optString("gamePassword"), "/getWorldGridsBySteamId"
-        )
-        if (r.code == 200 && r.data == null && r.msg.isNotEmpty()) {
-            try {
-                org.json.JSONArray(r.msg)
-                return@runBlocking jsonOk(mapOf("code" to r.code, "msg" to r.msg, "data" to r.msg))
-            } catch (_: Exception) {}
-        }
-        jsonOk(mapOf("code" to r.code, "msg" to r.msg, "data" to (r.data ?: JSONObject.NULL)))
-    }
-
-    /** POST 代理到 CF（认证请求） */
-    private fun proxyPost(path: String, body: JSONObject): Response {
+    /** POST 转发到服务端桥接 */
+    private fun proxyToBridge(method: String, path: String, body: JSONObject?): Response {
         return try {
-            val url = URL(cfOrigin + path)
+            val url = URL(bridgeUrl + path)
             val conn = url.openConnection() as HttpURLConnection
-            conn.requestMethod = "POST"
-            conn.setRequestProperty("Content-Type", "application/json")
-            conn.doOutput = true
-            conn.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+            conn.requestMethod = method
+            conn.connectTimeout = 8000
+            conn.readTimeout = 15000
+            if (body != null) {
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.doOutput = true
+                val bodyBytes = body.toString().toByteArray(Charsets.UTF_8)
+                conn.outputStream.use { it.write(bodyBytes) }
+            }
             val respBody = conn.inputStream.use { it.readBytes().toString(Charsets.UTF_8) }
             json(Response.Status.lookup(conn.responseCode), respBody)
         } catch (_: Exception) {
-            jsonError(502, "认证服务不可达")
+            jsonError(502, "桥接服务不可达")
         }
     }
 
-    /** GET 代理到 CF（版本检查等） */
-    private fun proxyGet(path: String): Response {
+    /** GET 代理到 CF（仅用于 version.json 实时拉取） */
+    private fun proxyGetCF(path: String): Response {
         return try {
             val url = URL(cfOrigin + path)
             val conn = url.openConnection() as HttpURLConnection
@@ -123,10 +112,9 @@ class HttpServer(
 
         // version.json 从 CF 实时拉取，与 EXE 行为一致
         if (filePath == "version.json") {
-            return proxyGet("/version.json")
+            return proxyGetCF("/version.json")
         }
 
-        // 尝试直接匹配
         try {
             return streamAsset("www/$filePath")
         } catch (_: Exception) {}
@@ -145,7 +133,6 @@ class HttpServer(
     }
 
     private fun streamAsset(assetPath: String): Response {
-        // 优先读取缓存目录（同步后），其次 assets
         val bytes: ByteArray
         val cacheDir = wwwDir()
         if (cacheDir != null) {
@@ -171,8 +158,6 @@ class HttpServer(
     // ---- 工具 ----
 
     private fun parseBody(session: IHTTPSession): JSONObject? {
-        // 修复 NanoHTTPD 中文乱码：parseBody 前强制 content-type 声明 UTF-8
-        // 社区标准方案: https://github.com/NanoHttpd/nanohttpd/issues/11
         val ct = session.headers["content-type"]
         if (ct != null && !ct.contains("charset", ignoreCase = true)) {
             session.headers["content-type"] = "$ct; charset=UTF-8"
@@ -182,9 +167,6 @@ class HttpServer(
         val raw = files["postData"] ?: return null
         return try { JSONObject(raw) } catch (_: Exception) { null }
     }
-
-    private fun jsonOk(data: Map<String, Any?>) =
-        json(Response.Status.OK, JSONObject(data).toString())
 
     private fun jsonError(code: Int, msg: String) =
         json(Response.Status.lookup(code), JSONObject(mapOf("code" to code, "msg" to msg)).toString())

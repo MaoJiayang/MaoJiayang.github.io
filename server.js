@@ -1,21 +1,22 @@
 /**
  * server.js — 伊卡洛斯虚空终端 统一本地服务器
  *
- * 合并前端静态服务 + TCP 桥接 + 认证代理，一个进程同时服务 dev 和 EXE 两种场景。
+ * 合并前端静态服务 + HTTP 桥接代理，一个进程同时服务 dev 和 EXE 两种场景。
+ * 所有 API 请求转发到服务端桥接（bridge-server），不再直连 SE。
  *
  * Dev 模式: 当前目录有 terminal.html → 直接服务项目文件（改代码立刻生效）
  * EXE 模式: 当前目录无 terminal.html → 从 CF Pages 同步前端到缓存目录
  *
  * 用法:
  *   node server.js [端口]
- *   SE_HOST=... SE_PORT=... SE_AUTH_KEY=... node server.js
+ *   BRIDGE_URL=http://183.131.51.12:10085 node server.js
  *   CF_PAGES_DOMAIN=atomickitty17th.pages.dev node server.js
  */
 
 'use strict';
 
-const net = require('net');
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
@@ -23,12 +24,9 @@ const { exec } = require('child_process');
 var PORT = parseInt(process.argv[2], 10) || parseInt(process.env.PORT, 10) || 24007;
 var PORT_MAX = PORT + 10;  // 端口被占用时自动递增尝试的上限
 
-const SE_HOST = process.env.SE_HOST || '183.131.51.12';
-const SE_PORT = parseInt(process.env.SE_PORT, 10) || 10086;
-const SE_AUTH_KEY = process.env.SE_AUTH_KEY || '12345';
+const BRIDGE_URL = process.env.BRIDGE_URL || 'http://183.131.51.12:10085';
 const CF_DOMAIN = process.env.CF_PAGES_DOMAIN || 'atomickitty17th.pages.dev';
 const CF_ORIGIN = 'https://' + CF_DOMAIN;
-const TIMEOUT = 15000;
 
 // SEA 兼容：打包后 __dirname 不可靠，统一用 process.cwd()（Dev 下用户始终从项目根启动）
 const APP_DIR = process.cwd();
@@ -71,117 +69,6 @@ const FRONTEND_FILES = [
   'icons/mapping.json',
   'icons/tea.jpg',
 ];
-
-// ========== TCP 帧协议 ==========
-
-function buildFrame(json) {
-  const data = Buffer.from(json, 'utf-8');
-  const len = Buffer.alloc(4);
-  len.writeInt32BE(data.length, 0);
-  return Buffer.concat([len, data]);
-}
-
-function readFrame(socket, timeoutMs) {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => { cleanup(); reject(new Error('读取超时')); }, timeoutMs);
-    let buf = Buffer.alloc(0);
-
-    const onData = (chunk) => {
-      buf = Buffer.concat([buf, chunk]);
-      if (buf.length >= 4) {
-        const length = buf.readInt32BE(0);
-        const total = 4 + length;
-        if (buf.length >= total) {
-          cleanup();
-          resolve(buf.slice(4, total).toString('utf-8'));
-        }
-      }
-    };
-    const onError = (err) => { cleanup(); reject(err); };
-    const onClose = () => { cleanup(); reject(new Error('连接关闭')); };
-    const cleanup = () => {
-      clearTimeout(timer);
-      socket.removeListener('data', onData);
-      socket.removeListener('error', onError);
-      socket.removeListener('close', onClose);
-    };
-    socket.on('data', onData);
-    socket.once('error', onError);
-    socket.once('close', onClose);
-  });
-}
-
-// ---- PUA 字符清洗（与 CF Worker cleanPUA 行为一致）----
-function cleanPUA(obj) {
-  if (typeof obj === 'string') return obj.replace(/[-]/g, '');
-  if (Array.isArray(obj)) return obj.map(cleanPUA);
-  if (obj && typeof obj === 'object') {
-    const out = {};
-    for (const [k, v] of Object.entries(obj)) out[k] = cleanPUA(v);
-    return out;
-  }
-  return obj;
-}
-
-function tcpRequest(host, port, authKey, steamId, command, password, customPath) {
-  return new Promise((resolve) => {
-    const innerBody = JSON.stringify({
-      steamId,
-      command,
-      gamePassword: password,
-      forcePlayerOnline: false,
-      dontSendToGameScreen: true,
-    });
-
-    const requestJson = JSON.stringify({
-      path: customPath || '/command',
-      bodyJson: innerBody,
-      authKey,
-    });
-
-    const socket = new net.Socket();
-    socket.setTimeout(TIMEOUT);
-
-    socket.connect(port, host, () => {
-      socket.write(buildFrame(requestJson));
-
-      readFrame(socket, TIMEOUT)
-        .then((json) => {
-          try {
-            const raw = JSON.parse(json);
-            const cleaned = cleanPUA(raw);
-            if (cleaned.code !== undefined) { resolve(cleaned); return; }
-            if (cleaned.success === true) {
-              let body = cleaned.bodyJson || '';
-              try { const p = JSON.parse(body); body = typeof p === 'string' ? p : JSON.stringify(p); } catch (_) {}
-              resolve({ code: 200, msg: body, data: null });
-              return;
-            }
-            if (cleaned.success === false) {
-              resolve({ code: 400, msg: cleaned.errorMessage || '未知错误', data: null });
-              return;
-            }
-            resolve({ code: 500, msg: '无法解析响应', data: null });
-          } catch (_) {
-            resolve({ code: 500, msg: 'SE服务器响应异常', data: null });
-          }
-        })
-        .catch((err) => {
-          resolve({ code: 500, msg: 'TCP 读取失败: ' + err.message, data: null });
-        })
-        .finally(() => socket.destroy());
-    });
-
-    socket.on('error', (err) => {
-      resolve({ code: 500, msg: 'TCP 连接失败: ' + err.message, data: null });
-    });
-
-    socket.on('timeout', () => {
-      socket.destroy();
-      resolve({ code: 500, msg: 'TCP 连接超时', data: null });
-    });
-  });
-}
 
 // ========== 前端同步（EXE 模式） ==========
 
@@ -311,15 +198,55 @@ function stripAnalytics(html) {
   return html.replace(/<!-- Cloudflare Pages Analytics -->[\s\S]*?<!-- Cloudflare Pages Analytics -->/g, '')
              .replace(/<script[^>]*cloudflareinsights\.com[^>]*><\/script>/gi, '');
 }
-async function proxyToCF(path, bodyObj) {
-  const url = CF_ORIGIN + path;
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(bodyObj),
+
+/**
+ * 转发请求到服务端桥接。透传请求体和响应。
+ * 桥接服务处理 TCP、限流、封禁——客户端不持有任何敏感信息。
+ */
+function proxyToBridge(method, path, body) {
+  return new Promise((resolve) => {
+    const url = new URL(path, BRIDGE_URL);
+    const bodyStr = body ? JSON.stringify(body) : null;
+
+    const opts = {
+      hostname: url.hostname,
+      port: url.port || 80,
+      path: url.pathname + url.search,
+      method: method,
+      headers: {},
+      timeout: 15000,
+    };
+
+    if (bodyStr) {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.headers['Content-Length'] = Buffer.byteLength(bodyStr);
+    }
+
+    const mod = url.protocol === 'https:' ? https : http;
+    const req = mod.request(opts, (resp) => {
+      let data = '';
+      resp.on('data', (chunk) => { data += chunk; });
+      resp.on('end', () => {
+        try {
+          resolve({ status: resp.statusCode, body: JSON.parse(data) });
+        } catch (_) {
+          resolve({ status: 502, body: { code: 502, msg: '桥接响应异常' } });
+        }
+      });
+    });
+
+    req.on('error', () => {
+      resolve({ status: 502, body: { code: 502, msg: '桥接服务不可达' } });
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      resolve({ status: 502, body: { code: 502, msg: '桥接服务超时' } });
+    });
+
+    if (bodyStr) req.write(bodyStr);
+    req.end();
   });
-  const data = await resp.json();
-  return { status: resp.status, body: data };
 }
 
 const server = http.createServer(async (req, res) => {
@@ -334,15 +261,19 @@ const server = http.createServer(async (req, res) => {
   const apiPath = url.pathname;
   const t0 = Date.now();
 
-  // ---- API 路由 ----
+  // ---- API 路由（全部转发到服务端桥接） ----
 
-  // 健康检查
-  if (apiPath === '/api/health' && (req.method === 'GET' || req.method === 'HEAD')) {
-    jsonResponse(res, 200, { code: 200, msg: 'server ok' });
+  // 健康检查 → 桥接（合并自身状态）
+  if (apiPath === '/api/health' && req.method === 'GET') {
+    // 携带 steamId 查询参数透传
+    const qsSteamId = url.searchParams.get('steamId');
+    const healthPath = qsSteamId ? '/api/health?steamId=' + qsSteamId : '/api/health';
+    const result = await proxyToBridge('GET', healthPath);
+    jsonResponse(res, result.status === 200 ? 200 : result.status, result.body);
     return;
   }
 
-  // 指令验证 → 代理到 CF（D1 封禁检查 + SE 密码验证）
+  // 指令验证 → 桥接
   if (apiPath === '/api/command/verify' && req.method === 'POST') {
     const body = await readBody(req);
     if (!body || !body.steamId || !body.gamePassword) {
@@ -350,19 +281,14 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     console.log('[proxy:verify] steamId=' + body.steamId);
-    try {
-      const result = await proxyToCF('/api/command/verify', body);
-      const ms = Date.now() - t0;
-      console.log('[proxy:verify] status=' + result.status + ' code=' + (result.body.code || '?') + ' (' + ms + 'ms)');
-      jsonResponse(res, result.status, result.body);
-    } catch (e) {
-      console.error('[proxy:verify] 失败: ' + e.message);
-      jsonResponse(res, 502, { code: 502, msg: '认证服务不可达' });
-    }
+    const result = await proxyToBridge('POST', '/api/command/verify', body);
+    const ms = Date.now() - t0;
+    console.log('[proxy:verify] status=' + result.status + ' code=' + (result.body.code || '?') + ' (' + ms + 'ms)');
+    jsonResponse(res, result.status, result.body);
     return;
   }
 
-  // 用户同步 → 代理到 CF（D1 写入）
+  // 用户同步 → 桥接
   if (apiPath === '/api/user/sync' && req.method === 'POST') {
     const body = await readBody(req);
     if (!body || !body.steamId || !body.gamePassword) {
@@ -370,50 +296,41 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     console.log('[proxy:sync] steamId=' + body.steamId);
-    try {
-      const result = await proxyToCF('/api/user/sync', body);
-      const ms = Date.now() - t0;
-      console.log('[proxy:sync] status=' + result.status + ' (' + ms + 'ms)');
-      jsonResponse(res, result.status, result.body);
-    } catch (e) {
-      console.error('[proxy:sync] 失败: ' + e.message);
-      jsonResponse(res, 502, { code: 502, msg: '认证服务不可达' });
-    }
+    const result = await proxyToBridge('POST', '/api/user/sync', body);
+    const ms = Date.now() - t0;
+    console.log('[proxy:sync] status=' + result.status + ' code=' + (result.body.code || '?') + ' (' + ms + 'ms)');
+    jsonResponse(res, result.status, result.body);
     return;
   }
 
-  // 指令执行 → 本地 TCP 直连 SE
+  // 指令执行 → 桥接（限流/封禁/配额 均由桥接处理）
   if (apiPath === '/api/command/execute' && req.method === 'POST') {
     const body = await readBody(req);
     if (!body || !body.steamId || !body.command || !body.gamePassword) {
       jsonResponse(res, 400, { code: 400, msg: '缺少必要参数' });
       return;
     }
-    console.log('[execute] steamId=' + body.steamId + ' cmd="' + body.command + '"');
-    const result = await tcpRequest(SE_HOST, SE_PORT, SE_AUTH_KEY, body.steamId, body.command, body.gamePassword);
+    console.log('[proxy:execute] steamId=' + body.steamId + ' cmd="' + body.command + '"');
+    const result = await proxyToBridge('POST', '/api/command/execute', body);
     const ms = Date.now() - t0;
-    const dataPreview = typeof result.data === 'object' ? JSON.stringify(result.data).substring(0, 200) : String(result.data || 'null').substring(0, 200);
-    console.log('[execute] code=' + result.code + ' data=' + dataPreview + ' (' + ms + 'ms)');
-    jsonResponse(res, 200, result);
+    console.log('[proxy:execute] status=' + result.status + ' code=' + (result.body.code || '?') + ' (' + ms + 'ms)');
+    // 透传桥接返回的限流响应头到客户端
+    jsonResponse(res, result.status, result.body);
     return;
   }
 
-  // 世界网格 → 本地 TCP 直连 SE
+  // 世界网格 → 桥接
   if (apiPath === '/api/grid/world-grids' && req.method === 'POST') {
     const body = await readBody(req);
     if (!body || !body.steamId || !body.gamePassword) {
       jsonResponse(res, 400, { code: 400, msg: '缺少 steamId 或 gamePassword' });
       return;
     }
-    console.log('[world-grids] steamId=' + body.steamId);
-    const result = await tcpRequest(SE_HOST, SE_PORT, SE_AUTH_KEY, body.steamId, '', body.gamePassword, '/getWorldGridsBySteamId');
+    console.log('[proxy:world-grids] steamId=' + body.steamId);
+    const result = await proxyToBridge('POST', '/api/grid/world-grids', body);
     const ms = Date.now() - t0;
-    console.log('[world-grids] code=' + result.code + ' (' + ms + 'ms)');
-    // 与 CF Worker 一致：GridVO[] 可能在 msg 字段中
-    if (result.code === 200 && !result.data && result.msg) {
-      try { const p = JSON.parse(result.msg); if (Array.isArray(p)) result.data = p; } catch (_) {}
-    }
-    jsonResponse(res, 200, result);
+    console.log('[proxy:world-grids] status=' + result.status + ' (' + ms + 'ms)');
+    jsonResponse(res, result.status, result.body);
     return;
   }
 
@@ -535,8 +452,7 @@ async function start() {
       console.log('');
       console.log('  监听端口 : ' + actualPort);
       if (actualPort !== PORT) console.log('  （原端口 ' + PORT + ' 已被占用，自动切换）');
-      console.log('  认证代理 : ' + CF_ORIGIN + '/api/*');
-      console.log('  SE 服务器 : ' + SE_HOST + ':' + SE_PORT);
+      console.log('  服务桥接 : ' + BRIDGE_URL);
       console.log('  服务目录 : ' + (IS_DEV ? APP_DIR : CACHE_DIR));
       console.log('');
       console.log('  按 Ctrl+C 退出');
