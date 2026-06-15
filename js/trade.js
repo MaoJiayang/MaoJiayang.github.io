@@ -227,8 +227,29 @@ var Trade = (function () {
   function shopBuySell(name) {
     var isBuy = shopMode === 'buy';
     var stock = Warehouse.getStock(name);
+    var data = isBuy ? shopBuyData : shopSellData;
+    var item = data ? data.find(function (x) { return x.name === name; }) : null;
+    var price = item ? item.price : 0;
+    var balance = (bankInfo && bankInfo.balance) || 0;
+    var overdraft = (bankInfo && bankInfo.overdraftLimit) || 0;
+
+    // 计算数量上限
+    var maxQty = 0;
+    if (isBuy && price > 0) {
+      maxQty = Math.floor((balance + overdraft) / price);
+    } else if (!isBuy && price > 0) {
+      var quotaRemain = Math.max(0, shopSellTodayLimit - shopSellTodayValue);
+      var quotaMax = Math.floor(quotaRemain / price);
+      maxQty = Math.min(stock, quotaMax > 0 ? quotaMax : stock);
+    } else if (!isBuy) {
+      maxQty = stock;
+    }
+
     UI.openQSheet(shopMode, name, {
-      stock: stock, noCap: isBuy,
+      stock: stock,
+      maxQty: maxQty,
+      itemPrice: price,
+      balance: balance,
       onConfirm: function (m, qty) {
         var cmd = isBuy ? '!采购 提交 ' + name + ' ' + qty : '!收购 提交 ' + name + ' ' + qty;
         var label = (isBuy ? '已购买 ' : '已出售 ') + name;

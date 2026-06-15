@@ -146,6 +146,8 @@ var SeBridge = (function () {
       })
       .catch(function (err) {
         if (err.message && err.message.indexOf('BRIDGE_HTTP_') === 0) throw err;
+        // 服务端正常返回但 code≠200（如玩家不在线等业务错误）→ 透传错误消息
+        if (err.httpStatus) throw err;
 
         // 网络错误 + 非本地桥接 → 降级到同域 CF Function
         if (_activeBridge && _activeBridge.indexOf('localhost') === -1) {

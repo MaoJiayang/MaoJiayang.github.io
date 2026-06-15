@@ -1056,3 +1056,62 @@ body::before{
 .lp-item-meta{font-size:11px;color:var(--text-muted);flex-shrink:0;display:flex;gap:8px}
 .lp-empty{padding:32px 16px;text-align:center;font-size:13px;color:var(--text-muted)}
 .lp-header{padding:16px 16px 12px;font-size:15px;font-weight:600;color:var(--text-primary);text-align:center}
+
+/* ========== 工具面板 ========== */
+#panel-tools{padding:16px}
+
+.tl-cat{margin-bottom:14px}
+.tl-cat-h{
+  display:flex;align-items:center;gap:8px;padding:10px 0;
+  font-size:14px;font-weight:600;color:var(--text-secondary);
+  cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;
+  border-bottom:1px solid var(--bg-hover);
+}
+.tl-cat-h .arrow{display:inline-block;font-size:11px;transition:transform .2s;color:var(--text-muted);width:14px;text-align:center}
+.tl-cat-h .arrow.open{transform:rotate(90deg)}
+.tl-cat-body{display:none}
+.tl-cat-body.open{display:block;padding:10px 0 4px}
+
+.tl-btn-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(min-width:480px){.tl-btn-grid{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:768px){.tl-btn-grid{grid-template-columns:repeat(4,1fr)}}
+
+.tl-btn{
+  padding:12px 8px;font-size:13px;font-weight:600;
+  border-radius:6px;border:1px solid var(--bg-hover);
+  background:var(--bg-card);color:var(--text-primary);
+  cursor:pointer;font-family:inherit;
+  transition:all .12s;text-align:center;
+  line-height:1.3;min-height:44px;
+  -webkit-tap-highlight-color:transparent;
+}
+.tl-btn:hover{background:var(--bg-hover);border-color:var(--jade-400)}
+.tl-btn:active{transform:scale(.96)}
+.tl-btn.tl-danger{color:var(--color-error);border-color:var(--color-error)}
+.tl-btn.tl-danger:hover{background:var(--color-error);color:#fff}
+.tl-btn.tl-warn{color:var(--gold-200);border-color:var(--gold-200)}
+.tl-btn.tl-warn:hover{background:var(--gold-200);color:var(--bg-void)}
+.tl-btn.tl-info{color:var(--blue-200);border-color:var(--blue-200)}
+.tl-btn.tl-info:hover{background:var(--blue-200);color:var(--bg-void)}
+
+/* 挑战选择器 Overlay */
+#challenge-overlay .overlay-pane{padding:20px 16px 28px;max-width:380px}
+.tl-ch-header{font-size:16px;font-weight:600;color:var(--text-primary);text-align:center;margin-bottom:18px}
+.tl-ch-group-label{font-size:11px;color:var(--text-muted);margin:14px 0 8px;text-transform:uppercase;letter-spacing:1px}
+.tl-ch-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tl-ch-btn{
+  padding:12px 4px;font-size:13px;font-weight:600;
+  border-radius:6px;border:1px solid var(--bg-hover);
+  background:var(--bg-card);color:var(--text-primary);
+  cursor:pointer;font-family:inherit;text-align:center;
+  transition:all .12s;min-height:44px;
+  -webkit-tap-highlight-color:transparent;
+}
+.tl-ch-btn:hover{background:var(--bg-hover);border-color:var(--jade-400)}
+.tl-ch-btn:active{transform:scale(.94)}
+
+/* QSheet 预期花费 */
+.qs-cost-hint{text-align:center;font-size:12px;color:var(--text-muted);padding:4px 0;min-height:20px}
+
+/* QSheet 滑块透支变黄 */
+.qs-slider-wrap.overdraft .slider-range{accent-color:var(--gold-400)}

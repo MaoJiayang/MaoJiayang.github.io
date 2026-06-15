@@ -6,7 +6,7 @@
 var UI = (function () {
   'use strict';
 
-  var TAB_ORDER = ['warehouse','trade','shipyard','hangar','settings'];
+  var TAB_ORDER = ['warehouse','trade','shipyard','hangar','tools','settings'];
   var currentTab = 'warehouse';
   var _tabCallbacks = {};
   var toastTimer = null;
@@ -276,6 +276,8 @@ var UI = (function () {
   var _lockExtra = false;      // 单价锁定
   var _noCap = false;          // 数量无上限（服营商店买入等）
   var _maxQty = 0;             // >0 表示数量上限（市场拆单用）
+  var _qsheetItemPrice = 0;    // 物品单价（服营商店用，用于显示预期花费）
+  var _qsheetBalance = 0;      // 银行余额（服营商店用，用于透支检测）
   var _qsheetConfirmLabel = null;  // 自定义确认按钮文字
   var _sliderDragging = false;    // 拖动中暂缓格式化，防闪烁
 
@@ -300,13 +302,23 @@ var UI = (function () {
     _lockQty = options.lockQty || 0;
     _lockExtra = options.lockExtra === true;
     _noCap = options.noCap === true;
+    _maxQty = options.maxQty || 0;
+    _qsheetItemPrice = options.itemPrice || 0;
+    _qsheetBalance = options.balance || 0;
     _qsheetOnConfirm = options.onConfirm || null;
     _qsheetConfirmLabel = options.confirmLabel || null;
     qsheetExtra = options.extraField || null;
 
     // 创建数量输入实例
     var qtyVal = _lockQty > 0 ? _lockQty : undefined;  // 锁定数量时用 lockQty，否则走记忆
-    var qtyMax = _lockQty > 0 ? _lockQty : function () { return getMaxWithdraw(); };
+    var qtyMaxFn;
+    if (_lockQty > 0) {
+      qtyMaxFn = _lockQty;
+    } else if (_maxQty > 0) {
+      qtyMaxFn = _maxQty;
+    } else {
+      qtyMaxFn = function () { return getMaxWithdraw(); };
+    }
     var qtyInst = createNumInput({
       input: document.getElementById('qs-qty'),
       type: 'qty',
@@ -314,7 +326,7 @@ var UI = (function () {
       value: qtyVal,
       defaultValue: 100,
       min: 1,
-      max: qtyMax,
+      max: qtyMaxFn,
       slider: document.getElementById('qs-slider'),
       buttons: {
         minus: document.getElementById('qs-minus'),
@@ -380,6 +392,7 @@ var UI = (function () {
 
     document.getElementById('qsheet-overlay').classList.add('show');
     updateQSheetTabs();
+    _updateQsheetCostHint(qtyInst.getValue());
   }
 
   /** 数量变化时更新确认按钮文案 */
@@ -398,6 +411,8 @@ var UI = (function () {
     // 更新 extra total
     var extraInst = getNumInput('qsheet_extra');
     if (extraInst) _onQsheetExtraChange(extraInst.getValue());
+    // 更新花费提示 + 透支检测
+    _updateQsheetCostHint(v);
   }
 
   /** 价格变化时更新总价 */
@@ -411,11 +426,42 @@ var UI = (function () {
     }
   }
 
+  /** 更新预期花费/收入提示 + 透支检测 */
+  function _updateQsheetCostHint(v) {
+    var el = document.getElementById('qs-cost-hint');
+    var sw = document.getElementById('qs-slider-wrap');
+    if (!_qsheetItemPrice || !v) {
+      if (el) el.textContent = '';
+      if (sw) sw.classList.remove('overdraft');
+      return;
+    }
+    var total = v * _qsheetItemPrice;
+    if (qsheetMode === 'buy') {
+      // 买入：显示预计花费，超出余额时滑块变黄
+      if (el) el.textContent = '预计花费 ' + fmtCompact(total) + ' SC';
+      if (sw && _qsheetBalance > 0 && total > _qsheetBalance) {
+        sw.classList.add('overdraft');
+      } else if (sw) {
+        sw.classList.remove('overdraft');
+      }
+    } else {
+      // 卖出：显示预计收入
+      if (el) el.textContent = '预计收入 ' + fmtCompact(total) + ' SC';
+      if (sw) sw.classList.remove('overdraft');
+    }
+  }
+
   function closeQSheet() {
     document.getElementById('qsheet-overlay').classList.remove('show');
     var qtyInst = getNumInput('qsheet_qty'); if (qtyInst) qtyInst.destroy();
     var extraInst = getNumInput('qsheet_extra'); if (extraInst) extraInst.destroy();
     qsheetExtra = null;
+    _qsheetItemPrice = 0;
+    _qsheetBalance = 0;
+    var hint = document.getElementById('qs-cost-hint');
+    if (hint) hint.textContent = '';
+    var sw = document.getElementById('qs-slider-wrap');
+    if (sw) sw.classList.remove('overdraft');
   }
 
   // ========== KMB 格式 & 步长 ==========
@@ -768,6 +814,13 @@ var UI = (function () {
       }
       UI.showToast('error', r.msg || '指令执行失败');
       return Promise.reject(r.msg);
+    }).catch(function (err) {
+      // callBridge HTTP 错误直接 throw，不会进入 then；这里兜底显示 toast
+      var msg = (err && err.message) ? err.message : '指令执行失败';
+      if (msg !== 'RATE_LIMITED' && msg.indexOf('BRIDGE_') !== 0) {
+        UI.showToast('error', msg);
+      }
+      return Promise.reject(err);
     });
   }
 

@@ -26,6 +26,7 @@
   <div class="sitem" data-tab="trade"><span class="sitem-icon">💰</span>交易</div>
   <div class="sitem" data-tab="shipyard"><span class="sitem-icon">🏭</span>船厂</div>
   <div class="sitem" data-tab="hangar"><span class="sitem-icon">🚁</span>船坞</div>
+  <div class="sitem" data-tab="tools"><span class="sitem-icon">🔧</span>工具</div>
   <div class="sitem" data-tab="settings"><span class="sitem-icon">⚙</span>设置</div>
 </nav>
 
@@ -223,6 +224,81 @@
 
     <button class="st-disconnect" id="st-disconnect">断开连接</button>
   </div>
+
+  <!-- 工具面板 -->
+  <div class="tab-panel" id="panel-tools">
+    <!-- 🎯 战斗 -->
+    <div class="tl-cat">
+      <div class="tl-cat-h" onclick="Tools.toggle(this)">
+        <span class="arrow open">▸</span><span class="tl-cat-label">🎯 战斗</span>
+      </div>
+      <div class="tl-cat-body open">
+        <div class="tl-btn-grid">
+          <button class="tl-btn" onclick="Tools.openChallengePicker()">⚔️ 挑战</button>
+          <button class="tl-btn" onclick="Tools.duel(false)">🤺 决斗 匹配</button>
+          <button class="tl-btn" onclick="Tools.duel(true)">🤺 决斗 匹配(小船)</button>
+          <button class="tl-btn tl-info" onclick="Tools.exec('!挑战 奖励列表','奖励列表')">📜 挑战奖励</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🚀 网格操作 -->
+    <div class="tl-cat">
+      <div class="tl-cat-h" onclick="Tools.toggle(this)">
+        <span class="arrow open">▸</span><span class="tl-cat-label">🚀 网格操作</span>
+      </div>
+      <div class="tl-cat-body open">
+        <div class="tl-btn-grid">
+          <button class="tl-btn" onclick="Tools.exec('!toship','转为飞船')">🛸 转为飞船</button>
+          <button class="tl-btn" onclick="Tools.exec('!tostatic','转为空间站')">🏗️ 转为空间站</button>
+          <button class="tl-btn" onclick="Tools.exec('!网格 升空','升空')">⬆️ 升空</button>
+          <button class="tl-btn" onclick="Tools.promptLanding()">⬇️ 降落</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🛡️ 安全区 -->
+    <div class="tl-cat">
+      <div class="tl-cat-h" onclick="Tools.toggle(this)">
+        <span class="arrow open">▸</span><span class="tl-cat-label">🛡️ 安全区</span>
+      </div>
+      <div class="tl-cat-body open">
+        <div class="tl-btn-grid">
+          <button class="tl-btn" onclick="Tools.exec('!安全区 召唤','召唤安全区')">🪄 召唤</button>
+          <button class="tl-btn tl-danger" onclick="Tools.exec('!安全区 删除','删除安全区')">🗑️ 删除</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 📋 全服任务 -->
+    <div class="tl-cat">
+      <div class="tl-cat-h" onclick="Tools.toggle(this)">
+        <span class="arrow open">▸</span><span class="tl-cat-label">📋 全服任务</span>
+      </div>
+      <div class="tl-cat-body open">
+        <div class="tl-btn-grid">
+          <button class="tl-btn" onclick="Tools.exec('!任务 信息','任务信息')">ℹ️ 任务信息</button>
+          <button class="tl-btn" onclick="Tools.openMissionDelivery()">📦 任务交付</button>
+          <button class="tl-btn" onclick="Tools.exec('!任务 排名','任务排名')">🏆 排名</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 📡 信息查询 -->
+    <div class="tl-cat">
+      <div class="tl-cat-h" onclick="Tools.toggle(this)">
+        <span class="arrow open">▸</span><span class="tl-cat-label">📡 信息查询</span>
+      </div>
+      <div class="tl-cat-body open">
+        <div class="tl-btn-grid">
+          <button class="tl-btn" onclick="Tools.exec('!info 星球坐标','星球坐标')">🌍 星球坐标</button>
+          <button class="tl-btn" onclick="Tools.exec('!info 星球矿物','星球矿物')">⛏️ 星球矿物</button>
+          <button class="tl-btn" onclick="Tools.exec('!info 矿物探测','矿物探测')">🔍 矿物探测</button>
+          <button class="tl-btn tl-warn" onclick="Tools.voteRestart()">🔄 投票重启</button>
+        </div>
+      </div>
+    </div>
+  </div>
   </div><!-- /#panels-wrap -->
   <div id="tab-dots"></div>
 </div>
@@ -233,6 +309,7 @@
   <div class="tab" data-tab="trade"><span class="tab-icon">💰</span>交易</div>
   <div class="tab" data-tab="shipyard"><span class="tab-icon">🏭</span>船厂</div>
   <div class="tab" data-tab="hangar"><span class="tab-icon">🚁</span>船坞</div>
+  <div class="tab" data-tab="tools"><span class="tab-icon">🔧</span>工具</div>
   <div class="tab" data-tab="settings"><span class="tab-icon">⚙</span>设置</div>
 </div>
 
@@ -257,6 +334,7 @@
     <div class="qs-slider-wrap" id="qs-slider-wrap">
       <input type="range" id="qs-slider" class="slider-range" min="1" max="100" value="100">
     </div>
+    <div class="qs-cost-hint" id="qs-cost-hint"></div>
     <div class="qs-extra" id="qs-extra" style="display:none">
       <div class="qs-extra-label" id="qs-extra-label">单价</div>
       <div class="qs-btns">
@@ -355,6 +433,7 @@
 <script src="js/hangar.js"></script>
 <script src="js/shipyard.js"></script>
 <script src="js/settings.js"></script>
+<script src="js/tools.js"></script>
 
 <script>
 // ========== 伊卡洛斯虚空终端 — 入口 ==========
@@ -373,6 +452,7 @@ Trade.init();
 Hangar.init();
 Shipyard.init();
 Settings.init();
+Tools.init();
 
 // Tab 回调
 UI.onTabChange('warehouse', function(){ Warehouse.onTabActivated(); });
@@ -380,6 +460,7 @@ UI.onTabChange('trade', function(){ Trade.onTabActivated(); });
 UI.onTabChange('hangar', function(){ Hangar.onTabActivated(); });
 UI.onTabChange('shipyard', function(){ Shipyard.onTabActivated(); });
 UI.onTabChange('settings', function(){ Settings.onTabActivated(); });
+UI.onTabChange('tools', function(){ Tools.onTabActivated(); });
 
 // 断开/撤销弹窗关闭时清理
 var origCloseDc = UI.closeDcDialog;
