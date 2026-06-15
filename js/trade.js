@@ -1776,5 +1776,6 @@ var Trade = (function () {
     pickContractList: pickContractList,
     submitCreateContract: submitCreateContract,
     getListData: function () { return listData; },
+    renderListCard: renderListCard,
   };
 })();

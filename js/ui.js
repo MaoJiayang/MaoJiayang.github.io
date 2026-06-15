@@ -159,7 +159,7 @@ var UI = (function () {
     document.getElementById('login-guide').classList.add('show');
     document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
     document.getElementById('tabbar').style.display = 'none';
-    document.getElementById('wh-bar').style.display = 'none';
+    var whBar = document.getElementById('wh-bar'); if (whBar) whBar.style.display = 'none';
   }
 
   function hideLoginGuide() {
@@ -177,7 +177,7 @@ var UI = (function () {
     hideLoginGuide();
     updateUserBadge();
     updateGauge();
-    document.getElementById('wh-bar').style.display = '';
+    var whBar2 = document.getElementById('wh-bar'); if (whBar2) whBar2.style.display = '';
     switchTab(currentTab);   // 恢复登录前被 showLoginGuide 隐藏的 panel
     fireTabCallback(currentTab);
     showToast('success', '已连接至伊卡洛斯星服务器');

@@ -5,13 +5,16 @@
 var Warehouse = (function () {
   'use strict';
 
+  var SUBTABS = ['items', 'lists', 'ops'];
+  var currentSubTab = 'items';
   var warehouseData = null;
   var warehouseLoading = false;
   var warehouseOpenCat = null;
   var warehouseShowAll = false;
-  var warehouseCompactNum = false;
+  var warehouseCompactNum = true;
   var PREFS_KEY = 'wh_prefs';
   var _renderTimer = null;
+  var _listsLoading = false;
 
   // 选择模式（供交易面板复用仓库选物品）
   var selectionMode = null;         // 'sell' | 'buy' | null
@@ -56,11 +59,8 @@ var Warehouse = (function () {
     if (warehouseLoading) return;
     if (!SeBridge.hasCredentials()) return;
     warehouseLoading = true;
-    var btn = document.getElementById('wh-refresh');
-    if (btn) btn.classList.add('spinning');
     SeBridge.executeCommand('!仓库 列表').then(function(r){
       warehouseLoading = false;
-      if (btn) btn.classList.remove('spinning');
       if (r.code === 200 && r.data) {
         warehouseData = { items: r.data.items || {}, steamId: r.data.steamId };
         SeBridge.trackCall();
@@ -77,7 +77,6 @@ var Warehouse = (function () {
       }
     }).catch(function(){
       warehouseLoading = false;
-      if (btn) btn.classList.remove('spinning');
       UI.showToast('error', '网络错误，请稍后重试');
     });
   }
@@ -157,18 +156,6 @@ var Warehouse = (function () {
     var catOrder = ['矿石','矿锭','零件','弹药','工具','消耗品','其他'];
     var groups = {};
     var hasOwnedItems = Object.keys(whItems).length > 0;
-
-    // 工具栏
-    var bar = document.getElementById('wh-bar');
-    if (bar) bar.style.display = SeBridge.hasCredentials() ? '' : 'none';
-    var showAllBtn = document.getElementById('wh-showall-btn');
-    if (showAllBtn) {
-      showAllBtn.textContent = warehouseShowAll ? '隐藏未拥有' : '显示未拥有';
-      showAllBtn.classList.toggle('active', warehouseShowAll);
-      showAllBtn.style.display = hasOwnedItems ? '' : 'none';
-    }
-    var fmtBtn = document.getElementById('wh-fmt-btn');
-    if (fmtBtn) fmtBtn.textContent = warehouseCompactNum ? '完整' : '简洁';
 
     // 按分类分组（catalog 未加载时跳过，由下方「其他」兜底）
     var catalogReady = Object.keys(itemCategories).length > 0;
@@ -257,19 +244,18 @@ var Warehouse = (function () {
     var body = catEl.querySelector('.wh-cat-body');
     var wasOpen = arrow.classList.contains('open');
 
+    // 已展开的不能收起来——始终保留一个打开
+    if (wasOpen) return;
+
     document.querySelectorAll('.wh-cat-h').forEach(function(h){
       h.querySelector('.arrow').classList.remove('open');
       var b = h.parentElement.querySelector('.wh-cat-body');
       if (b) b.classList.remove('open');
     });
 
-    if (!wasOpen) {
-      arrow.classList.add('open');
-      if (body) body.classList.add('open');
-      warehouseOpenCat = catName;
-    } else {
-      warehouseOpenCat = null;
-    }
+    arrow.classList.add('open');
+    if (body) body.classList.add('open');
+    warehouseOpenCat = catName;
   }
 
   function toggleShowAll(show) {
@@ -277,14 +263,14 @@ var Warehouse = (function () {
     warehouseOpenCat = null;
     savePrefs();
     render();
+    if (currentSubTab === 'ops') renderOps();
   }
 
   function toggleNumFmt() {
     warehouseCompactNum = !warehouseCompactNum;
     savePrefs();
-    var btn = document.getElementById('wh-fmt-btn');
-    if (btn) btn.textContent = warehouseCompactNum ? '完整' : '简洁';
     render();
+    if (currentSubTab === 'ops') renderOps();
   }
 
   // ========== 物品操作 ==========
@@ -338,23 +324,8 @@ var Warehouse = (function () {
 
   function listOps() {
     if (!SeBridge.hasCredentials()) { UI.showLoginGuide(); return; }
-
-    var cached = Trade.getListData();
-    if (cached) {
-      var lists = extractListNames(cached);
-      if (lists.length > 0) { openListOpsPicker(lists); return; }
-    }
-    // 无缓存则获取
-    UI.executeWithConfirm('!清单 列表', null).then(function (d) {
-      var lists = extractListNames(d);
-      if (lists.length === 0) {
-        UI.showToast('error', '暂无可用的清单，请先在合同面板创建清单');
-        return;
-      }
-      openListOpsPicker(lists);
-    }).catch(function () {
-      UI.showToast('error', '获取清单列表失败');
-    });
+    // 切换到清单子标签
+    switchSubTab('lists');
   }
 
   function extractListNames(d) {
@@ -414,15 +385,134 @@ var Warehouse = (function () {
     });
   }
 
+  // ========== 子标签切换 ==========
+
+  function switchSubTab(tab) {
+    if (tab === currentSubTab) return;
+    currentSubTab = tab;
+    document.querySelectorAll('.st-tab[data-wh-tab]').forEach(function (el) {
+      el.classList.toggle('active', el.dataset.whTab === tab);
+    });
+    document.querySelectorAll('.wh-section').forEach(function (el) {
+      el.style.display = el.id === 'warehouse-' + tab ? 'block' : 'none';
+    });
+    if (tab === 'items' && !warehouseData) load();
+    if (tab === 'lists' && !Trade.getListData()) loadLists();
+    if (tab === 'ops') renderOps();
+  }
+
+  function initSubTabs() {
+    document.querySelectorAll('.st-tab[data-wh-tab]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        switchSubTab(el.dataset.whTab);
+      });
+    });
+  }
+
+  // ========== 操作面板 ==========
+
+  function renderOps() {
+    var container = document.getElementById('wh-ops-content');
+    if (!container) return;
+    var html =
+      '<button class="tl-btn" onclick="Warehouse.saveAllNoArg()">📥 存入全部</button>' +
+      '<button class="tl-btn" onclick="Warehouse.load()">↻ 刷新库存</button>' +
+      '<button class="tl-btn' + (warehouseShowAll ? ' active' : '') + '" onclick="Warehouse.toggleShowAll()">' +
+        (warehouseShowAll ? '👁 隐藏未拥有' : '👁 显示未拥有') + '</button>' +
+      '<button class="tl-btn' + (warehouseCompactNum ? ' active' : '') + '" onclick="Warehouse.toggleNumFmt()">' +
+        (warehouseCompactNum ? '切换完整数字' : '切换简洁数字') +
+        '<br><span style="font-size:10px;opacity:.45">' +
+        (warehouseCompactNum ? '如 1,250' : '如 1.3K') + '</span></button>';
+    container.innerHTML = html;
+  }
+
+  // ========== 清单列表 ==========
+
+  function loadLists() {
+    if (_listsLoading) return;
+    var cached = Trade.getListData();
+    if (cached) {
+      renderLists(cached);
+      return;
+    }
+    _listsLoading = true;
+    renderLists();
+    UI.executeWithConfirm('!清单 列表', null).then(function (d) {
+      _listsLoading = false;
+      renderLists(d);
+    }).catch(function () {
+      _listsLoading = false;
+      renderLists();
+    });
+  }
+
+  function renderLists(data) {
+    var container = document.getElementById('wh-lists-content');
+    if (!container) return;
+
+    if (_listsLoading && !data && !Trade.getListData()) {
+      container.innerHTML = '<div class="tr-empty">加载中…</div>';
+      return;
+    }
+
+    data = data || Trade.getListData();
+    var lists = [];
+    if (data) {
+      if (Array.isArray(data.lists)) lists = data.lists;
+      else if (Array.isArray(data)) lists = data;
+    }
+
+    var search = (document.getElementById('wh-lists-search').value || '').toLowerCase().trim();
+    var html = '<button class="ct-act-create-btn block" onclick="Trade.openListBuilder()">+ 创建清单</button>';
+
+    if (lists.length === 0) {
+      html += '<div class="tr-empty">暂无清单<br><span style="font-size:11px;opacity:.6">创建清单后可按清单批量存取</span></div>';
+    } else {
+      var filtered = lists;
+      if (search) {
+        filtered = lists.filter(function (l) {
+          var n = (l.name || '').toLowerCase();
+          if (n.indexOf(search) !== -1) return true;
+          if (l.items) {
+            for (var i = 0; i < l.items.length; i++) {
+              if (l.items[i].name && l.items[i].name.toLowerCase().indexOf(search) !== -1) return true;
+            }
+          }
+          return false;
+        });
+      }
+      if (filtered.length === 0) {
+        html += '<div class="tr-empty">' + (search ? '没有匹配的清单' : '暂无清单') + '</div>';
+      } else {
+        filtered.forEach(function (l) {
+          var name = l.name || '';
+          html += '<div class="wh-list-wrap" onclick="if(!event.target.closest(\'button\'))Warehouse.listActionSheet(\'' + UI.escAttr(name) + '\')">'
+            + Trade.renderListCard(l) + '</div>';
+        });
+      }
+    }
+    container.innerHTML = html;
+  }
+
+  function listActionSheet(name) {
+    showListAction(name);
+  }
+
   // ========== 初始化 ==========
 
   function init() {
     loadPrefs();
+    initSubTabs();
     // 搜索框即时过滤
     var searchInput = document.getElementById('wh-search');
     if (searchInput) searchInput.addEventListener('input', function () {
       clearTimeout(_renderTimer);
       _renderTimer = setTimeout(render, 200);
+    });
+    var listsSearch = document.getElementById('wh-lists-search');
+    if (listsSearch) listsSearch.addEventListener('input', function () {
+      clearTimeout(_renderTimer);
+      _renderTimer = setTimeout(function () { renderLists(); }, 200);
     });
     // 加载图标和物品目录
     fetch('icons/mapping.json')
@@ -437,7 +527,8 @@ var Warehouse = (function () {
   }
 
   function onTabActivated() {
-    if (!warehouseData) load();
+    if (currentSubTab === 'items' && !warehouseData) load();
+    if (currentSubTab === 'lists' && !Trade.getListData()) loadLists();
   }
 
   function markStale() {
@@ -471,5 +562,7 @@ var Warehouse = (function () {
     enterSelectionMode: enterSelectionMode,
     exitSelectionMode: exitSelectionMode,
     listOps: listOps,
+    switchSubTab: switchSubTab,
+    listActionSheet: listActionSheet,
   };
 })();

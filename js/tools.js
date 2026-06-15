@@ -134,6 +134,9 @@ var Tools = (function () {
     var body = catEl.querySelector('.tl-cat-body');
     var wasOpen = arrow.classList.contains('open');
 
+    // 已展开的不能收起来——始终保留一个打开
+    if (wasOpen) return;
+
     // 关闭其他分类
     document.querySelectorAll('#panel-tools .tl-cat-h').forEach(function (h) {
       h.querySelector('.arrow').classList.remove('open');
@@ -141,10 +144,8 @@ var Tools = (function () {
       if (b) b.classList.remove('open');
     });
 
-    if (!wasOpen) {
-      arrow.classList.add('open');
-      if (body) body.classList.add('open');
-    }
+    arrow.classList.add('open');
+    if (body) body.classList.add('open');
   }
 
   // ========== Tab 激活 ==========
