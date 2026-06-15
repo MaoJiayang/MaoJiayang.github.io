@@ -6,6 +6,11 @@
 
 - 地址：`https://atomickitty17th.pages.dev/terminal`
 - 部署：`git push` → CF Pages 自动构建
+- **CF 构建命令**（在 Dashboard → Settings → Build configuration 中配置）：
+  ```bash
+  FILES=$(cat frontend-files.json) && echo "{\"v\":\"$CF_PAGES_COMMIT_SHA\",\"files\":$FILES}" > version.json
+  ```
+  构建产物 `version.json` 格式：`{"v":"abc123","files":["terminal.html",...]}`，所有端运行时同步时先拉此文件获取版本号和文件列表。
 
 ## 🖥️ Dev 本地开发
 
@@ -78,6 +83,16 @@ npm run build:bridge             # → dist/se-bridge-server.exe
 | `CF_PAGES_DOMAIN` | CF Pages 域名 |
 | `HTTP_PORT` | 本地 HTTP 端口 |
 
+## ➕ 新增前端文件
+
+只需改一处——`frontend-files.json`：
+
+1. 在数组末尾加一行文件路径
+2. `git push` → CF Pages 构建时自动注入 `version.json` 的 `files` 字段
+3. EXE/APK 下次启动自动拉取新文件
+
+各端消费者自动跟随 `version.json` 的文件列表，无需手动同步清单。
+
 ## 🤖 重新生成 Embedding
 
 更新 `commands.json` 后执行：
@@ -105,6 +120,8 @@ node test-search.js "保存飞船"    # 本地测试
 | `js/hangar.js` | 船坞面板 |
 | `js/shipyard.js` | 船厂面板 |
 | `js/settings.js` | 设置面板 |
+| `js/tools.js` | 工具面板 |
+| `frontend-files.json` | **唯一真相源**，前端文件列表，加新文件只需改此处 |
 
 ### 桥接
 

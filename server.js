@@ -44,47 +44,23 @@ const CACHE_DIR = IS_DEV ? APP_DIR : path.join(
 
 console.log('[server] 模式: ' + (IS_DEV ? 'Dev（本地文件）' : 'EXE（缓存: ' + CACHE_DIR + '）'));
 
-// ========== 前端文件列表（用于 EXE 模式同步） ==========
+// ========== 前端文件列表（从 CF version.json 的 files 字段获取） ==========
 
-const FRONTEND_FILES = [
-  'terminal.html',
-  'terminal.css',
-  'commands.html',
-  'version.json',
-  'version-check.js',
-  'items_catalog.json',
-  'commands.json',
-  'config.json',
-  'command-autocomplete.js',
-  'command-executor.js',
-  'js/se-bridge.js',
-  'js/ui.js',
-  'js/warehouse.js',
-  'js/trade.js',
-  'js/hangar.js',
-  'js/shipyard.js',
-  'js/settings.js',
-  'js/tools.js',
-  'icons/sprite.css',
-  'icons/sprite.webp',
-  'icons/mapping.json',
-  'icons/tea.jpg',
-];
+/** 从 CF 拉取 version.json，返回 { v, files } */
+async function fetchRemoteManifest() {
+  try {
+    const res = await fetch(CF_ORIGIN + '/version.json');
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data.v || !data.files || !Array.isArray(data.files)) return null;
+    return { v: data.v, files: data.files };
+  } catch (_) { return null; }
+}
 
 // ========== 前端同步（EXE 模式） ==========
 
 function ensureDir(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-}
-
-/** 从远端读取 version.json 的 v 字段 */
-async function fetchRemoteVersion() {
-  try {
-    const res = await fetch(CF_ORIGIN + '/version.json');
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.v || null;
-  } catch (_) { return null; }
 }
 
 /** 从缓存读取 version.json 的 v 字段 */
@@ -120,28 +96,38 @@ async function syncFrontend(forceUpdate) {
   var force = forceUpdate || process.argv.includes('--update');
   console.log('[sync] ' + (force ? '强制更新，' : '') + '来源: ' + CF_ORIGIN);
 
-  // 1. 先查远端版本号
-  var remoteV = null;
+  // 1. 拉取远端清单（version.json），包含 v 和 files
+  var manifest = null;
   if (!force) {
-    remoteV = await fetchRemoteVersion();
-    var localV = cachedVersion();
-    if (remoteV && localV && remoteV === localV) {
-      console.log('[sync] 已是最新 (v=' + remoteV.slice(0, 7) + ')，跳过同步');
+    manifest = await fetchRemoteManifest();
+    if (!manifest) {
+      console.log('[sync] 无法获取远端清单，跳过同步');
       return;
     }
-    if (remoteV) {
-      console.log('[sync] ' + (localV ? '版本更新: ' + localV.slice(0, 7) + ' → ' + remoteV.slice(0, 7) : '首次安装，全量同步'));
+    var localV = cachedVersion();
+    if (localV && manifest.v === localV) {
+      console.log('[sync] 已是最新 (v=' + manifest.v.slice(0, 7) + ')，跳过同步');
+      return;
+    }
+    console.log('[sync] ' + (localV ? '版本更新: ' + localV.slice(0, 7) + ' → ' + manifest.v.slice(0, 7) : '首次安装，全量同步'));
+  } else {
+    // 强制更新：仍需先拉清单获取文件列表
+    manifest = await fetchRemoteManifest();
+    if (!manifest) {
+      console.log('[sync] 无法获取远端清单，跳过同步');
+      return;
     }
   }
 
-  // 2. 下载全部文件
+  // 2. 按清单下载全部文件
+  var files = manifest.files;
   var updated = 0, errors = 0;
-  for (var i = 0; i < FRONTEND_FILES.length; i++) {
-    var file = FRONTEND_FILES[i];
+  for (var i = 0; i < files.length; i++) {
+    var file = files[i];
     try {
       await downloadFile(file);
       updated++;
-      console.log('[sync]   ' + (updated < 10 ? ' ' : '') + updated + '/' + FRONTEND_FILES.length + ' ' + file);
+      console.log('[sync]   ' + (updated < 10 ? ' ' : '') + updated + '/' + files.length + ' ' + file);
     } catch (e) {
       // 有缓存就沿用，否则报错
       if (fs.existsSync(path.join(CACHE_DIR, file))) {

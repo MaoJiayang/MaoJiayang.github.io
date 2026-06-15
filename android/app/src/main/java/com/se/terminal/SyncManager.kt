@@ -16,50 +16,58 @@ object SyncManager {
     private const val TAG = "SyncManager"
     private val CF_ORIGIN = "https://${BuildConfig.CF_PAGES_DOMAIN}"
 
-    private val FILES = arrayOf(
-        "terminal.html", "terminal.css", "commands.html", "version.json",
+    /** 冷启动兜底：网络不通时从 assets 拷贝文件到缓存 */
+    private val FALLBACK_FILES = arrayOf(
+        "terminal.html", "terminal.css", "commands.html",
         "version-check.js", "command-autocomplete.js", "command-executor.js",
         "items_catalog.json", "commands.json", "config.json",
         "js/se-bridge.js", "js/ui.js", "js/warehouse.js",
-        "js/trade.js", "js/hangar.js", "js/shipyard.js", "js/settings.js",
+        "js/trade.js", "js/hangar.js", "js/shipyard.js", "js/settings.js", "js/tools.js",
         "icons/sprite.css", "icons/sprite.webp", "icons/mapping.json", "icons/tea.jpg"
     )
+
+    data class Manifest(val v: String, val files: List<String>)
 
     suspend fun sync(context: Context) = withContext(Dispatchers.IO) {
         val wwwDir = File(context.filesDir, "www")
         wwwDir.mkdirs()
 
-        // 1. 对比版本号
-        val remoteV = fetchVersion()
-        if (remoteV == null) {
-            Log.d(TAG, "无法获取远端版本，跳过同步")
+        // 1. 拉取远端清单（version.json），包含 v 和 files
+        val manifest = fetchManifest()
+        if (manifest == null) {
+            Log.d(TAG, "无法获取远端清单，跳过同步")
             return@withContext
         }
 
         val localV = readLocalVersion(wwwDir, context)
-        if (localV != null && remoteV == localV) {
-            Log.d(TAG, "已是最新 (v=${remoteV.take(7)})，跳过同步")
+        if (localV != null && manifest.v == localV) {
+            Log.d(TAG, "已是最新 (v=${manifest.v.take(7)})，跳过同步")
             return@withContext
         }
 
-        Log.d(TAG, if (localV != null) "版本更新: ${localV.take(7)} -> ${remoteV.take(7)}" else "首次同步")
+        Log.d(TAG, if (localV != null) "版本更新: ${localV.take(7)} -> ${manifest.v.take(7)}" else "首次同步")
 
-        // 2. 全量下载
+        // 2. 按远端清单全量下载
         var updated = 0
-        for (file in FILES) {
+        for (file in manifest.files) {
             if (downloadFile(wwwDir, file)) updated++
         }
-        Log.d(TAG, "同步完成: $updated/${FILES.size} 文件")
+        Log.d(TAG, "同步完成: $updated/${manifest.files.size} 文件")
     }
 
-    private fun fetchVersion(): String? {
+    /** 从 CF 拉取 version.json，返回 { v, files } 完整清单 */
+    private fun fetchManifest(): Manifest? {
         return try {
             val url = URL("$CF_ORIGIN/version.json")
             val conn = url.openConnection() as HttpURLConnection
             conn.connectTimeout = 5000
             conn.readTimeout = 5000
             val body = conn.inputStream.use { it.readBytes().toString(Charsets.UTF_8) }
-            org.json.JSONObject(body).optString("v", null)
+            val json = org.json.JSONObject(body)
+            val v = json.optString("v", null) ?: return null
+            val arr = json.optJSONArray("files") ?: return null
+            val files = (0 until arr.length()).map { arr.getString(it) }
+            Manifest(v, files)
         } catch (_: Exception) { null }
     }
 

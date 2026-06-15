@@ -8,19 +8,16 @@ Write-Host "  Sync frontend to Android assets"
 Write-Host "========================================"
 Write-Host ""
 
-$files = @(
-    "terminal.html", "terminal.css", "commands.html",
-    "version-check.js", "command-autocomplete.js", "command-executor.js",
-    "items_catalog.json", "commands.json", "config.json",
-    "js\se-bridge.js", "js\ui.js", "js\warehouse.js",
-    "js\trade.js", "js\hangar.js", "js\shipyard.js", "js\settings.js",
-    "icons\sprite.css", "icons\sprite.webp", "icons\mapping.json", "icons\tea.jpg"
-)
+# 从唯一真相源 frontend-files.json 读取文件列表
+$manifestPath = Join-Path $SRC "frontend-files.json"
+$files = Get-Content $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
 
 $ok = 0
 foreach ($f in $files) {
     $srcPath = Join-Path $SRC $f
     $dstPath = Join-Path $DST $f
+    $dstDir = Split-Path -Parent $dstPath
+    if (-not (Test-Path $dstDir)) { New-Item -ItemType Directory -Force -Path $dstDir | Out-Null }
     if (Test-Path $srcPath) {
         Copy-Item $srcPath $dstPath -Force
         Write-Host "  $f"
