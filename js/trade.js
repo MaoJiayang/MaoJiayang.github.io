@@ -762,7 +762,7 @@ var Trade = (function () {
     var chart = document.getElementById('ts-chart');
     if (!chart) return;
 
-    // 无对手方订单 → 占位提示
+    // 无订单时占位提示
     if (tsBuckets.length === 0) {
       chart.innerHTML = '<div class="ts-chart-empty">暂无行情参考，可自由定价</div>';
       return;
@@ -772,10 +772,50 @@ var Trade = (function () {
     var qInst = UI.getNumInput('tradesheet_qty');
     var curPrice = pInst ? pInst.getValue() : 0;
     var curQty = qInst ? qInst.getValue() : 0;
-    var acc = computeAccum(tsBuckets, curPrice, curQty, tsMode === 'buy');
-    var maxFmt = UI.fmtCompact(tsMaxBucket);
-    var midFmt = UI.fmtCompact(Math.round(tsMaxBucket / 2));
     var N = tsBuckets.length;
+
+    // 发布模式：找用户价格所在 bucket，若无则找插入位置（在两桶之间）
+    var userBucketIdx = -1;
+    var userInsertAfter = -1;  // 在两桶之间插入新列的位置
+    if (_tsIsPublish && curPrice > 0) {
+      for (var i = 0; i < N; i++) {
+        if (curPrice >= tsBuckets[i].priceMin && curPrice <= tsBuckets[i].priceMax) {
+          userBucketIdx = i;
+          break;
+        }
+      }
+      if (userBucketIdx === -1) {
+        for (var i = 0; i < N - 1; i++) {
+          if (curPrice > tsBuckets[i].priceMax && curPrice < tsBuckets[i + 1].priceMin) {
+            userInsertAfter = i;
+            break;
+          }
+        }
+        // 在首桶之前或末桶之后也标记
+        if (userInsertAfter === -1 && N > 0) {
+          if (curPrice < tsBuckets[0].priceMin) userInsertAfter = -1; // 首个之前
+          else if (curPrice > tsBuckets[N - 1].priceMax) userInsertAfter = N - 1; // 末尾之后，插在最后
+        }
+      }
+    }
+
+    // 发布模式量表：以市场最大量为基准，用户叠加超过时再扩展
+    var scaleMax = tsMaxBucket;
+    if (_tsIsPublish) {
+      if (userBucketIdx >= 0) {
+        var augmented = tsBuckets[userBucketIdx].count + curQty;
+        if (augmented > tsMaxBucket) scaleMax = augmented;
+      } else if (curQty > tsMaxBucket) {
+        scaleMax = curQty;
+      }
+    }
+
+    // 行情模式：computeAccum 填充量
+    var acc = _tsIsPublish ? null : computeAccum(tsBuckets, curPrice, curQty, tsMode === 'buy');
+    var asc = tsMode === 'buy';  // 升序
+
+    var maxFmt = UI.fmtCompact(scaleMax);
+    var midFmt = UI.fmtCompact(Math.round(scaleMax / 2));
 
     var html = '<div class="ts-chart-inner">';
 
@@ -786,31 +826,85 @@ var Trade = (function () {
       + '<span>0</span>'
       + '</div>';
 
-    // 柱状图 + 横轴标签（列布局：每列 bar + label）
-    html += '<div class="ts-bars-wrap"><div class="ts-bars">';
-    for (var i = 0; i < N; i++) {
-      var b = tsBuckets[i];
-      var h = tsMaxBucket > 0 ? Math.round((b.count / tsMaxBucket) * 100) : 0;
-      var fill = acc.fills[i];
-      var bg = fill > 0
-        ? 'linear-gradient(to top, var(--jade-200) ' + fill + '%, var(--bg-hover) ' + fill + '%)'
-        : 'var(--bg-hover)';
-      var isCur = i === acc.currentIdx && acc.currentPrice > 0;
-      var isLast = i === N - 1;
-      // 标签：当前价（绿）> 末桶价 > 其余空白占位（保基线对齐）
-      var lbl = '';
-      if (isCur) {
-        lbl = '<span class="ts-xlbl ts-xlbl-cur">' + UI.fmtCompact(acc.currentPrice) + ' SC</span>';
-      } else if (isLast) {
-        lbl = '<span class="ts-xlbl">' + UI.fmtCompact(b.priceMax) + ' SC</span>';
-      } else {
-        lbl = '<span class="ts-xlbl"></span>';  // 始终占位，首桶省略文字但保留空间
-      }
-      html += '<div class="ts-bar-col">'
-        + '<div class="ts-bar" style="height:' + h + '%;background:' + bg + ';min-width:3px" title="' + b.label + ': ' + UI.fmtCompact(b.count) + ' 件"></div>'
-        + lbl
+    /** 渲染一条柱 */
+    function barCol(count, bg, title, h, labelHtml) {
+      return '<div class="ts-bar-col">'
+        + '<div class="ts-bar" style="height:' + h + '%;background:' + bg + ';min-width:3px" title="' + title + '"></div>'
+        + labelHtml
         + '</div>';
     }
+
+    /** 渲染用户专属金色柱（新价格区间，无既有订单） */
+    function userBarCol() {
+      var h = scaleMax > 0 ? +((curQty / scaleMax) * 100).toFixed(1) : 0;
+      var bg = 'var(--gold-400)';
+      var title = UI.fmtCompact(curPrice) + ': ' + UI.fmtCompact(curQty) + '（你的） 件';
+      var lbl = '<span class="ts-xlbl ts-xlbl-cur">' + UI.fmtCompact(curPrice) + ' SC</span>';
+      return barCol(0, bg, title, h, lbl);
+    }
+
+    // 柱状图 + 横轴标签
+    html += '<div class="ts-bars-wrap"><div class="ts-bars">';
+    var virtualColRendered = false;
+    for (var i = 0; i < N; i++) {
+      var b = tsBuckets[i];
+      var isLast = i === N - 1;
+
+      // 发布模式：在合适位置插入用户专属列
+      if (_tsIsPublish && !virtualColRendered && userBucketIdx === -1 && curQty > 0) {
+        var insertBeforeThis = (userInsertAfter === -1 && i === 0)  // 首个前
+          || (userInsertAfter === i - 1);                            // 紧接在插入点后
+        if (insertBeforeThis) {
+          html += userBarCol();
+          virtualColRendered = true;
+        }
+      }
+
+      // ---- 渲染现有 bucket 柱 ----
+      var h = scaleMax > 0 ? +((b.count / scaleMax) * 100).toFixed(1) : 0;
+      var bg, title;
+      var isCur = _tsIsPublish ? (i === userBucketIdx) : (acc && i === acc.currentIdx && acc.currentPrice > 0);
+
+      if (_tsIsPublish && i === userBucketIdx && curQty > 0) {
+        // 既有订单（灰底）+ 用户量（金色叠加在上）
+        // 渐变百分比相对于柱子自身高度，用既有/总量的比例计算
+        var combined = b.count + curQty;
+        var existingPct = combined > 0 ? +((b.count / combined) * 100).toFixed(1) : 0;
+        // 金色段至少保留可见高度（≈1px）
+        if (curQty > 0 && existingPct >= 100) existingPct = 99;
+        var totalH = scaleMax > 0 ? +((combined / scaleMax) * 100).toFixed(1) : 0;
+        bg = 'linear-gradient(to top, var(--bg-hover) 0%, var(--bg-hover) ' + existingPct + '%, var(--gold-400) ' + existingPct + '%, var(--gold-400) 100%)';
+        h = totalH;
+        title = b.label + ': ' + UI.fmtCompact(b.count) + ' + ' + UI.fmtCompact(curQty) + '（你的） 件';
+      } else if (_tsIsPublish) {
+        bg = 'var(--bg-hover)';
+        title = b.label + ': ' + UI.fmtCompact(b.count) + ' 件';
+      } else if (acc && acc.fills[i] > 0) {
+        var fillPct = acc.fills[i];
+        bg = 'linear-gradient(to top, var(--jade-200) ' + fillPct + '%, var(--bg-hover) ' + fillPct + '%)';
+        title = b.label + ': ' + UI.fmtCompact(b.count) + ' 件';
+      } else {
+        bg = 'var(--bg-hover)';
+        title = b.label + ': ' + UI.fmtCompact(b.count) + ' 件';
+      }
+
+      // 标签：当前价 > 末桶价 > 其余占位（仅占位无文字）
+      var lbl = '';
+      if (isCur) {
+        lbl = '<span class="ts-xlbl ts-xlbl-cur">' + UI.fmtCompact(_tsIsPublish ? curPrice : acc.currentPrice) + ' SC</span>';
+      } else if (isLast && !_tsIsPublish) {
+        lbl = '<span class="ts-xlbl">' + UI.fmtCompact(b.priceMax) + ' SC</span>';
+      } else {
+        lbl = '<span class="ts-xlbl"></span>';
+      }
+      html += barCol(0, bg, title, h, lbl);
+    }
+
+    // 用户列可能在所有桶之后（末桶之后）
+    if (_tsIsPublish && !virtualColRendered && userBucketIdx === -1 && curQty > 0) {
+      html += userBarCol();
+    }
+
     html += '</div></div>';
 
     html += '</div>'; // .ts-chart-inner
@@ -827,8 +921,37 @@ var Trade = (function () {
     var qInst = UI.getNumInput('tradesheet_qty');
     var price = pInst ? pInst.getValue() : 0;
     var qty = qInst ? qInst.getValue() : 0;
-    var cost = calcFillCost(qty, price, tsMode);
-    document.getElementById('ts-total').textContent = '预估成交 ' + UI.fmtPrice(cost.total) + ' SC（均价 ' + UI.fmtCompact(cost.avgPrice) + '）';
+
+    if (_tsIsPublish) {
+      // 发布模式：简单乘法估算
+      var total = qty * price;
+      var incomeLabel = tsMode === 'buy' ? '预估收入 ' : '预估支出 ';
+      var text = incomeLabel + UI.fmtPrice(total) + ' SC';
+
+      // 位序信息单独一行
+      var rankHtml = '';
+      if (tsBuckets.length > 0) {
+        var betterCount = 0;
+        for (var i = 0; i < _tsOrders.length; i++) {
+          if (tsMode === 'buy' ? _tsOrders[i].price < price : _tsOrders[i].price > price) {
+            betterCount += _tsOrders[i].count || 0;
+          }
+        }
+        var priceCount = tsBuckets.length;
+        var roleLabel = tsMode === 'buy' ? '卖家' : '买家';
+        var betterLabel = tsMode === 'buy' ? '出价更低' : '出价更高';
+        if (betterCount > 0) {
+          rankHtml = '<div class="ts-rank">共 ' + priceCount + ' 个' + roleLabel + '，有 ' + UI.fmtCompact(betterCount) + ' 件' + betterLabel + '</div>';
+        } else {
+          rankHtml = '<div class="ts-rank">共 ' + priceCount + ' 个' + roleLabel + '，你的出价最优</div>';
+        }
+      }
+      document.getElementById('ts-total').innerHTML = text + rankHtml;
+    } else {
+      // 行情模式：按对手方订单簿估算成交价
+      var cost = calcFillCost(qty, price, tsMode);
+      document.getElementById('ts-total').textContent = '预估成交 ' + UI.fmtPrice(cost.total) + ' SC（均价 ' + UI.fmtCompact(cost.avgPrice) + '）';
+    }
   }
 
   /**
