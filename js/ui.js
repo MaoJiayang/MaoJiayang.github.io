@@ -761,10 +761,10 @@ var UI = (function () {
       } else {
         showLoginErr(r.msg || '验证失败');
       }
-    }).catch(function(){
+    }).catch(function(e){
       btn.disabled = false;
       btn.textContent = '连接服务器';
-      showLoginErr('连接失败，请稍后重试');
+      showLoginErr((e && e.message) || '连接失败，请稍后重试');
     });
   }
 

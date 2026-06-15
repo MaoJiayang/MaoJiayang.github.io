@@ -131,12 +131,18 @@ var SeBridge = (function () {
         if (remaining !== null) _rateRemaining = parseInt(remaining, 10);
         if (reset !== null) _rateResetSeconds = parseInt(reset, 10);
 
-        if (!r.ok) throw new Error('BRIDGE_HTTP_' + r.status);
-        if (_bridgeDown && _activeBridge) {
-          _bridgeDown = false;
-          if (_onStatusChange) _onStatusChange({ bridgeOnline: true });
-        }
-        return r.json();
+        return r.json().then(function (data) {
+          if (!r.ok) {
+            var err = new Error(data.msg || ('HTTP ' + r.status));
+            err.httpStatus = r.status;
+            throw err;
+          }
+          if (_bridgeDown && _activeBridge) {
+            _bridgeDown = false;
+            if (_onStatusChange) _onStatusChange({ bridgeOnline: true });
+          }
+          return data;
+        });
       })
       .catch(function (err) {
         if (err.message && err.message.indexOf('BRIDGE_HTTP_') === 0) throw err;
@@ -156,10 +162,16 @@ var SeBridge = (function () {
               var reset = r.headers.get('X-RateLimit-Reset');
               if (remaining !== null) _rateRemaining = parseInt(remaining, 10);
               if (reset !== null) _rateResetSeconds = parseInt(reset, 10);
-              if (!r.ok) throw new Error('BRIDGE_HTTP_' + r.status);
-              return r.json();
+              return r.json().then(function (data) {
+                if (!r.ok) {
+                  var err = new Error(data.msg || ('HTTP ' + r.status));
+                  err.httpStatus = r.status;
+                  throw err;
+                }
+                return data;
+              });
             })
-            .catch(function () { throw new Error('BRIDGE_DOWN'); });
+            .catch(function (e) { if (e.httpStatus) throw e; throw new Error('BRIDGE_DOWN'); });
         }
 
         throw new Error('BRIDGE_DOWN');
@@ -178,8 +190,14 @@ var SeBridge = (function () {
     var opts = { method: method, headers: headers };
     if (body) opts.body = JSON.stringify(body);
     return fetch(_activeBridge + path, opts).then(function (r) {
-      if (!r.ok) throw new Error('AUTH_HTTP_' + r.status);
-      return r.json();
+      return r.json().then(function (data) {
+        if (!r.ok) {
+          var err = new Error(data.msg || ('HTTP ' + r.status));
+          err.httpStatus = r.status;
+          throw err;
+        }
+        return data;
+      });
     });
   }
 
