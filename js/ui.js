@@ -323,6 +323,7 @@ var UI = (function () {
       input: document.getElementById('qs-qty'),
       type: 'qty',
       instanceKey: 'qsheet_qty',
+      memSuffix: '_' + mode,
       value: qtyVal,
       defaultValue: 100,
       min: 1,
@@ -724,12 +725,25 @@ var UI = (function () {
     // 非仓库模式不允许切换
     if (qsheetMode !== 'deposit' && qsheetMode !== 'withdraw') return;
     if (mode === 'withdraw' && qsheetStock === 0) return;
+
+    var inst = getNumInput('qsheet_qty');
+    // save() 此时用的仍是旧模式的 _memoryKey，正确写入旧键
+    if (inst) inst.save();
+
     qsheetMode = mode;
     var newMax = mode === 'deposit' ? Infinity : qsheetStock;
-    var inst = getNumInput('qsheet_qty');
+
+    // 切换到新模式：更新实例的 _memoryKey，此后 save() 写入新键
     if (inst) {
+      inst._memoryKey = 'inp_qsheet_qty_' + mode;
       inst.setMax(newMax);
-      inst.setValue(100);
+      // 恢复新模式上次的记忆值
+      var savedVal = InputMemory.get('inp_qsheet_qty_' + mode, undefined);
+      if (savedVal != null) {
+        inst.setValue(savedVal);
+      } else {
+        inst.setValue(100);
+      }
     }
     updateQSheetTabs();
   }
@@ -915,7 +929,7 @@ var UI = (function () {
    */
   function createNumInput(opts) {
     var type = opts.type;
-    var memoryKey = opts.noMemory ? null : ('inp_' + type);
+    var memoryKey = opts.noMemory ? null : ('inp_' + (opts.instanceKey || type) + (opts.memSuffix || ''));
     var input = opts.input;
 
     // 解析 min/max

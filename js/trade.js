@@ -523,11 +523,7 @@ var Trade = (function () {
       }
 
       // 替换确认回调：发布订单而非自动交易
-      _tsOnConfirm = function () {
-        var pInst = UI.getNumInput('tradesheet_price');
-        var qInst = UI.getNumInput('tradesheet_qty');
-        var price = pInst ? pInst.getValue() : 100;
-        var qty = qInst ? qInst.getValue() : 100;
+      _tsOnConfirm = function (price, qty) {
         var cmd = '!市场 发布' + (isSell ? '卖单 ' : '收单 ') + itemName + ' ' + qty + ' ' + price;
         var label = (isSell ? '卖单已发布：' : '收单已发布：') + itemName;
         exec(cmd, label).then(function () { Warehouse.markStale(); Warehouse.ensureData(); refreshMarket(); }).catch(function () {});
@@ -656,8 +652,7 @@ var Trade = (function () {
       input: document.getElementById('ts-price'),
       type: 'price',
       instanceKey: 'tradesheet_price',
-      value: initPrice,
-      defaultValue: 100,
+      defaultValue: initPrice != null ? initPrice : 100,
       min: 0,
       max: Infinity,
       buttons: {
@@ -685,8 +680,7 @@ var Trade = (function () {
       input: document.getElementById('ts-qty'),
       type: 'qty',
       instanceKey: 'tradesheet_qty',
-      value: initQty,
-      defaultValue: 100,
+      defaultValue: initQty,
       min: 1,
       max: tsMaxQty,
       slider: document.getElementById('ts-slider'),
@@ -706,13 +700,10 @@ var Trade = (function () {
     document.getElementById('ts-price-label').textContent = mode === 'buy' ? '最高单价' : '最低单价';
     document.getElementById('ts-confirm').textContent = mode === 'buy' ? '确认购买' : '确认出售';
 
-    _tsOnConfirm = function () {
-      var p = priceInst.getValue();
-      var q = UI.getNumInput('tradesheet_qty');
-      var qty = q ? q.getValue() : 100;
+    _tsOnConfirm = function (price, qty) {
       var cmd = mode === 'buy'
-        ? '!市场 自动购买 ' + itemName + ' ' + qty + ' ' + p
-        : '!市场 自动出售 ' + itemName + ' ' + qty + ' ' + p;
+        ? '!市场 自动购买 ' + itemName + ' ' + qty + ' ' + price
+        : '!市场 自动出售 ' + itemName + ' ' + qty + ' ' + price;
       var label = (mode === 'buy' ? '已购买 ' : '已出售 ') + itemName;
       exec(cmd, label).then(function () {
         Warehouse.markStale(); Warehouse.ensureData();
@@ -770,12 +761,16 @@ var Trade = (function () {
   }
 
   function confirmTradeSheet() {
+    var priceInst = UI.getNumInput('tradesheet_price');
+    var qtyInst = UI.getNumInput('tradesheet_qty');
+    var price = priceInst ? priceInst.getValue() : 100;
+    var qty = qtyInst ? qtyInst.getValue() : 100;
     // 写入记忆
-    var priceInst = UI.getNumInput('tradesheet_price'); if (priceInst) priceInst.save();
-    var qtyInst = UI.getNumInput('tradesheet_qty'); if (qtyInst) qtyInst.save();
+    if (priceInst) priceInst.save();
+    if (qtyInst) qtyInst.save();
     var fn = _tsOnConfirm;
     closeTradeSheet();
-    if (fn) fn();
+    if (fn) fn(price, qty);
   }
 
   /** 渲染柱状图 */
