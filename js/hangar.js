@@ -37,24 +37,19 @@ var Hangar = (function () {
   }
 
   function updateSellDisplay() {
+    var inst = UI.getNumInput('sellform_price');
+    var price = inst ? inst.getValue() : 50000;
     var input = document.getElementById('sf-price');
     if (input && document.activeElement !== input) {
-      var s = UI.fmtCompact(_sellPrice);
-      input.value = s.replace(/^([\d,]+)([KMB])$/, '$1.0$2'); // 补齐缺省小数位防跳变
+      var s = UI.fmtCompact(price);
+      input.value = s.replace(/^([\d,]+)([KMB])$/, '$1.0$2');
     }
     var preview = document.getElementById('sf-preview');
     if (!preview) return;
     var desc = (document.getElementById('sf-desc').value || '').trim();
-    var text = '出售飞船 — ' + UI.fmtCompact(_sellPrice) + ' SC';
+    var text = '出售飞船 — ' + UI.fmtCompact(price) + ' SC';
     if (desc) text += ' — ' + desc;
     preview.textContent = text;
-    updateSellBtns();
-  }
-
-  function updateSellBtns() {
-    var minReached = _sellPrice <= 1;
-    var subs = document.querySelectorAll('#sell-form-overlay .sf-sub');
-    for (var i = 0; i < subs.length; i++) subs[i].disabled = minReached;
   }
 
   function onSellPriceFocus() {
@@ -89,23 +84,44 @@ var Hangar = (function () {
   }
 
   function showSellForm() {
-    _sellPrice = 50000;
-    _sellTap.count = 0; _sellTap.last = 0;
-    document.getElementById('sf-price').value = _sellPrice;
+    // 销毁旧实例
+    var oldInst = UI.getNumInput('sellform_price'); if (oldInst) oldInst.destroy();
+
+    // 创建价格输入实例
+    var priceInst = UI.createNumInput({
+      input: document.getElementById('sf-price'),
+      type: 'price',
+      instanceKey: 'sellform_price',
+      defaultValue: 50000,
+      min: 1,
+      max: Infinity,
+      buttons: {
+        minus: document.querySelector('#sell-form-overlay .sf-sub:not(.sf-fast)'),
+        plus: document.querySelector('#sell-form-overlay .sf-add:not(.sf-fast)'),
+        minusFast: document.querySelector('#sell-form-overlay .sf-sub.sf-fast'),
+        plusFast: document.querySelector('#sell-form-overlay .sf-add.sf-fast')
+      },
+      onChange: function (v) { updateSellDisplay(); }
+    });
+
     document.getElementById('sf-desc').value = '';
     updateSellDisplay();
     _sellOverlay.show();
   }
 
   function confirmSell() {
-    if (_sellPrice < 1 || isNaN(_sellPrice)) {
+    var priceInst = UI.getNumInput('sellform_price');
+    var price = priceInst ? priceInst.getValue() : 50000;
+    if (price < 1 || isNaN(price)) {
       UI.showToast('error', '请输入有效的售价');
       return;
     }
+    // 写入记忆
+    if (priceInst) priceInst.save();
     var desc = document.getElementById('sf-desc').value.trim();
     var descStr = desc ? ' "' + desc + '"' : ' ""';
     _sellOverlay.hide();
-    exec('!网格 出售 ' + _sellPrice + ' ' + descStr, '已上架飞船').then(function () {
+    exec('!网格 出售 ' + price + ' ' + descStr, '已上架飞船').then(function () {
       loadHangar(); loadShipMarket();
     }).catch(function () {});
   }
@@ -700,13 +716,27 @@ var Hangar = (function () {
       '</div>',
       { onBackdrop: function () { _sellOverlay.hide(); } }
     );
-    _sellOverlay.on('#sf-price', 'focus', onSellPriceFocus);
-    _sellOverlay.on('#sf-price', 'blur', onSellPriceBlur);
-    _sellOverlay.on('#sf-price', 'input', onSellPriceInput);
-    _sellOverlay.on('.sf-sub:not(.sf-fast)', 'click', function(){ adjustSellPrice(-1); });
-    _sellOverlay.on('.sf-add:not(.sf-fast)', 'click', function(){ adjustSellPrice(1); });
-    _sellOverlay.on('.sf-sub.sf-fast', 'click', function(){ fastAdjustSellPrice(-1); });
-    _sellOverlay.on('.sf-add.sf-fast', 'click', function(){ fastAdjustSellPrice(1); });
+    _sellOverlay.on('#sf-price', 'focus', function(){
+      var inst = UI.getNumInput('sellform_price'); if (inst) inst.focus();
+    });
+    _sellOverlay.on('#sf-price', 'blur', function(){
+      var inst = UI.getNumInput('sellform_price'); if (inst) inst.blur();
+    });
+    _sellOverlay.on('#sf-price', 'input', function(){
+      var inst = UI.getNumInput('sellform_price'); if (inst) inst.handleInput();
+    });
+    _sellOverlay.on('.sf-sub:not(.sf-fast)', 'click', function(){
+      var inst = UI.getNumInput('sellform_price'); if (inst) inst.adjust(-1);
+    });
+    _sellOverlay.on('.sf-add:not(.sf-fast)', 'click', function(){
+      var inst = UI.getNumInput('sellform_price'); if (inst) inst.adjust(1);
+    });
+    _sellOverlay.on('.sf-sub.sf-fast', 'click', function(){
+      var inst = UI.getNumInput('sellform_price'); if (inst) inst.fastAdjust(-1);
+    });
+    _sellOverlay.on('.sf-add.sf-fast', 'click', function(){
+      var inst = UI.getNumInput('sellform_price'); if (inst) inst.fastAdjust(1);
+    });
     _sellOverlay.on('#sf-desc', 'input', updateSellDisplay);
     _sellOverlay.on('.sf-cancel', 'click', function(){ _sellOverlay.hide(); });
     _sellOverlay.on('.sf-confirm', 'click', confirmSell);

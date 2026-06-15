@@ -248,6 +248,20 @@ body::before{
 }
 .wh-select-banner button:hover{background:rgba(255,255,255,.1)}
 
+/* 出售额度条 */
+.wh-sell-quota{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:10px 14px;margin-bottom:10px;border-radius:6px;
+  background:var(--bg-hover);font-size:13px;color:var(--text-primary);
+}
+.wh-sell-quota-bar{
+  flex:1;max-width:140px;height:6px;border-radius:3px;background:var(--bg-void);
+}
+.wh-sell-quota-fill{
+  display:block;height:100%;border-radius:3px;
+  background:var(--jade-400);transition:width .3s;
+}
+
 /* ========== 交易面板 ========== */
 /* 共享子标签 */
 .st-tabs{display:flex;gap:0;margin-bottom:14px;border-bottom:1px solid var(--bg-hover)}

@@ -11,6 +11,8 @@ var Trade = (function () {
   var marketMode = 'mk';        // 'mk' | 'orders'
   var shopBuyData = null;       // ItemVO[]（买入列表）
   var shopSellData = null;      // ItemVO[]（卖出/回收列表）
+  var shopSellTodayValue = 0;   // 今日已收购金额
+  var shopSellTodayLimit = 0;   // 今日收购额度上限
   var bankInfo = null;
   var shopOpenCat = null;       // 商店当前展开的分类
   var shopLoading = false;
@@ -40,6 +42,7 @@ var Trade = (function () {
   var tsMaxBucket = 0;
   var _tsOrders = [];           // 当前使用的订单列表（升序或降序）
   var _tsOnConfirm = null;
+  var _tsIsPublish = false;     // 发布订单模式（跳过行情价格联动）
   var _tsVvHandler = null;      // visualViewport 键盘适配
   var _tsWasFullscreen = false; // 打开前处于全屏 → 关闭后恢复
 
@@ -102,12 +105,12 @@ var Trade = (function () {
   }
 
   function loadSellList() {
-    if (!shopSellData) {
-      exec('!收购 列表', null).then(function (d) {
-        shopSellData = Array.isArray(d) ? d : (d && d.items ? d.items : []);
-        renderShop();
-      }).catch(function () { shopSellData = []; renderShop(); });
-    } else { renderShop(); }
+    exec('!收购 列表', null).then(function (d) {
+      shopSellData = Array.isArray(d) ? d : (d && d.items ? d.items : []);
+      shopSellTodayValue = (d && d.todayValue) || 0;
+      shopSellTodayLimit = (d && d.todayLimit) || 0;
+      renderShop();
+    }).catch(function () { shopSellData = []; shopSellTodayValue = 0; shopSellTodayLimit = 0; renderShop(); });
   }
 
   function switchShopMode(mode) {
@@ -183,6 +186,15 @@ var Trade = (function () {
     });
 
     var html = '';
+    // 出售模式：显示今日剩余额度（从满到空）
+    if (shopMode === 'sell' && shopSellTodayLimit > 0) {
+      var usedPct = shopSellTodayLimit > 0 ? Math.round((shopSellTodayValue / shopSellTodayLimit) * 100) : 0;
+      var remainPct = 100 - usedPct;
+      html += '<div class="wh-sell-quota">' +
+        '<span>今日额度: ' + UI.fmtNum(shopSellTodayValue) + ' / ' + UI.fmtNum(shopSellTodayLimit) + ' SC</span>' +
+        '<span class="wh-sell-quota-bar"><span class="wh-sell-quota-fill" style="width:' + remainPct + '%"></span></span>' +
+        '</div>';
+    }
     var openCat = shopOpenCat || catOrder.find(function (c) { return groups[c] && groups[c].length > 0; }) || '零件';
 
     catOrder.forEach(function (cat) {
@@ -220,7 +232,7 @@ var Trade = (function () {
       onConfirm: function (m, qty) {
         var cmd = isBuy ? '!采购 提交 ' + name + ' ' + qty : '!收购 提交 ' + name + ' ' + qty;
         var label = (isBuy ? '已购买 ' : '已出售 ') + name;
-        exec(cmd, label).then(function () { loadBankInfo(); Warehouse.markStale(); Warehouse.ensureData(); }).catch(function () {});
+        exec(cmd, label).then(function () { loadBankInfo(); Warehouse.markStale(); Warehouse.ensureData(); loadSellList(); }).catch(function () {});
       }
     });
   }
@@ -456,15 +468,46 @@ var Trade = (function () {
       Warehouse.exitSelectionMode();
       UI.switchTab('trade');
       // 发布视角看同方向订单（卖单参考卖单、收单参考收单），与交易视角相反
-      openTradeSheet(modeForQ === 'sell' ? 'buy' : 'sell', itemName);
+      openTradeSheet(modeForQ === 'sell' ? 'buy' : 'sell', itemName, true);
       // 覆盖 UI 文案：发布订单 vs 自动交易
       var isSell = modeForQ === 'sell';
       document.getElementById('ts-title').textContent = (isSell ? '发布卖单 ' : '发布收单 ') + itemName;
       document.getElementById('ts-price-label').textContent = '单价';
       document.getElementById('ts-confirm').textContent = isSell ? '确认发布卖单' : '确认发布收单';
+
+      // 发布卖单：数量上限 = 仓库库存；发布买单：上限 = 银行余额 / 单价
+      var qtyInst = UI.getNumInput('tradesheet_qty');
+      if (isSell) {
+        var stock = Warehouse.getStock(itemName) || 0;
+        if (qtyInst) qtyInst.setMax(Math.max(1, stock));
+      } else {
+        var updateBuyMax = function () {
+          var pInst = UI.getNumInput('tradesheet_price');
+          var price = pInst ? Math.max(1, pInst.getValue()) : 1;
+          var balance = (bankInfo && bankInfo.balance) || 0;
+          var maxAfford = Math.floor(balance / price);
+          var qi = UI.getNumInput('tradesheet_qty');
+          if (qi) qi.setMax(Math.max(1, maxAfford));
+        };
+        updateBuyMax();
+        // 价格变动时重新计算数量上限
+        var priceInst = UI.getNumInput('tradesheet_price');
+        if (priceInst) {
+          var origOnChange = priceInst._onChange;
+          priceInst._onChange = function (v) {
+            if (origOnChange) origOnChange(v);
+            updateBuyMax();
+          };
+        }
+      }
+
       // 替换确认回调：发布订单而非自动交易
       _tsOnConfirm = function () {
-        var cmd = '!市场 发布' + (isSell ? '卖单 ' : '收单 ') + itemName + ' ' + tsQty + ' ' + tsPrice;
+        var pInst = UI.getNumInput('tradesheet_price');
+        var qInst = UI.getNumInput('tradesheet_qty');
+        var price = pInst ? pInst.getValue() : 100;
+        var qty = qInst ? qInst.getValue() : 100;
+        var cmd = '!市场 发布' + (isSell ? '卖单 ' : '收单 ') + itemName + ' ' + qty + ' ' + price;
         var label = (isSell ? '卖单已发布：' : '收单已发布：') + itemName;
         exec(cmd, label).then(function () { Warehouse.markStale(); Warehouse.ensureData(); refreshMarket(); }).catch(function () {});
       };
@@ -554,7 +597,11 @@ var Trade = (function () {
   }
 
   /** 打开 TradeSheet（交易 / 发布订单共用） */
-  function openTradeSheet(mode, itemName) {
+  function openTradeSheet(mode, itemName, isPublish) {
+    // 销毁旧实例
+    var oldPrice = UI.getNumInput('tradesheet_price'); if (oldPrice) oldPrice.destroy();
+    var oldQty = UI.getNumInput('tradesheet_qty'); if (oldQty) oldQty.destroy();
+
     var mi = getMarketItem(itemName);
     var orders = [];
     if (mi) {
@@ -567,29 +614,84 @@ var Trade = (function () {
     var bb = buildBuckets(orders);
     tsBuckets = bb.buckets;
     tsMaxBucket = bb.maxCount;
+    _tsIsPublish = !!isPublish;
 
-    // 默认值（无对手方订单时用兜底默认价 + 不设上限）
-    if (orders.length > 0) {
-      tsPrice = mode === 'buy' ? bb.minPrice : bb.maxPrice;
-      tsMaxQty = calcMaxQtyForPrice(tsPrice, mode);
+    // 确定初始价格和数量上限
+    var initPrice, initMaxQty;
+    if (!isPublish && orders.length > 0) {
+      initPrice = mode === 'buy' ? bb.minPrice : bb.maxPrice;
+      initMaxQty = calcMaxQtyForPrice(initPrice, mode);
+    } else if (!isPublish) {
+      initPrice = undefined;  // 走记忆
+      initMaxQty = 2147483647;
     } else {
-      tsPrice = 100;
-      tsMaxQty = 2147483647;  // 无对手方订单时仅做整型防御，不设实际上限
+      initPrice = undefined;  // 发布模式：走记忆
+      initMaxQty = 2147483647;
     }
-    tsQty = Math.min(100, tsMaxQty);
+    tsMaxQty = initMaxQty;
 
+    // 创建价格输入实例
+    var priceInst = UI.createNumInput({
+      input: document.getElementById('ts-price'),
+      type: 'price',
+      instanceKey: 'tradesheet_price',
+      value: initPrice,
+      defaultValue: 100,
+      min: 0,
+      max: Infinity,
+      buttons: {
+        minus: document.getElementById('ts-price-sub'),
+        plus: document.getElementById('ts-price-add')
+      },
+      onChange: function (v) {
+        // 行情模式：价格变化联动数量上限
+        if (!_tsIsPublish) {
+          tsMaxQty = calcMaxQtyForPrice(v, tsMode);
+          var qtyInst = UI.getNumInput('tradesheet_qty');
+          if (qtyInst) {
+            qtyInst.setMax(tsMaxQty);
+            if (qtyInst.getValue() > tsMaxQty) qtyInst.setValue(tsMaxQty);
+          }
+        }
+        renderChart();
+        updateTsDisplay();
+      }
+    });
+
+    // 创建数量输入实例
+    var initQty = Math.min(100, tsMaxQty);
+    UI.createNumInput({
+      input: document.getElementById('ts-qty'),
+      type: 'qty',
+      instanceKey: 'tradesheet_qty',
+      value: initQty,
+      defaultValue: 100,
+      min: 1,
+      max: tsMaxQty,
+      slider: document.getElementById('ts-slider'),
+      buttons: {
+        minus: document.getElementById('ts-qty-sub'),
+        plus: document.getElementById('ts-qty-add')
+      },
+      onChange: function (v) {
+        renderChart();
+        updateTsDisplay();
+      }
+    });
+
+    // 界面文案
     document.getElementById('ts-title').textContent = (mode === 'buy' ? '购买 ' : '出售 ') + itemName;
     document.getElementById('ts-stock').textContent = '仓库: ' + UI.fmtCompact(Warehouse.getStock(itemName) || 0);
     document.getElementById('ts-price-label').textContent = mode === 'buy' ? '最高单价' : '最低单价';
-    document.getElementById('ts-price').value = tsPrice;
-    document.getElementById('ts-qty').value = tsQty;
-    UI.syncSlider(document.getElementById('ts-slider'), tsQty, tsMaxQty, false);
     document.getElementById('ts-confirm').textContent = mode === 'buy' ? '确认购买' : '确认出售';
 
     _tsOnConfirm = function () {
+      var p = priceInst.getValue();
+      var q = UI.getNumInput('tradesheet_qty');
+      var qty = q ? q.getValue() : 100;
       var cmd = mode === 'buy'
-        ? '!市场 自动购买 ' + itemName + ' ' + tsQty + ' ' + tsPrice
-        : '!市场 自动出售 ' + itemName + ' ' + tsQty + ' ' + tsPrice;
+        ? '!市场 自动购买 ' + itemName + ' ' + qty + ' ' + p
+        : '!市场 自动出售 ' + itemName + ' ' + qty + ' ' + p;
       var label = (mode === 'buy' ? '已购买 ' : '已出售 ') + itemName;
       exec(cmd, label).then(function () {
         Warehouse.markStale(); Warehouse.ensureData();
@@ -625,6 +727,10 @@ var Trade = (function () {
   }
 
   function closeTradeSheet() {
+    // 销毁数值输入实例
+    var priceInst = UI.getNumInput('tradesheet_price'); if (priceInst) priceInst.destroy();
+    var qtyInst = UI.getNumInput('tradesheet_qty'); if (qtyInst) qtyInst.destroy();
+
     if (_tsVvHandler && window.visualViewport) {
       window.visualViewport.removeEventListener('resize', _tsVvHandler);
       window.visualViewport.removeEventListener('scroll', _tsVvHandler);
@@ -643,6 +749,9 @@ var Trade = (function () {
   }
 
   function confirmTradeSheet() {
+    // 写入记忆
+    var priceInst = UI.getNumInput('tradesheet_price'); if (priceInst) priceInst.save();
+    var qtyInst = UI.getNumInput('tradesheet_qty'); if (qtyInst) qtyInst.save();
     var fn = _tsOnConfirm;
     closeTradeSheet();
     if (fn) fn();
@@ -659,7 +768,11 @@ var Trade = (function () {
       return;
     }
 
-    var acc = computeAccum(tsBuckets, tsPrice, tsQty, tsMode === 'buy');
+    var pInst = UI.getNumInput('tradesheet_price');
+    var qInst = UI.getNumInput('tradesheet_qty');
+    var curPrice = pInst ? pInst.getValue() : 0;
+    var curQty = qInst ? qInst.getValue() : 0;
+    var acc = computeAccum(tsBuckets, curPrice, curQty, tsMode === 'buy');
     var maxFmt = UI.fmtCompact(tsMaxBucket);
     var midFmt = UI.fmtCompact(Math.round(tsMaxBucket / 2));
     var N = tsBuckets.length;
@@ -710,11 +823,11 @@ var Trade = (function () {
 
   /** 更新显示：总价 + 滑块填色 + 输入框 */
   function updateTsDisplay() {
-    document.getElementById('ts-price').value = UI.fmtPrice(tsPrice);
-    var qtyFmt = _tsSliderDragging ? String(tsQty) : UI.fmtCompact(tsQty);
-    document.getElementById('ts-qty').value = qtyFmt.replace(/^([\d,]+)([KMBk])$/, '$1.0$2');
-    UI.syncSlider(document.getElementById('ts-slider'), Math.min(tsQty, tsMaxQty), tsMaxQty, false);
-    var cost = calcFillCost(tsQty, tsPrice, tsMode);
+    var pInst = UI.getNumInput('tradesheet_price');
+    var qInst = UI.getNumInput('tradesheet_qty');
+    var price = pInst ? pInst.getValue() : 0;
+    var qty = qInst ? qInst.getValue() : 0;
+    var cost = calcFillCost(qty, price, tsMode);
     document.getElementById('ts-total').textContent = '预估成交 ' + UI.fmtPrice(cost.total) + ' SC（均价 ' + UI.fmtCompact(cost.avgPrice) + '）';
   }
 
@@ -752,23 +865,28 @@ var Trade = (function () {
     return total;
   }
 
-  function onTsPriceInput() {
-    var raw = document.getElementById('ts-price').value.replace(/,/g, '');
-    var v = parseInt(raw, 10);
-    if (isNaN(v) || v < 0) v = 0;
-    tsPrice = v;
-    tsMaxQty = calcMaxQtyForPrice(tsPrice, tsMode);
-    if (tsQty > tsMaxQty) tsQty = tsMaxQty;
+  /** 委托到数值输入实例的价格输入处理 */
+  function _onTsPriceInput() {
+    var inst = UI.getNumInput('tradesheet_price');
+    if (inst) inst.handleInput();
+    // 价格变化后联动数量上限
+    if (!_tsIsPublish) {
+      var newPrice = inst ? inst.getValue() : 0;
+      tsMaxQty = calcMaxQtyForPrice(newPrice, tsMode);
+      var qtyInst = UI.getNumInput('tradesheet_qty');
+      if (qtyInst) {
+        qtyInst.setMax(tsMaxQty);
+        if (qtyInst.getValue() > tsMaxQty) qtyInst.setValue(tsMaxQty);
+      }
+    }
     renderChart();
     updateTsDisplay();
   }
 
-  function onTsQtyInput() {
-    var raw = document.getElementById('ts-qty').value.replace(/,/g, '');
-    var v = parseInt(raw, 10);
-    if (isNaN(v) || v < 1) v = 1;
-    if (v > tsMaxQty) v = tsMaxQty;
-    tsQty = v;
+  /** 委托到数值输入实例的数量输入处理 */
+  function _onTsQtyInput() {
+    var inst = UI.getNumInput('tradesheet_qty');
+    if (inst) inst.handleInput();
     renderChart();
     updateTsDisplay();
   }
@@ -776,8 +894,10 @@ var Trade = (function () {
   function adjustTsPrice(delta) {
     var step = tsPrice >= 1000 ? 100 : tsPrice >= 100 ? 10 : 1;
     tsPrice = Math.max(0, tsPrice + delta * step);
-    tsMaxQty = calcMaxQtyForPrice(tsPrice, tsMode);
-    if (tsQty > tsMaxQty) tsQty = tsMaxQty;
+    if (!_tsIsPublish) {
+      tsMaxQty = calcMaxQtyForPrice(tsPrice, tsMode);
+      if (tsQty > tsMaxQty) tsQty = tsMaxQty;
+    }
     renderChart();
     updateTsDisplay();
   }
@@ -1436,36 +1556,49 @@ var Trade = (function () {
     _contractFormOverlay.on('.ct-create-cancel', 'click', function () { _contractFormOverlay.hide(); });
     _contractFormOverlay.on('.ct-create-confirm', 'click', submitCreateContract);
 
-    // TradeSheet 按钮
+    // TradeSheet 按钮 — 委托到 UI 数值输入实例
     document.getElementById('ts-cancel').addEventListener('click', closeTradeSheet);
     document.getElementById('ts-confirm').addEventListener('click', confirmTradeSheet);
     document.getElementById('tradesheet-overlay').addEventListener('click', function (e) {
       if (e.target === this) closeTradeSheet();
     });
-    document.getElementById('ts-price').addEventListener('input', onTsPriceInput);
-    document.getElementById('ts-qty').addEventListener('input', onTsQtyInput);
+    document.getElementById('ts-price').addEventListener('input', _onTsPriceInput);
+    document.getElementById('ts-qty').addEventListener('input', _onTsQtyInput);
     // 手机输入法弹窗时自动滚到可见位置
     var _tsInitH = window.innerHeight;
     var _tsFocusScroll = function () {
       var self = this;
-      // Android：viewport resize → 延迟等键盘动画 → scrollIntoView
-      // iOS：visualViewport resize → transform 顶卡片（由 _tsVvHandler 处理）
       setTimeout(function () {
         var nowH = window.innerHeight;
         if (nowH < _tsInitH - 100) {
-          // Android 键盘已弹出（viewport 缩小）→ 滚容器
           self.scrollIntoView({ block: 'center', behavior: 'smooth' });
         }
       }, 500);
     };
     document.getElementById('ts-price').addEventListener('focus', _tsFocusScroll);
     document.getElementById('ts-qty').addEventListener('focus', _tsFocusScroll);
-    document.getElementById('ts-slider').addEventListener('input', onTsSliderInput);
-    document.getElementById('ts-slider').addEventListener('change', onTsSliderChange);
-    document.getElementById('ts-price-sub').addEventListener('click', function () { adjustTsPrice(-1); });
-    document.getElementById('ts-price-add').addEventListener('click', function () { adjustTsPrice(1); });
-    document.getElementById('ts-qty-sub').addEventListener('click', function () { adjustTsQty(-1); });
-    document.getElementById('ts-qty-add').addEventListener('click', function () { adjustTsQty(1); });
+    // 滑块委托
+    document.getElementById('ts-slider').addEventListener('input', function () {
+      var inst = UI.getNumInput('tradesheet_qty');
+      if (inst) { inst._dragging = true; inst.setValue(parseInt(this.value, 10) || 1); }
+    });
+    document.getElementById('ts-slider').addEventListener('change', function () {
+      var inst = UI.getNumInput('tradesheet_qty');
+      if (inst) { inst._dragging = false; inst._refresh(false); }
+    });
+    // 步进按钮委托
+    document.getElementById('ts-price-sub').addEventListener('click', function () {
+      var inst = UI.getNumInput('tradesheet_price'); if (inst) inst.adjust(-1);
+    });
+    document.getElementById('ts-price-add').addEventListener('click', function () {
+      var inst = UI.getNumInput('tradesheet_price'); if (inst) inst.adjust(1);
+    });
+    document.getElementById('ts-qty-sub').addEventListener('click', function () {
+      var inst = UI.getNumInput('tradesheet_qty'); if (inst) inst.adjust(-1);
+    });
+    document.getElementById('ts-qty-add').addEventListener('click', function () {
+      var inst = UI.getNumInput('tradesheet_qty'); if (inst) inst.adjust(1);
+    });
   }
 
   function initMarket() {

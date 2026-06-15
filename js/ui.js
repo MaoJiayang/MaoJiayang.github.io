@@ -285,10 +285,12 @@ var UI = (function () {
    *   options: { stock, lockQty, extraField: { label, value, suffix, step, min, max }, onConfirm }
    */
   function openQSheet(mode, itemName, stockOrOptions, onConfirm) {
+    // 销毁旧实例
+    var oldQty = getNumInput('qsheet_qty'); if (oldQty) oldQty.destroy();
+    var oldExtra = getNumInput('qsheet_extra'); if (oldExtra) oldExtra.destroy();
+
     qsheetMode = mode;
     qsheetItem = itemName;
-    _qtyTap.count = 0; _qtyTap.last = 0;
-    _extraTap.count = 0; _extraTap.last = 0;
 
     // 判断 overload：第三个参数是对象则为 options 模式
     var isOptions = typeof stockOrOptions === 'object' && stockOrOptions !== null;
@@ -298,16 +300,54 @@ var UI = (function () {
     _lockQty = options.lockQty || 0;
     _lockExtra = options.lockExtra === true;
     _noCap = options.noCap === true;
-    qsheetQty = _lockQty > 0 ? _lockQty : 100;
     _qsheetOnConfirm = options.onConfirm || null;
-    _qsheetConfirmLabel = options.confirmLabel || null;  // 自定义确认按钮文字（清单构建器等场景）
+    _qsheetConfirmLabel = options.confirmLabel || null;
     qsheetExtra = options.extraField || null;
-    qsheetExtraVal = qsheetExtra ? qsheetExtra.value : 0;
-    var depositing = mode === 'deposit';
-    // 锁定数量（不可拆分）或以存量/无限量限制
-    var maxWithdraw = getMaxWithdraw();
-    if (qsheetQty > maxWithdraw) qsheetQty = maxWithdraw;
-    if (qsheetQty < 1) qsheetQty = 1;
+
+    // 创建数量输入实例
+    var qtyVal = _lockQty > 0 ? _lockQty : undefined;  // 锁定数量时用 lockQty，否则走记忆
+    var qtyMax = _lockQty > 0 ? _lockQty : function () { return getMaxWithdraw(); };
+    var qtyInst = createNumInput({
+      input: document.getElementById('qs-qty'),
+      type: 'qty',
+      instanceKey: 'qsheet_qty',
+      value: qtyVal,
+      defaultValue: 100,
+      min: 1,
+      max: qtyMax,
+      slider: document.getElementById('qs-slider'),
+      buttons: {
+        minus: document.getElementById('qs-minus'),
+        plus: document.getElementById('qs-plus'),
+        minusFast: document.getElementById('qs-minus-fast'),
+        plusFast: document.getElementById('qs-plus-fast')
+      },
+      locked: _lockQty > 0,
+      onChange: function (v) { _onQsheetQtyChange(v); }
+    });
+
+    // 创建价格输入实例（extraField）
+    if (qsheetExtra) {
+      createNumInput({
+        input: document.getElementById('qs-extra-val'),
+        type: 'price',
+        instanceKey: 'qsheet_extra',
+        value: qsheetExtra.value,
+        defaultValue: 100,
+        min: qsheetExtra.min != null ? qsheetExtra.min : 0,
+        max: qsheetExtra.max != null ? qsheetExtra.max : 999999,
+        buttons: {
+          minus: document.getElementById('qs-extra-minus'),
+          plus: document.getElementById('qs-extra-plus'),
+          minusFast: document.getElementById('qs-extra-minus-fast'),
+          plusFast: document.getElementById('qs-extra-plus-fast')
+        },
+        locked: _lockExtra,
+        onChange: function (v) { _onQsheetExtraChange(v); }
+      });
+    }
+
+    // UI 文案
     document.getElementById('qs-item').textContent = itemName;
     if (_lockQty > 0) {
       document.getElementById('qs-stock').textContent = '数量不可拆分';
@@ -316,45 +356,65 @@ var UI = (function () {
     } else {
       document.getElementById('qs-stock').textContent = '库存 ' + fmtCompact(qsheetStock);
     }
-    document.getElementById('qs-qty').value = fmtCompact(qsheetQty);
 
-    // 拖动条初始范围（无上限时隐藏）
-    var hasCap = isFinite(getMaxWithdraw());
-    var sliderWrap = document.getElementById('qs-slider-wrap');
-    if (sliderWrap) sliderWrap.style.display = hasCap ? '' : 'none';
-    if (hasCap) UI.syncSlider(document.getElementById('qs-slider'), Math.min(qsheetQty, getMaxSlider()), getMaxSlider(), _lockQty > 0);
-
-    // extra field
+    // extra field 显示
     var extraEl = document.getElementById('qs-extra');
     var confirmBtn = document.getElementById('qs-confirm');
     if (_qsheetConfirmLabel) {
       extraEl.style.display = 'none';
-      confirmBtn.textContent = _qsheetConfirmLabel + ' ' + fmtCompact(qsheetQty);
+      confirmBtn.textContent = _qsheetConfirmLabel + ' ' + fmtCompact(qtyInst.getValue());
     } else if (qsheetExtra) {
       extraEl.style.display = 'block';
       document.getElementById('qs-extra-label').textContent = qsheetExtra.label;
-      document.getElementById('qs-extra-val').value = fmtCompact(qsheetExtraVal);
-      confirmBtn.textContent = qsheetExtra.confirmLabel || (qsheetMode === 'buy' ? '确认购买' : '确认出售');
+      var extraInst = getNumInput('qsheet_extra');
+      confirmBtn.textContent = qsheetExtra.confirmLabel || (mode === 'buy' ? '确认购买' : '确认出售');
     } else {
       extraEl.style.display = 'none';
+      var label;
+      if (mode === 'deposit') label = '确认存入 ';
+      else if (mode === 'withdraw') label = '确认取出 ';
+      else if (mode === 'buy') label = '确认购买 ';
+      else label = '确认出售 ';
+      confirmBtn.textContent = label + fmtCompact(qtyInst.getValue());
+    }
+
+    document.getElementById('qsheet-overlay').classList.add('show');
+    updateQSheetTabs();
+  }
+
+  /** 数量变化时更新确认按钮文案 */
+  function _onQsheetQtyChange(v) {
+    var confirmBtn = document.getElementById('qs-confirm');
+    if (_qsheetConfirmLabel) {
+      confirmBtn.textContent = _qsheetConfirmLabel + ' ' + fmtCompact(v);
+    } else if (!qsheetExtra) {
       var label;
       if (qsheetMode === 'deposit') label = '确认存入 ';
       else if (qsheetMode === 'withdraw') label = '确认取出 ';
       else if (qsheetMode === 'buy') label = '确认购买 ';
       else label = '确认出售 ';
-      confirmBtn.textContent = label + fmtCompact(qsheetQty);
+      confirmBtn.textContent = label + fmtCompact(v);
     }
+    // 更新 extra total
+    var extraInst = getNumInput('qsheet_extra');
+    if (extraInst) _onQsheetExtraChange(extraInst.getValue());
+  }
 
-    document.getElementById('qsheet-overlay').classList.add('show');
-    updateQSheetTabs();
-    updateQSheetBtns();
-    updateExtraDisplay();
+  /** 价格变化时更新总价 */
+  function _onQsheetExtraChange(v) {
+    var qtyInst = getNumInput('qsheet_qty');
+    var qty = qtyInst ? qtyInst.getValue() : 0;
+    var total = qty * v;
+    var el = document.getElementById('qs-extra-total');
+    if (el) {
+      el.textContent = total > 0 ? '总价 ' + fmtCompact(total) + ' ' + (qsheetExtra ? qsheetExtra.suffix || 'SC' : 'SC') : '';
+    }
   }
 
   function closeQSheet() {
     document.getElementById('qsheet-overlay').classList.remove('show');
-    clearTimeout(_qtyTap.timer);
-    clearTimeout(_extraTap.timer);
+    var qtyInst = getNumInput('qsheet_qty'); if (qtyInst) qtyInst.destroy();
+    var extraInst = getNumInput('qsheet_extra'); if (extraInst) extraInst.destroy();
     qsheetExtra = null;
   }
 
@@ -479,24 +539,16 @@ var UI = (function () {
   // ========== 输入焦点切换 ==========
 
   function onQtyFocus() {
-    var input = document.getElementById('qs-qty');
-    input.value = qsheetQty;
-    fitFontSize(input);
+    var inst = getNumInput('qsheet_qty'); if (inst) inst.focus();
   }
   function onQtyBlur() {
-    var input = document.getElementById('qs-qty');
-    input.value = fmtCompact(qsheetQty);
-    input.style.fontSize = '';
+    var inst = getNumInput('qsheet_qty'); if (inst) inst.blur();
   }
   function onExtraFocus() {
-    var input = document.getElementById('qs-extra-val');
-    input.value = qsheetExtraVal;
-    fitFontSize(input);
+    var inst = getNumInput('qsheet_extra'); if (inst) inst.focus();
   }
   function onExtraBlur() {
-    var input = document.getElementById('qs-extra-val');
-    input.value = fmtCompact(qsheetExtraVal);
-    input.style.fontSize = '';
+    var inst = getNumInput('qsheet_extra'); if (inst) inst.blur();
   }
 
   function updateExtraBtns() {
@@ -518,17 +570,7 @@ var UI = (function () {
   }
 
   function onExtraInput() {
-    if (_lockExtra) return;
-    var input = document.getElementById('qs-extra-val');
-    input.value = input.value.replace(/[^\d.kKmMbB]/g, '');
-    fitFontSize(input);
-    var v = parseCompact(input.value);
-    if (isNaN(v)) v = 0;
-    var min = qsheetExtra && qsheetExtra.min != null ? qsheetExtra.min : 0;
-    var max = qsheetExtra && qsheetExtra.max ? qsheetExtra.max : 999999;
-    qsheetExtraVal = Math.max(min, Math.min(max, v));
-    _extraTap.count = 0;
-    updateExtraDisplay();
+    var inst = getNumInput('qsheet_extra'); if (inst) inst.handleInput();
   }
 
   function adjustExtra(delta) {
@@ -590,16 +632,7 @@ var UI = (function () {
   }
 
   function onQtyInput() {
-    if (_lockQty > 0) return;
-    var input = document.getElementById('qs-qty');
-    // 过滤非法字符（只允许数字、小数点、K/M/B）
-    input.value = input.value.replace(/[^\d.kKmMbB]/g, '');
-    fitFontSize(input);
-    var v = parseCompact(input.value);
-    if (isNaN(v) || v < 1) v = 1;
-    qsheetQty = Math.max(1, Math.min(getMaxWithdraw(), v));
-    _qtyTap.count = 0;
-    updateQSheetDisplay();
+    var inst = getNumInput('qsheet_qty'); if (inst) inst.handleInput();
   }
 
   function adjustQty(delta) {
@@ -646,37 +679,45 @@ var UI = (function () {
     if (qsheetMode !== 'deposit' && qsheetMode !== 'withdraw') return;
     if (mode === 'withdraw' && qsheetStock === 0) return;
     qsheetMode = mode;
-    qsheetQty = 100;
-    var maxWithdraw = mode === 'deposit' ? Infinity : qsheetStock;
-    if (qsheetQty > maxWithdraw) qsheetQty = maxWithdraw;
-    if (qsheetQty < 1) qsheetQty = 1;
-    _qtyTap.count = 0;
+    var newMax = mode === 'deposit' ? Infinity : qsheetStock;
+    var inst = getNumInput('qsheet_qty');
+    if (inst) {
+      inst.setMax(newMax);
+      inst.setValue(100);
+    }
     updateQSheetTabs();
-    updateQSheetDisplay();
   }
 
   function confirmQSheet() {
-    if (qsheetQty < 1) qsheetQty = 1;
+    var qtyInst = getNumInput('qsheet_qty');
+    var extraInst = getNumInput('qsheet_extra');
+    var qty = qtyInst ? qtyInst.getValue() : 100;
+    if (qty < 1) { qty = 1; if (qtyInst) qtyInst.setValue(1); }
+
+    // 写入记忆
+    if (qtyInst) qtyInst.save();
+    if (extraInst) extraInst.save();
+
     // 保存状态——closeQSheet 会清空 qsheetExtra
     var extra = qsheetExtra;
-    var extraVal = qsheetExtraVal;
+    var extraVal = extraInst ? extraInst.getValue() : 0;
     if (extra && extraVal < (extra.min != null ? extra.min : 0)) extraVal = (extra.min != null ? extra.min : 0);
     closeQSheet();
     if (_qsheetOnConfirm) {
       if (extra) {
         // 市场：传 mode + qty + extraVal
-        _qsheetOnConfirm(qsheetMode, qsheetQty, extraVal);
+        _qsheetOnConfirm(qsheetMode, qty, extraVal);
       } else if (qsheetMode === 'buy' || qsheetMode === 'sell') {
         // 商店买入/卖出：传 mode + qty
-        _qsheetOnConfirm(qsheetMode, qsheetQty);
+        _qsheetOnConfirm(qsheetMode, qty);
       } else if (_qsheetConfirmLabel) {
         // 自定义场景（清单构建器等）：传 mode + qty，不生成仓库指令
-        _qsheetOnConfirm(qsheetMode, qsheetQty);
+        _qsheetOnConfirm(qsheetMode, qty);
       } else {
         // 仓库存入/取出：传完整指令
         var cmd = qsheetMode === 'deposit'
-          ? '!仓库 存入 ' + qsheetItem + ' ' + qsheetQty
-          : '!仓库 取出 ' + qsheetItem + ' ' + qsheetQty;
+          ? '!仓库 存入 ' + qsheetItem + ' ' + qty
+          : '!仓库 取出 ' + qsheetItem + ' ' + qty;
         var label = qsheetMode === 'deposit' ? '存入' : '取出';
         _qsheetOnConfirm(cmd, label);
       }
@@ -768,6 +809,222 @@ var UI = (function () {
     });
   }
 
+  // ========== 输入记忆 ==========
+
+  /** 统一滑块同步：设置范围、值、禁用态，并填充已拖动区域 */
+  function syncSlider(slider, value, max, disabled) {
+    slider.max = max;
+    slider.value = value;
+    slider.disabled = !!disabled;
+    var pct = max > 0 ? (value / max) * 100 : 0;
+    slider.style.background = 'linear-gradient(to right, var(--jade-200) 0%, var(--jade-200) ' + pct + '%, var(--bg-hover) ' + pct + '%)';
+  }
+
+  var InputMemory = {
+    _prefix: 'inp_',
+    get: function (key, fallback) {
+      try {
+        var raw = localStorage.getItem(this._prefix + key);
+        if (raw !== null) {
+          var v = parseInt(raw, 10);
+          if (!isNaN(v) && v >= 0) return v;
+        }
+      } catch (_) {}
+      return fallback;
+    },
+    set: function (key, value) {
+      try { localStorage.setItem(this._prefix + key, String(value)); } catch (_) {}
+    }
+  };
+
+  // ========== 数值输入工厂 ==========
+
+  /** 活跃实例注册表（供全局按钮事件委托） */
+  var _activeNumInputs = {};
+
+  /**
+   * 创建数值输入实例，统一封装 KMB 格式、自适应步进、记忆、滑块联动。
+   *
+   * @param {Object} opts
+   * @param {HTMLInputElement} opts.input
+   * @param {'qty'|'price'}   opts.type
+   * @param {string}          [opts.instanceKey]
+   * @param {number}          [opts.value]
+   * @param {number}          [opts.defaultValue=100]
+   * @param {number|function} [opts.min]
+   * @param {number|function} [opts.max]
+   * @param {HTMLInputElement}[opts.slider]
+   * @param {Object}          [opts.buttons]  { minus, plus, minusFast, plusFast }
+   * @param {function}        [opts.onChange]
+   * @param {boolean}         [opts.locked]
+   * @param {boolean}         [opts.noMemory]
+   * @returns {Object}
+   */
+  function createNumInput(opts) {
+    var type = opts.type;
+    var memoryKey = opts.noMemory ? null : ('inp_' + type);
+    var input = opts.input;
+
+    // 解析 min/max
+    function resolveMin() {
+      var m = opts.min;
+      if (typeof m === 'function') return m();
+      if (m != null) return m;
+      return type === 'qty' ? 1 : 0;
+    }
+    function resolveMax() {
+      var m = opts.max;
+      if (typeof m === 'function') return m();
+      if (m != null) return m;
+      return Infinity;
+    }
+    function clamp(v) {
+      return Math.max(resolveMin(), Math.min(resolveMax(), v));
+    }
+
+    // 初始值：opts.value > 记忆 > opts.defaultValue > 100
+    var initVal;
+    if (opts.value != null) {
+      initVal = opts.value;
+    } else if (memoryKey) {
+      initVal = InputMemory.get(memoryKey, opts.defaultValue != null ? opts.defaultValue : 100);
+    } else {
+      initVal = opts.defaultValue != null ? opts.defaultValue : 100;
+    }
+    initVal = clamp(initVal);
+    if (initVal < 1 && type === 'qty') initVal = 1;
+
+    var inst = {
+      _val: initVal,
+      _type: type,
+      _memoryKey: memoryKey,
+      _locked: !!opts.locked,
+      _input: input,
+      _slider: opts.slider || null,
+      _buttons: opts.buttons || {},
+      _onChange: opts.onChange || null,
+      _tap: { count: 0, last: 0, timer: null },
+      _dragging: false,
+
+      // ---- 公共 API ----
+
+      getValue: function () { return this._val; },
+
+      setValue: function (v) {
+        this._val = clamp(v);
+        this._refresh(false);
+        if (this._onChange) this._onChange(this._val);
+      },
+
+      getMin: function () { return resolveMin(); },
+      getMax: function () { return resolveMax(); },
+
+      setMin: function (v) { opts.min = v; this._val = clamp(this._val); this._refresh(true); },
+      setMax: function (v) { opts.max = v; this._val = clamp(this._val); this._refresh(true); },
+
+      lock: function () { this._locked = true; this._refresh(true); },
+      unlock: function () { this._locked = false; this._refresh(true); },
+
+      focus: function () {
+        this._input.value = String(this._val);
+        fitFontSize(this._input);
+      },
+
+      blur: function () {
+        this._input.style.fontSize = '';
+        this._refresh(false);
+        if (this._onChange) this._onChange(this._val);
+      },
+
+      handleInput: function () {
+        if (this._locked) return;
+        var raw = this._input.value.replace(/[^\d.kKmMbB]/g, '');
+        this._input.value = raw;
+        fitFontSize(this._input);
+        var v = parseCompact(raw);
+        if (isNaN(v) || v < resolveMin()) v = resolveMin();
+        this._val = clamp(v);
+        this._tap.count = 0;
+        this._syncSlider();
+        if (this._onChange) this._onChange(this._val);
+      },
+
+      adjust: function (delta) {
+        if (this._locked) return;
+        var step = getDirStep(this._val, delta);
+        if (Math.abs(delta) < step) delta = delta > 0 ? step : -step;
+        this.setValue(this._val + delta);
+      },
+
+      fastAdjust: function (deltaDir) {
+        if (this._locked) return;
+        var step = fastStep(this._val, deltaDir, this._tap);
+        this.adjust(deltaDir * step);
+      },
+
+      save: function () {
+        if (this._memoryKey) InputMemory.set(this._memoryKey, this._val);
+      },
+
+      destroy: function () {
+        clearTimeout(this._tap.timer);
+        if (opts.instanceKey) delete _activeNumInputs[opts.instanceKey];
+      },
+
+      // ---- 内部方法 ----
+
+      _refresh: function (updateButtons) {
+        // 显示
+        if (document.activeElement !== this._input) {
+          var s = this._dragging ? String(this._val) : fmtCompact(this._val);
+          this._input.value = s.replace(/^([\d,]+)([KMBk])$/, '$1.0$2');
+        }
+        // 只读
+        this._input.readOnly = this._locked;
+        // 按钮
+        if (updateButtons) this._updateButtons();
+        // 滑块
+        this._syncSlider();
+      },
+
+      _updateButtons: function () {
+        var b = this._buttons;
+        var min = resolveMin(), max = resolveMax();
+        var stepDown = getDirStep(this._val, -1);
+        var stepUp = getDirStep(this._val, 1);
+        var disabledMinus = this._locked || this._val <= min;
+        var disabledPlus = this._locked || (!isFinite(max) ? false : this._val + stepUp > max);
+        if (b.minus) b.minus.disabled = disabledMinus;
+        if (b.minusFast) b.minusFast.disabled = disabledMinus;
+        if (b.plus) b.plus.disabled = disabledPlus;
+        if (b.plusFast) b.plusFast.disabled = disabledPlus;
+      },
+
+      _syncSlider: function () {
+        if (!this._slider) return;
+        var max = resolveMax();
+        var sliderMax = isFinite(max) ? max : 9999999;
+        syncSlider(this._slider, Math.min(this._val, sliderMax), sliderMax, this._locked);
+        // 无上限时隐藏滑块容器（面向父级查找，兼容 qs-slider-wrap / ts-slider-wrap）
+        var wrap = this._slider.parentElement;
+        if (wrap) wrap.style.display = isFinite(max) ? '' : 'none';
+      }
+    };
+
+    // 注册
+    if (opts.instanceKey) _activeNumInputs[opts.instanceKey] = inst;
+
+    // 初始化显示
+    inst._refresh(true);
+
+    return inst;
+  }
+
+  /** 获取活跃实例 */
+  function getNumInput(key) {
+    return _activeNumInputs[key] || null;
+  }
+
   // ========== 初始化 ==========
 
   function init() {
@@ -796,19 +1053,41 @@ var UI = (function () {
     // 滑动
     initSwipe(document.getElementById('main'));
 
-    // QSheet 按钮
-    document.getElementById('qs-minus').addEventListener('click', function(){ adjustQty(-1); });
-    document.getElementById('qs-plus').addEventListener('click', function(){ adjustQty(1); });
-    document.getElementById('qs-minus-fast').addEventListener('click', function(){ fastAdjust(-1); });
-    document.getElementById('qs-plus-fast').addEventListener('click', function(){ fastAdjust(1); });
-    document.getElementById('qs-slider').addEventListener('input', onQsSliderInput);
-    document.getElementById('qs-slider').addEventListener('change', onQsSliderChange);
+    // QSheet 按钮 — 委托到当前活跃数值输入实例
+    document.getElementById('qs-minus').addEventListener('click', function(){
+      var inst = getNumInput('qsheet_qty'); if (inst) inst.adjust(-1);
+    });
+    document.getElementById('qs-plus').addEventListener('click', function(){
+      var inst = getNumInput('qsheet_qty'); if (inst) inst.adjust(1);
+    });
+    document.getElementById('qs-minus-fast').addEventListener('click', function(){
+      var inst = getNumInput('qsheet_qty'); if (inst) inst.fastAdjust(-1);
+    });
+    document.getElementById('qs-plus-fast').addEventListener('click', function(){
+      var inst = getNumInput('qsheet_qty'); if (inst) inst.fastAdjust(1);
+    });
+    document.getElementById('qs-slider').addEventListener('input', function(){
+      var inst = getNumInput('qsheet_qty');
+      if (inst) { inst._dragging = true; inst.setValue(parseInt(this.value, 10) || 1); }
+    });
+    document.getElementById('qs-slider').addEventListener('change', function(){
+      var inst = getNumInput('qsheet_qty');
+      if (inst) { inst._dragging = false; inst._refresh(false); }
+    });
 
     // QSheet extra 按钮
-    document.getElementById('qs-extra-minus').addEventListener('click', function(){ adjustExtra(-1); });
-    document.getElementById('qs-extra-plus').addEventListener('click', function(){ adjustExtra(1); });
-    document.getElementById('qs-extra-minus-fast').addEventListener('click', function(){ fastAdjustExtra(-1); });
-    document.getElementById('qs-extra-plus-fast').addEventListener('click', function(){ fastAdjustExtra(1); });
+    document.getElementById('qs-extra-minus').addEventListener('click', function(){
+      var inst = getNumInput('qsheet_extra'); if (inst) inst.adjust(-1);
+    });
+    document.getElementById('qs-extra-plus').addEventListener('click', function(){
+      var inst = getNumInput('qsheet_extra'); if (inst) inst.adjust(1);
+    });
+    document.getElementById('qs-extra-minus-fast').addEventListener('click', function(){
+      var inst = getNumInput('qsheet_extra'); if (inst) inst.fastAdjust(-1);
+    });
+    document.getElementById('qs-extra-plus-fast').addEventListener('click', function(){
+      var inst = getNumInput('qsheet_extra'); if (inst) inst.fastAdjust(1);
+    });
 
     // QSheet tab 切换
     document.getElementById('qs-tab-deposit').addEventListener('click', function(){ switchQSheetMode('deposit'); });
@@ -1001,15 +1280,11 @@ var UI = (function () {
     // 工具函数
     escHtml: escHtml,
     escAttr: escAttr,
-    /** 统一滑块同步：设置范围、值、禁用态，并填充已拖动区域 */
-    syncSlider: function (slider, value, max, disabled) {
-      slider.max = max;
-      slider.value = value;
-      slider.disabled = !!disabled;
-      var pct = max > 0 ? (value / max) * 100 : 0;
-      slider.style.background = 'linear-gradient(to right, var(--jade-200) 0%, var(--jade-200) ' + pct + '%, var(--bg-hover) ' + pct + '%)';
-    },
+    syncSlider: syncSlider,
     // Init
     init: init,
+    // 数值输入工厂
+    createNumInput: createNumInput,
+    getNumInput: getNumInput,
   };
 })();
