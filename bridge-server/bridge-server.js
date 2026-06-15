@@ -327,6 +327,14 @@ async function getUserState(steamId) {
   const cached = userCache.get(steamId);
   if (cached) {
     cached.lastAccess = Date.now();
+    // 缓存命中但 displayName 为空 → 可能上次 sync 时 D1 不可达，异步补注册
+    if (!cached.displayName) {
+      syncUserToCF(steamId, '', '').then((cfResult) => {
+        if (cfResult && cfResult.code === 200) {
+          console.log('[bridge] 异步补注册 D1: ' + steamId);
+        }
+      }).catch(() => {});
+    }
     return cached;
   }
 
@@ -938,7 +946,12 @@ const server = http.createServer(async (req, res) => {
         console.warn('[bridge] sync ' + steamId + ' D1 注册失败，用缓存默认值');
       }
 
-      // 3. 兜底：D1 不可达 / displayName 为空 → 返回缓存值
+      // 3. 兜底：D1 不可达 / displayName 为空 → 写入默认缓存 + 异步补注册 D1
+      if (!cached) {
+        userCache.set(steamId, { rateLimit: 20, banned: false, displayName: '', cachedAt: Date.now(), lastAccess: Date.now() });
+      }
+      // 异步尝试补写 D1（不阻塞响应，CF 恢复后会自动完成注册）
+      syncUserToCF(steamId, displayName, '').catch(() => {});
       const fallback = cached || { rateLimit: 20, banned: false, displayName: '' };
       addLog(steamId, 'sync', 200, Date.now() - t0);
       jsonResponse(res, 200, {
@@ -1177,7 +1190,12 @@ async function handleCfTcpFrame(frame) {
       }
     }
 
-    // 兜底：D1 不可达 / 无 displayName
+    // 兜底：D1 不可达 / 无 displayName → 写入默认缓存 + 异步补注册 D1
+    if (!cached) {
+      userCache.set(steamId, { rateLimit: 20, banned: false, displayName: '', cachedAt: Date.now(), lastAccess: Date.now() });
+    }
+    // 异步尝试补写 D1（不阻塞响应）
+    syncUserToCF(steamId, displayName, '').catch(() => {});
     const fallback = cached || { rateLimit: 20, banned: false, displayName: '' };
     addLog(steamId, 'cf-sync', 200, Date.now() - t0);
     return { code: 200, msg: 'ok', data: { attrs: { rateLimit: fallback.rateLimit, banned: fallback.banned, displayName: fallback.displayName } } };
