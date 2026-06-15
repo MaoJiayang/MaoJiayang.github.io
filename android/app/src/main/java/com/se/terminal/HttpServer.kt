@@ -81,8 +81,11 @@ class HttpServer(
                 val bodyBytes = body.toString().toByteArray(Charsets.UTF_8)
                 conn.outputStream.use { it.write(bodyBytes) }
             }
-            val respBody = conn.inputStream.use { it.readBytes().toString(Charsets.UTF_8) }
-            json(Response.Status.lookup(conn.responseCode), respBody)
+            val code = conn.responseCode
+            val inStream = if (code in 200..299) conn.inputStream
+                           else (conn.errorStream ?: ByteArrayInputStream(ByteArray(0)))
+            val respBody = inStream.use { it.readBytes().toString(Charsets.UTF_8) }
+            json(Response.Status.lookup(code), respBody)
         } catch (_: Exception) {
             jsonError(502, "桥接服务不可达")
         }
@@ -94,9 +97,12 @@ class HttpServer(
             val url = URL(cfOrigin + path)
             val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
-            val respBody = conn.inputStream.use { it.readBytes().toString(Charsets.UTF_8) }
+            val code = conn.responseCode
+            val inStream = if (code in 200..299) conn.inputStream
+                           else (conn.errorStream ?: ByteArrayInputStream(ByteArray(0)))
+            val respBody = inStream.use { it.readBytes().toString(Charsets.UTF_8) }
             val mime = if (path.endsWith(".json")) "application/json; charset=utf-8" else "text/plain"
-            newFixedLengthResponse(Response.Status.lookup(conn.responseCode), mime, respBody).apply {
+            newFixedLengthResponse(Response.Status.lookup(code), mime, respBody).apply {
                 addHeader("Access-Control-Allow-Origin", "*")
             }
         } catch (_: Exception) {

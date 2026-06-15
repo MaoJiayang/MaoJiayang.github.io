@@ -745,8 +745,6 @@ var UI = (function () {
 
     btn.disabled = true;
     btn.textContent = '正在验证…';
-    var errEl = document.getElementById('lg-err');
-    errEl.classList.remove('show');
 
     SeBridge.verifyCredentials(steamId, pwd).then(function(r){
       btn.disabled = false;
