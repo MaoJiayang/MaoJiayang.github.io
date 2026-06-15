@@ -740,6 +740,7 @@ var UI = (function () {
     var btn = document.getElementById('lg-submit');
 
     if (!steamId) { showLoginErr('请输入 SteamID'); return; }
+    if (!/^7656119\d{10}$/.test(steamId)) { showLoginErr('SteamID 格式错误（17位数字，7656119开头）'); return; }
     if (!pwd) { showLoginErr('请输入游戏密码'); return; }
 
     btn.disabled = true;

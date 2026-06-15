@@ -1106,7 +1106,13 @@ async function handleCfTcpFrame(frame) {
     return { code: 401, msg: '鉴权失败', data: null };
   }
 
-  // 2. 获取用户状态：优先缓存，其次兜底懒加载
+  // 2. SteamID 格式校验（与 HTTP verify 一致）
+  if (!/^7656119\d{10}$/.test(steamId)) {
+    addLog(steamId, 'cf-tcp', 400, Date.now() - t0);
+    return { code: 400, msg: 'SteamID 格式错误', data: null };
+  }
+
+  // 3. 获取用户状态：优先缓存，其次兜底懒加载
   //    SE 验证前不写缓存，防止坏 ID 污染
   let userState = userCache.get(steamId);
   if (!userState) {
@@ -1120,20 +1126,20 @@ async function handleCfTcpFrame(frame) {
     console.log('[bridge] [兜底] ' + steamId + ' 懒加载成功');
   }
 
-  // 3. 封禁检查
+  // 4. 封禁检查
   if (userState.banned) {
     addLog(steamId, 'cf-' + pathLabel, 403, Date.now() - t0);
     return { code: 403, msg: '您的账号已被禁用', data: null };
   }
 
-  // 4. 限流检查
+  // 5. 限流检查
   const rateCheck = checkRateLimit(steamId, userState);
   if (rateCheck.limited) {
     addLog(steamId, 'cf-' + pathLabel, 429, Date.now() - t0);
     return { code: 429, msg: '请求过于频繁，请等待 ' + rateCheck.resetSeconds + ' 秒', data: null };
   }
 
-  // 5. sync 类型：不调 SE，纯 D1 读/写
+  // 6. sync 类型：不调 SE，纯 D1 读/写
   if (isSync) {
     const cached = userCache.get(steamId);
     const displayName = cached ? cached.displayName : '';
@@ -1177,11 +1183,11 @@ async function handleCfTcpFrame(frame) {
     return { code: 200, msg: 'ok', data: { attrs: { rateLimit: fallback.rateLimit, banned: fallback.banned, displayName: fallback.displayName } } };
   }
 
-  // 6. 非 sync：执行指令到 SE
+  // 7. 非 sync：执行指令到 SE
   const result = await tcpRequest(config.seHost, config.sePort, config.seAuthKey,
     steamId, frame.command || '', frame.gamePassword || '', frame.path);
 
-  // 7. SE 成功后写缓存（含 displayName 从 SE 响应取，rateLimit/banned 从 CF userState 取）
+  // 8. SE 成功后写缓存（含 displayName 从 SE 响应取，rateLimit/banned 从 CF userState 取）
   if (result.code === 200) {
     const seDisplayName = (result.data && result.data.displayName) || '';
     const cfUserState = (frame.userState && typeof frame.userState.rateLimit === 'number') ? frame.userState : null;
@@ -1196,7 +1202,7 @@ async function handleCfTcpFrame(frame) {
     console.log('[bridge] CF verify 缓存用户 ' + steamId + ' (displayName=' + seDisplayName + ')');
   }
 
-  // 8. 特殊处理 world-grids
+  // 9. 特殊处理 world-grids
   if (frame.path === '/getWorldGridsBySteamId' && result.code === 200 && result.msg) {
     try {
       const parsed = JSON.parse(result.msg);
