@@ -64,6 +64,7 @@ const FRONTEND_FILES = [
   'js/hangar.js',
   'js/shipyard.js',
   'js/settings.js',
+  'js/tools.js',
   'icons/sprite.css',
   'icons/sprite.webp',
   'icons/mapping.json',
