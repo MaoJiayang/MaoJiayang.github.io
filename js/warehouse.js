@@ -170,23 +170,26 @@ var Warehouse = (function () {
     var fmtBtn = document.getElementById('wh-fmt-btn');
     if (fmtBtn) fmtBtn.textContent = warehouseCompactNum ? '完整' : '简洁';
 
-    // 按分类分组
-    catOrder.forEach(function(cat){
-      var catalog = itemCategories[cat];
-      if (!catalog || catalog.length === 0) return;
-      var items = [];
-      catalog.forEach(function(name){
-        if (search && name.toLowerCase().indexOf(search) === -1) return;
-        var amount = whItems.hasOwnProperty(name) ? whItems[name] : 0;
-        if (!warehouseShowAll && amount === 0) return;
-        items.push({ name: name, amount: amount });
+    // 按分类分组（catalog 未加载时跳过，由下方「其他」兜底）
+    var catalogReady = Object.keys(itemCategories).length > 0;
+    if (catalogReady) {
+      catOrder.forEach(function(cat){
+        var catalog = itemCategories[cat];
+        if (!catalog || catalog.length === 0) return;
+        var items = [];
+        catalog.forEach(function(name){
+          if (search && name.toLowerCase().indexOf(search) === -1) return;
+          var amount = whItems.hasOwnProperty(name) ? whItems[name] : 0;
+          if (!warehouseShowAll && amount === 0) return;
+          items.push({ name: name, amount: amount });
+        });
+        if (items.length === 0) return;
+        items.sort(function(a,b){ return a.name.localeCompare(b.name); });
+        groups[cat] = items;
       });
-      if (items.length === 0) return;
-      items.sort(function(a,b){ return a.name.localeCompare(b.name); });
-      groups[cat] = items;
-    });
+    }
 
-    // 未覆盖物品归入「其他」
+    // 未覆盖物品（及 catalog 未加载时全部物品）归入「其他」
     var covered = {};
     catOrder.forEach(function(cat){ (groups[cat]||[]).forEach(function(i){ covered[i.name] = true; }); });
     var uncat = [];

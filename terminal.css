@@ -38,7 +38,7 @@ body{
   background:var(--bg-void);
   color:var(--text-primary);
   overflow-x:hidden;
-  overscroll-behavior-x:none;
+  overscroll-behavior:none;
   -webkit-font-smoothing:antialiased;
 }
 /* 蓝图网格背景（fixed，随滚动保持参照感） */

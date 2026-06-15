@@ -178,6 +178,7 @@ var UI = (function () {
     updateUserBadge();
     updateGauge();
     document.getElementById('wh-bar').style.display = '';
+    switchTab(currentTab);   // 恢复登录前被 showLoginGuide 隐藏的 panel
     fireTabCallback(currentTab);
     showToast('success', '已连接至伊卡洛斯星服务器');
 
