@@ -334,6 +334,8 @@ body::before{
   font-family:inherit;transition:all .12s;
 }
 .tr-act-btn:hover{background:var(--bg-hover);border-color:var(--jade-400)}
+.tr-act-btn.danger{color:var(--color-error);border-color:var(--color-error)}
+.tr-act-btn.danger:hover{background:var(--color-error);color:#fff}
 
 .tr-empty{padding:32px;text-align:center;color:var(--text-muted);font-size:13px}
 

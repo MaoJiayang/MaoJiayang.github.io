@@ -140,9 +140,9 @@ var Trade = (function () {
       if (val) { val.innerHTML = html; val.classList.remove('loading'); }
       box.className = 'tr-info-box' + (cls || '');
     };
-    setVal('ti-balance', UI.fmtNum(bankInfo.balance) + ' SC', bankInfo.balance > 0 ? ' good' : bankInfo.balance < 0 ? ' bad' : '');
-    setVal('ti-overdraft', bankInfo.overdraftLimit > 0 ? UI.fmtNum(bankInfo.overdraftLimit) + ' SC' : '无', bankInfo.overdraftLimit > 0 ? ' good' : '');
-    setVal('ti-vip', bankInfo.vipDays > 0 ? bankInfo.vipDays + ' 天' : '—', bankInfo.vipDays > 0 ? ' good' : '');
+    setVal('ti-balance', UI.fmtNum(bankInfo.balance), bankInfo.balance > 0 ? ' good' : bankInfo.balance < 0 ? ' bad' : '');
+    setVal('ti-overdraft', bankInfo.overdraftLimit > 0 ? UI.fmtNum(bankInfo.overdraftLimit) : '无', bankInfo.overdraftLimit > 0 ? ' good' : '');
+    setVal('ti-vip', bankInfo.vipDays > 0 ? bankInfo.vipDays : '—', bankInfo.vipDays > 0 ? ' good' : '');
   }
 
   function toggleShopCat(hdr) {

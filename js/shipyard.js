@@ -232,9 +232,15 @@ var Shipyard = (function () {
 
   /** 回收飞船 */
   function recycle() {
-    exec('!船厂 回收', '回收已提交').then(function () {
-      refreshQueue();
-    }).catch(function () {});
+    document.getElementById('dc-msg').textContent = '确定要回收飞船吗？';
+    document.getElementById('dc-confirm-btn').textContent = '确认回收';
+    document.getElementById('dc-confirm-btn').onclick = function () {
+      UI.closeDcDialog();
+      exec('!船厂 回收', '回收已提交').then(function () {
+        refreshQueue();
+      }).catch(function () {});
+    };
+    document.getElementById('dc-overlay').classList.add('show');
   }
 
   /** 取消排队任务 */
