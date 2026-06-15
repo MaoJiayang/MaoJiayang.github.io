@@ -36,6 +36,15 @@ android {
     buildFeatures {
         buildConfig = true
     }
+
+    // 输出文件名：虚空终端.apk
+    applicationVariants.all {
+        val variant = this
+        outputs.all {
+            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl)
+                .outputFileName = "虚空终端.apk"
+        }
+    }
 }
 
 dependencies {
