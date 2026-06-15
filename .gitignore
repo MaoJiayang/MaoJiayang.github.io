@@ -9,5 +9,6 @@ android/.gradle/
 android/.idea/
 android/build/
 android/app/build/
+android/app/release/
 android/local.properties
 android/app/src/main/assets/www/

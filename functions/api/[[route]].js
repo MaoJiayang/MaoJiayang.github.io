@@ -488,8 +488,9 @@ export async function onRequestPost({ request, env }) {
     const banCheck = await checkBanned(body.steamId, env.LOG_DB);
     if (banCheck) return banCheck;
     const userState = await getUserStateForBridge(body.steamId, env);
+    // sync 不传 SE 命令，桥接直接读/写 D1（不调 SE）
     const result = await tcpToBridge(bridgeHost, bridgeTcpPort, bridgeAuthKey,
-      body.steamId, '!info myinfo', body.gamePassword, null, userState, 'sync');
+      body.steamId, '', '', null, userState, 'sync');
     return Response.json(result, { status: result.code === 200 ? 200 : (result.code > 0 ? result.code : 500) });
   }
 
