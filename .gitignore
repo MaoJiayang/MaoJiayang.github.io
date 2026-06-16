@@ -12,5 +12,6 @@ android/app/build/
 android/app/release/
 android/local.properties
 android/app/src/main/assets/www/
+*.obj
 libs/
 nuget.exe

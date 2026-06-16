@@ -131,6 +131,14 @@ static LRESULT CALLBACK WndProc(HWND h, UINT m, WPARAM w, LPARAM l,
     webview_dispatch(g_wv, toggleTopmost, NULL);
     return 0;
   }
+  if (m == WM_ACTIVATE && g_onTop) {
+    LONG ex = GetWindowLong(h, GWL_EXSTYLE);
+    if (LOWORD(w) == WA_INACTIVE) {
+      SetWindowLong(h, GWL_EXSTYLE, ex | WS_EX_TRANSPARENT);
+    } else {
+      SetWindowLong(h, GWL_EXSTYLE, ex & ~WS_EX_TRANSPARENT);
+    }
+  }
   return DefSubclassProc(h, m, w, l);
 }
 
