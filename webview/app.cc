@@ -77,12 +77,14 @@ static void toggleTopmost(webview_t w, void *) {
     GetWindowRect(g_hwnd, &g_bigRect);
     g_bigValid = true;
 
-    // 手机尺寸（用上次的位置，首次居中）
-    int ww = 420, wh = 750;
-    int x, y;
+    // 手机尺寸（用上次的位置和大小，首次居中 420x750）
+    int x, y, ww, wh;
     if (g_smallValid) {
-      x = g_smallRect.left; y = g_smallRect.top;
+      x  = g_smallRect.left; y  = g_smallRect.top;
+      ww = g_smallRect.right - g_smallRect.left;
+      wh = g_smallRect.bottom - g_smallRect.top;
     } else {
+      ww = 420; wh = 750;
       RECT work; SystemParametersInfo(SPI_GETWORKAREA, 0, &work, 0);
       x = work.left + ((work.right - work.left) - ww) / 2;
       y = work.top  + ((work.bottom - work.top) - wh) / 2;
@@ -118,11 +120,6 @@ static void toggleTopmost(webview_t w, void *) {
     LONG ex = GetWindowLong(g_hwnd, GWL_EXSTYLE);
     SetWindowLong(g_hwnd, GWL_EXSTYLE, ex & ~WS_EX_LAYERED);
   }
-}
-
-// ---- JS → C++ 绑定: 关闭窗口 ----
-static void onClose(const char *, const char *, void *) {
-  if (g_wv) webview_terminate(g_wv);
 }
 
 // ---- 窗口子类化 (仅处理 WM_HOTKEY) ----
@@ -174,7 +171,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   int h = std::min(800L, (long)(rc.bottom - rc.top - 100));
   webview_set_size(g_wv, w, h, WEBVIEW_HINT_NONE);
 
-  webview_bind(g_wv, "webview_close", onClose, NULL);
   webview_init(g_wv, "window.__webview=1");
 
   webview_navigate(g_wv, defaultUrl);
