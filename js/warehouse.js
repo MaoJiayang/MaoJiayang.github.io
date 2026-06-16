@@ -242,20 +242,19 @@ var Warehouse = (function () {
     var catName = catEl.querySelector('.wh-cat-label').textContent;
     var arrow = el.querySelector('.arrow');
     var body = catEl.querySelector('.wh-cat-body');
-    var wasOpen = arrow.classList.contains('open');
 
-    // 已展开的不能收起来——始终保留一个打开
-    if (wasOpen) return;
-
+    // 关闭其他分类（跳过自己）
     document.querySelectorAll('.wh-cat-h').forEach(function(h){
+      if (h === el) return;
       h.querySelector('.arrow').classList.remove('open');
       var b = h.parentElement.querySelector('.wh-cat-body');
       if (b) b.classList.remove('open');
     });
 
-    arrow.classList.add('open');
-    if (body) body.classList.add('open');
-    warehouseOpenCat = catName;
+    // toggle 自己
+    var nowOpen = arrow.classList.toggle('open');
+    if (body) body.classList.toggle('open');
+    warehouseOpenCat = nowOpen ? catName : null;
   }
 
   function toggleShowAll(show) {

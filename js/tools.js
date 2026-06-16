@@ -132,20 +132,18 @@ var Tools = (function () {
     var catEl = hdrEl.parentElement;
     var arrow = hdrEl.querySelector('.arrow');
     var body = catEl.querySelector('.tl-cat-body');
-    var wasOpen = arrow.classList.contains('open');
 
-    // 已展开的不能收起来——始终保留一个打开
-    if (wasOpen) return;
-
-    // 关闭其他分类
+    // 关闭其他分类（跳过自己）
     document.querySelectorAll('#panel-tools .tl-cat-h').forEach(function (h) {
+      if (h === hdrEl) return;
       h.querySelector('.arrow').classList.remove('open');
       var b = h.parentElement.querySelector('.tl-cat-body');
       if (b) b.classList.remove('open');
     });
 
-    arrow.classList.add('open');
-    if (body) body.classList.add('open');
+    // toggle 自己
+    arrow.classList.toggle('open');
+    if (body) body.classList.toggle('open');
   }
 
   // ========== Tab 激活 ==========
