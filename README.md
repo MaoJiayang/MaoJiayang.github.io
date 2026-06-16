@@ -23,14 +23,36 @@ node server.js
 
 ## 📦 桌面版 EXE
 
+### 前置依赖
+
+- **Node.js 22+**（SEA 打包）
+- **Visual Studio 2022 Build Tools**（C++ 桌面开发 workload，编译内嵌浏览器）
+- **WebView2 Runtime** — Win10 1809+ / Win11 自带，无需分发
+
+### 构建
+
 ```bash
-npm install            # 安装依赖（仅首次）
-npm run build          # → dist/se-terminal.exe（~85MB）
+# 首次：安装 Node 依赖 + WebView2 SDK
+npm install
+nuget install Microsoft.Web.WebView2 -OutputDirectory libs
+
+# 每次构建（需在 VS 2022 Developer Command Prompt 中执行）
+scripts\build-webview.bat && npm run build
+# → dist/se-terminal.exe（~85MB，单文件）
 ```
 
-双击 `se-terminal.exe` 即可运行。控制台窗口不可关闭。
+### 特性
+
+- **内嵌 WebView2 窗口**：无标题栏，边缘可拖拽调整大小，顶部可拖动位置
+- **Alt+K**：全局热键，切换窗口置顶 + 半透明
+- **关闭按钮**：窗口右上角 ✕，对应的命令行控制台会跟随退出
+- **单文件分发**：`webview.exe` 以 base64 内嵌在 `server.js` 中，SEA 打包后仅一个 `se-terminal.exe`
+- `WebView2Loader.dll` 系统自带，不分发
+
+### 维护
 
 - 更换图标：替换 `icons/favicon.svg` → 重新 `npm run build`
+- 修改内嵌浏览器：编辑 `webview/app.cc` → `scripts\build-webview.bat && npm run build`
 - 清缓存测试：
 
 ```powershell
@@ -147,7 +169,11 @@ node test-search.js "保存飞船"    # 本地测试
 |------|------|
 | `build.js` | 生成 embeddings.json |
 | `scripts/sync-assets.ps1` | 前端 → Android assets |
+| `scripts/build-webview.bat` | 编译内嵌 WebView2 浏览器 |
+| `scripts/embed-webview.js` | 将 webview.exe base64 注入 server.js |
 | `start-local.bat` | 本地一键启动 |
+| `webview/app.cc` | WebView2 内嵌浏览器 C++ 源码 |
+| `webview/include/` | webview 库头文件 |
 
 ## ☁️ CF Dashboard 配置
 

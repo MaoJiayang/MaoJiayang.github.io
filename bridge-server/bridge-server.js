@@ -888,9 +888,10 @@ const server = http.createServer(async (req, res) => {
       const result = await tcpRequest(config.seHost, config.sePort, config.seAuthKey,
         body.steamId, '!info myinfo', body.gamePassword);
 
+      var displayName = '';
       // SE 验证成功后写缓存（含 displayName），失败不缓存保持缓存干净
       if (result.code === 200) {
-        const displayName = (result.data && result.data.displayName) || '';
+        displayName = (result.data && result.data.displayName) || '';
         const existing = userCache.get(steamId);
         userCache.set(steamId, {
           rateLimit: existing ? existing.rateLimit : 20,

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
 <title>伊卡洛斯虚空终端</title>
 <link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
-<style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{overflow-x:hidden;overscroll-behavior-x:none}#login-guide,#qsheet-overlay,#cf-overlay,#dc-overlay,#tradesheet-overlay,#donate-overlay{visibility:hidden}</style>
+<style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{overflow-x:hidden;overscroll-behavior-x:none}#login-guide,#qsheet-overlay,#cf-overlay,#dc-overlay,#tradesheet-overlay,#donate-overlay{visibility:hidden}::-webkit-scrollbar{display:none}html{-ms-overflow-style:none;scrollbar-width:none}</style>
 <link rel="stylesheet" href="icons/sprite.css">
 <link rel="stylesheet" href="terminal.css">
 </head>
@@ -14,6 +14,7 @@
 <!-- 全局顶栏 -->
 <div id="topbar">
   <span class="logo">◈ 虚空终端<span class="logo-hash" id="logo-hash"></span></span>
+  <button id="wv-close" title="关闭窗口" onclick="if(window.webview_close)window.webview_close()">✕</button>
   <span class="spacer"></span>
   <span class="conn-dot" id="conn-dot" title="检测中"></span>
   <span class="gauge-bar" id="gauge-bar" style="display:none"><span class="gauge-fill" id="gauge-fill"></span></span>
