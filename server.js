@@ -42,6 +42,40 @@ const CACHE_DIR = IS_DEV ? APP_DIR : path.join(
   'SE-Terminal', 'www'
 );
 
+// ========== 文件日志（每天一个文件，EXE 下防止闪退后无法查看日志） ==========
+
+const LOG_DIR = path.join(IS_DEV ? APP_DIR : path.dirname(CACHE_DIR), 'logs');
+var _logFile = null;
+
+function initLogFile() {
+  try { fs.mkdirSync(LOG_DIR, { recursive: true }); } catch (_) {}
+  var today = new Date().toISOString().slice(0, 10);
+  _logFile = path.join(LOG_DIR, today + '.log');
+  // 运行间隔线
+  var sep = '\n' + '═'.repeat(60) + '\n' +
+    '  启动: ' + new Date().toISOString() + '\n' +
+    '═'.repeat(60) + '\n';
+  try { fs.appendFileSync(_logFile, sep, 'utf-8'); } catch (_) {}
+}
+
+function logToFile(level, msg) {
+  if (!_logFile) return;
+  var ts = new Date().toISOString().replace('T', ' ').slice(0, 19);
+  try { fs.appendFileSync(_logFile, '[' + ts + '] [' + level + '] ' + msg + '\n', 'utf-8'); } catch (_) {}
+}
+
+// 劫持 console 写入日志文件
+['log', 'warn', 'error'].forEach(function (method) {
+  var _orig = console[method];
+  console[method] = function () {
+    _orig.apply(console, arguments);
+    var msg = Array.prototype.map.call(arguments, function (a) {
+      return typeof a === 'object' ? JSON.stringify(a) : String(a);
+    }).join(' ');
+    logToFile(method.toUpperCase(), msg);
+  };
+});
+
 console.log('[server] 模式: ' + (IS_DEV ? 'Dev（本地文件）' : 'EXE（缓存: ' + CACHE_DIR + '）'));
 
 // ========== 前端文件列表（从 CF version.json 的 files 字段获取） ==========
@@ -137,6 +171,13 @@ async function syncFrontend(forceUpdate) {
         errors++;
       }
     }
+  }
+
+  // 3. 把 version.json 写入缓存（作为本地版本比对基准，同时供下次启动判断是否需要更新）
+  if (manifest) {
+    try {
+      fs.writeFileSync(path.join(CACHE_DIR, 'version.json'), JSON.stringify(manifest), 'utf-8');
+    } catch (_) {}
   }
 
   console.log('[sync] 完成: ' + updated + ' 下载, ' + errors + ' 失败');
@@ -421,6 +462,7 @@ function openBrowser(port) {
 }
 
 async function start() {
+  initLogFile();
   if (!IS_DEV) {
     await syncFrontend(process.argv.includes('--update'));
   }
@@ -455,7 +497,13 @@ async function start() {
         // 端口被占用 → 检查是否是自己的旧实例，是则复用
         if (await reuseIfOurs(p)) {
           openBrowser(p);
-          process.exit(0);
+          console.log('');
+          console.log('  已有实例在端口 ' + p + ' 上运行，本次启动已复用。');
+          console.log('  如需重启，请先关闭旧实例（任务管理器结束 node.exe）。');
+          console.log('');
+          console.log('按回车键退出...');
+          process.stdin.resume();
+          process.stdin.once('data', function () { process.exit(0); });
           return;
         }
         console.log('  端口 ' + p + ' 已被占用，尝试 ' + (p + 1) + '...');
@@ -480,7 +528,19 @@ async function start() {
   }
 }
 
-start().catch(function (err) {
+// 防止 SEA 下静默崩溃
+process.on('uncaughtException', function (err) {
+  console.error('');
+  console.error('✗ 未捕获异常: ' + (err && err.message ? err.message : err));
+  console.error(err && err.stack ? err.stack : '');
+  console.error('按回车键退出...');
+  process.stdin.resume();
+  process.stdin.once('data', function () { process.exit(1); });
+});
+
+start().then(function () {
+  console.log('[server] start() 正常完成');
+}).catch(function (err) {
   console.error('启动失败: ' + (err && err.message ? err.message : err));
   console.error('按回车键退出...');
   process.stdin.resume();
