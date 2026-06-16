@@ -344,7 +344,7 @@ async function getUserState(steamId) {
     if (!cached.displayName) {
       syncUserToCF(steamId, '', '').then((cfResult) => {
         if (cfResult && cfResult.code === 200) {
-          console.log('[bridge] 异步补写 D1: ' + steamId);
+          addLog(steamId, 'dn:异步补写', 200, 0);
         }
       }).catch(() => {});
     }
@@ -362,7 +362,7 @@ async function getUserState(steamId) {
       lastAccess: Date.now(),
     };
     userCache.set(steamId, entry);
-    console.log('[bridge] 用户 ' + steamId + ' 已缓存 (limit=' + entry.rateLimit + ', banned=' + entry.banned + ')');
+    addLog(steamId, 'cache:新缓存', 200, 0, 'limit=' + entry.rateLimit + ' banned=' + entry.banned);
     return entry;
   }
 
@@ -469,7 +469,7 @@ function cleanupCache() {
     if (now - entry.lastAccess > maxIdleMs) {
       userCache.delete(steamId);
       rateWindows.delete(steamId); // 同时清理限流窗口
-      console.log('[bridge] 清除过期缓存: ' + steamId);
+      addLog(steamId, 'cache:过期清除', 0, 0);
     }
   }
 }
@@ -479,7 +479,7 @@ setInterval(cleanupCache, 10 * 60 * 1000);
 
 // ========== 请求日志 ==========
 
-function addLog(steamId, path, status, elapsedMs) {
+function addLog(steamId, path, status, elapsedMs, msg) {
   const entry = {
     time: new Date().toISOString(),
     steamId: String(steamId),
@@ -487,12 +487,18 @@ function addLog(steamId, path, status, elapsedMs) {
     status,
     elapsed: elapsedMs,
   };
+  if (msg) entry.message = msg;
   recentLogs.unshift(entry);
   if (recentLogs.length > MAX_LOGS) recentLogs.pop();
 
-  // 追加到日志文件（JSON Lines，每行一条）
+  // 日志文件（JSON Lines）
   ensureLogStream();
   logStream.write(JSON.stringify(entry) + '\n');
+
+  // 控制台（统一格式化，方便 tail -f / 调试）
+  var line = entry.time + ' ' + path + ' ' + steamId + ' → ' + status + ' (' + elapsedMs + 'ms)';
+  if (msg) line += ' | ' + msg;
+  console.log(line);
 }
 
 // ========== HTTP 辅助方法 ==========
@@ -715,8 +721,8 @@ async function handleAdminAPI(pathname, body, remoteAddr) {
     // 2. 同步到 D1
     const d1Result = await updateUserD1(steamId, { rateLimit });
     const msg = d1Result ? '限流值已设为 ' + rateLimit + ' (D1 已同步)' : '限流值已设为 ' + rateLimit + ' (仅缓存)';
-    console.log('[bridge] ADMIN set-limit ' + steamId + ' → ' + rateLimit + (d1Result ? ' [D1 OK]' : ' [D1 FAIL]'));
-    addLog(steamId, 'admin:set-limit→' + rateLimit, d1Result ? 200 : 206, 0);
+    addLog(steamId, 'admin:set-limit→' + rateLimit, d1Result ? 200 : 206, 0,
+    (d1Result ? 'D1 OK' : 'D1 FAIL'));
     return { status: 200, body: { code: 200, msg } };
   }
 
@@ -774,8 +780,8 @@ async function handleAdminAPI(pathname, body, remoteAddr) {
     const d1Result = await updateUserD1(steamId, { banned });
     const action = banned ? '封禁' : '解封';
     const msg = steamId + (d1Result ? ' 已' + action + ' (D1 已同步)' : ' 已' + action + ' (仅缓存)');
-    console.log('[bridge] ADMIN ' + action + ' ' + steamId + (d1Result ? ' [D1 OK]' : ' [D1 FAIL]'));
-    addLog(steamId, 'admin:' + action, d1Result ? 200 : 206, 0);
+    addLog(steamId, 'admin:' + action, d1Result ? 200 : 206, 0,
+    (d1Result ? 'D1 OK' : 'D1 FAIL'));
     return { status: 200, body: { code: 200, msg } };
   }
 
@@ -893,10 +899,10 @@ const server = http.createServer(async (req, res) => {
           cachedAt: Date.now(),
           lastAccess: Date.now(),
         });
-        console.log('[bridge] verify 缓存用户 ' + steamId + ' (displayName=' + displayName + ')');
       }
 
-      addLog(steamId, 'verify', result.code, Date.now() - t0);
+      addLog(steamId, 'verify', result.code, Date.now() - t0,
+        displayName ? 'displayName=' + displayName : 'displayName 为空');
       jsonResponse(res, result.code === 200 ? 200 : (result.code === 400 ? 400 : 500), result);
       return;
     }
@@ -925,8 +931,7 @@ const server = http.createServer(async (req, res) => {
             cachedAt: Date.now(),
             lastAccess: Date.now(),
           });
-          console.log('[bridge] sync ' + steamId + ' D1 回写完成 (limit=' + attrs.rateLimit + ')');
-          addLog(steamId, 'sync', 200, Date.now() - t0);
+          addLog(steamId, 'sync', 200, Date.now() - t0, 'D1 回写完成 limit=' + attrs.rateLimit);
           jsonResponse(res, 200, {
             code: 200, msg: 'ok',
             data: { attrs: { rateLimit: attrs.rateLimit || 20, banned: attrs.banned === true, displayName: attrs.displayName || displayName } },
@@ -947,8 +952,7 @@ const server = http.createServer(async (req, res) => {
           lastAccess: Date.now(),
         };
         userCache.set(steamId, updated);
-        console.log('[bridge] sync ' + steamId + ' D1 有记录 (limit=' + updated.rateLimit + ')');
-        addLog(steamId, 'sync', 200, Date.now() - t0);
+        addLog(steamId, 'sync', 200, Date.now() - t0, 'D1 有记录 limit=' + updated.rateLimit);
         jsonResponse(res, 200, {
           code: 200, msg: 'ok',
           data: { attrs: { rateLimit: updated.rateLimit, banned: updated.banned, displayName: updated.displayName } },
@@ -1008,11 +1012,25 @@ const server = http.createServer(async (req, res) => {
       const result = await tcpRequest(config.seHost, config.sePort, config.seAuthKey,
         body.steamId, body.command, body.gamePassword);
 
-      // 4. 记录调用
+      // 4. 缓存有空名字？异步补拿 displayName（不阻塞响应）
+      if (result.code === 200 && userState && !userState.displayName && !userState._dnPending) {
+        userState._dnPending = true;
+        tcpRequest(config.seHost, config.sePort, config.seAuthKey, steamId, '!info myinfo', body.gamePassword)
+          .then(function(r) {
+            delete userState._dnPending;
+            if (r.code === 200 && r.data && r.data.displayName) {
+              userState.displayName = r.data.displayName;
+              syncUserToCF(steamId, r.data.displayName, '').catch(function(){});
+              addLog(steamId, 'execute:补拿DN', 200, 0, 'displayName=' + r.data.displayName);
+            }
+          }).catch(function() { delete userState._dnPending; });
+      }
+
+      // 5. 记录调用
       recordCall(steamId);
       addLog(steamId, 'execute', result.code, Date.now() - t0);
 
-      // 5. 附加限流信息到响应头
+      // 6. 附加限流信息到响应头
       const headers = Object.assign({
         'X-RateLimit-Remaining': String(rateCheck.remaining),
         'X-RateLimit-Reset': String(rateCheck.resetSeconds),
@@ -1136,14 +1154,13 @@ async function handleCfTcpFrame(frame) {
   //    SE 验证前不写缓存，防止坏 ID 污染
   let userState = userCache.get(steamId);
   if (!userState) {
-    console.log('[bridge] [兜底] CF 用户 ' + steamId + ' 缓存未命中，懒加载');
+    addLog(steamId, 'cf:兜底懒加载', 0, 0, '开始');
     userState = await getUserState(steamId);
     if (!userState) {
-      addLog(steamId, 'cf-' + pathLabel, 503, Date.now() - t0);
-      console.warn('[bridge] CF TCP: ' + steamId + ' 兜底懒加载也失败，拒绝');
+      addLog(steamId, 'cf-' + pathLabel, 503, Date.now() - t0, '兜底懒加载失败');
       return { code: 503, msg: '服务暂不可用', data: null };
     }
-    console.log('[bridge] [兜底] ' + steamId + ' 懒加载成功');
+    addLog(steamId, 'cf:兜底懒加载', 200, 0, '成功');
   }
 
   // 4. 封禁检查
@@ -1176,8 +1193,7 @@ async function handleCfTcpFrame(frame) {
           cachedAt: Date.now(),
           lastAccess: Date.now(),
         });
-        console.log('[bridge] CF sync ' + steamId + ' D1 回写完成 (limit=' + attrs.rateLimit + ')');
-        addLog(steamId, 'cf-sync', 200, Date.now() - t0);
+        addLog(steamId, 'cf-sync', 200, Date.now() - t0, 'D1 回写完成 limit=' + attrs.rateLimit);
         return { code: 200, msg: 'ok', data: { attrs: { rateLimit: attrs.rateLimit || 20, banned: false, displayName: attrs.displayName || displayName } } };
       }
     }
@@ -1223,7 +1239,8 @@ async function handleCfTcpFrame(frame) {
       cachedAt: Date.now(),
       lastAccess: Date.now(),
     });
-    console.log('[bridge] CF verify 缓存用户 ' + steamId + ' (displayName=' + seDisplayName + ')');
+    addLog(steamId, 'cf-verify:缓存', 200, 0,
+      seDisplayName ? 'displayName=' + seDisplayName : 'displayName 为空');
   }
 
   // 9. 特殊处理 world-grids
@@ -1232,6 +1249,20 @@ async function handleCfTcpFrame(frame) {
       const parsed = JSON.parse(result.msg);
       if (Array.isArray(parsed)) result.data = parsed;
     } catch (_) {}
+  }
+
+  // 非 sync 且缓存有空名字 → 异步补拿 displayName
+  if (!isSync && result.code === 200 && userState && !userState.displayName && !userState._dnPending) {
+    userState._dnPending = true;
+    tcpRequest(config.seHost, config.sePort, config.seAuthKey, steamId, '!info myinfo', frame.gamePassword || '')
+      .then(function(r) {
+        delete userState._dnPending;
+        if (r.code === 200 && r.data && r.data.displayName) {
+          userState.displayName = r.data.displayName;
+          syncUserToCF(steamId, r.data.displayName, '').catch(function(){});
+          addLog(steamId, 'cf-execute:补拿DN', 200, 0, 'displayName=' + r.data.displayName);
+        }
+      }).catch(function() { delete userState._dnPending; });
   }
 
   recordCall(steamId);
