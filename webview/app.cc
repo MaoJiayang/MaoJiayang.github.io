@@ -77,11 +77,7 @@ static void toggleTopmost(webview_t w, void *) {
     GetWindowRect(g_hwnd, &g_bigRect);
     g_bigValid = true;
 
-    // 抢焦点
-    BringWindowToTop(g_hwnd);
-    SetForegroundWindow(g_hwnd);
-
-    // 置顶 + 手机尺寸（用上次的位置，首次居中）
+    // 手机尺寸（用上次的位置，首次居中）
     int ww = 420, wh = 750;
     int x, y;
     if (g_smallValid) {
@@ -91,8 +87,13 @@ static void toggleTopmost(webview_t w, void *) {
       x = work.left + ((work.right - work.left) - ww) / 2;
       y = work.top  + ((work.bottom - work.top) - wh) / 2;
     }
-    SetWindowPos(g_hwnd, HWND_TOPMOST, x, y, ww, wh,
-                 SWP_SHOWWINDOW | SWP_NOACTIVATE);
+    SetWindowPos(g_hwnd, NULL, x, y, ww, wh, SWP_NOZORDER | SWP_SHOWWINDOW);
+
+    // 抢焦点 + 置顶
+    BringWindowToTop(g_hwnd);
+    SetForegroundWindow(g_hwnd);
+    SetWindowPos(g_hwnd, HWND_TOPMOST, 0, 0, 0, 0,
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
     // 半透明
     LONG ex = GetWindowLong(g_hwnd, GWL_EXSTYLE);
@@ -103,12 +104,7 @@ static void toggleTopmost(webview_t w, void *) {
     GetWindowRect(g_hwnd, &g_smallRect);
     g_smallValid = true;
 
-    // 恢复不透明
-    SetLayeredWindowAttributes(g_hwnd, 0, 255, LWA_ALPHA);
-    LONG ex = GetWindowLong(g_hwnd, GWL_EXSTYLE);
-    SetWindowLong(g_hwnd, GWL_EXSTYLE, ex & ~WS_EX_LAYERED);
-
-    // 还原大窗口
+    // 还原大窗口（先置底）
     if (g_bigValid) {
       SetWindowPos(g_hwnd, HWND_BOTTOM,
         g_bigRect.left, g_bigRect.top,
@@ -116,6 +112,11 @@ static void toggleTopmost(webview_t w, void *) {
         g_bigRect.bottom - g_bigRect.top,
         SWP_NOACTIVATE | SWP_SHOWWINDOW);
     }
+
+    // 恢复不透明
+    SetLayeredWindowAttributes(g_hwnd, 0, 255, LWA_ALPHA);
+    LONG ex = GetWindowLong(g_hwnd, GWL_EXSTYLE);
+    SetWindowLong(g_hwnd, GWL_EXSTYLE, ex & ~WS_EX_LAYERED);
   }
 }
 
