@@ -23,6 +23,7 @@
       "output": "dist-electron"
     },
     "electronDist": "node_modules/electron/dist",
+    "afterPack": "scripts/cleanup-build.js",
     "files": [
       "electron/**",
       "server.js",

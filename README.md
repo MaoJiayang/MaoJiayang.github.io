@@ -55,7 +55,7 @@ npm run start:electron   # Electron 窗口 + HTTP 服务器
 
 ### 维护
 
-- 更换图标：替换 `icons/favicon.svg` → 重新 `npm run build`
+- 目前使用 Electron 默认图标。自定义图标需额外工具（`signAndEditExecutable` 拉取 rcedit 会因网络问题超时），暂时关闭了资源编辑
 - 修改窗口行为：编辑 `electron/main.js` → `npm run build`
 - 清缓存测试：
 
