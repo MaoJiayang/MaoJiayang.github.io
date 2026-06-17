@@ -93,6 +93,17 @@ body::before{
 .conn-dot.online{background:#4ade80;box-shadow:0 0 6px rgba(74,222,128,.5)}
 .conn-dot.offline{background:#f85149}
 
+/* Electron 无框窗口：顶栏作为拖拽手柄 */
+#topbar { -webkit-app-region: drag; }
+#topbar .logo,
+#topbar .logo-hash,
+#topbar .spacer,
+#topbar .conn-dot,
+#topbar .gauge-bar,
+#topbar .gauge-wrap,
+#topbar #user-badge,
+#topbar #fs-btn { -webkit-app-region: no-drag; }
+
 /* ========== 主内容区 ========== */
 #main{
   min-height:100dvh;

@@ -3,8 +3,11 @@
 node_modules/
 .env
 dist/
+dist-electron/
+logs/
 *.exe
 sea-prep.blob
+sea-prep-bridge.blob
 android/.gradle/
 android/.idea/
 android/build/
@@ -12,6 +15,3 @@ android/app/build/
 android/app/release/
 android/local.properties
 android/app/src/main/assets/www/
-*.obj
-libs/
-nuget.exe
