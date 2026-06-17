@@ -14,7 +14,6 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
-import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : AppCompatActivity() {
@@ -26,11 +25,6 @@ class MainActivity : AppCompatActivity() {
         // 切换回 AppTheme（SplashTheme 仅用于启动瞬间）
         setTheme(R.style.AppTheme)
         super.onCreate(savedInstanceState)
-
-        // Edge-to-edge：让 WebView 的内容延伸到系统栏和刘海区域
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        window.statusBarColor = android.graphics.Color.TRANSPARENT
-        window.navigationBarColor = android.graphics.Color.TRANSPARENT
 
         webView = WebView(this).apply {
             overScrollMode = View.OVER_SCROLL_NEVER  // 关掉橡皮筋效果
@@ -90,12 +84,15 @@ class MainActivity : AppCompatActivity() {
         }
         setContentView(webView)
 
-        // 内容延伸到系统栏和刘海区域（Android 15+ 强制要求）
+        // 状态栏透明 + 暗色窗口背景 → 刘海区域与 app 主题融为一体
+        @Suppress("DEPRECATION")
+        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+        window.statusBarColor = android.graphics.Color.TRANSPARENT
+
         ViewCompat.setOnApplyWindowInsetsListener(webView) { _, insets ->
             val cutout = insets.getInsets(WindowInsetsCompat.Type.displayCutout())
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
-            // 注入 CSS 安全区域变量到 WebView
             injectSafeArea(webView, cutout.top, cutout.right, cutout.bottom, cutout.left,
                            bars.top, bars.right, bars.bottom, bars.left,
                            ime.bottom)

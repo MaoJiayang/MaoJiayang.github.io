@@ -60,7 +60,7 @@ body::before{
   padding:0 12px;gap:10px;
 }
 #topbar .logo{
-  font-family:var(--font-mono);font-size:13px;font-weight:600;
+  font-family:var(--font-mono);font-size:14px;font-weight:600;
   color:var(--jade-200);letter-spacing:0.04em;white-space:nowrap;
 }
 .logo-hash{font-size:10px;font-weight:400;color:var(--text-disabled);margin-left:6px;letter-spacing:0}
