@@ -158,6 +158,7 @@ class HttpServer(
         val mime = mimeType(assetPath)
         val resp = newFixedLengthResponse(Response.Status.OK, mime, ByteArrayInputStream(bytes), bytes.size.toLong())
         resp.addHeader("Access-Control-Allow-Origin", "*")
+        resp.addHeader("Cache-Control", "no-cache")
         return resp
     }
 
