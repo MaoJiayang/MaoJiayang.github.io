@@ -11,8 +11,8 @@ android {
         applicationId = "com.se.terminal"
         minSdk = 26
         targetSdk = 34
-        versionCode = 2
-        versionName = "1.1.0"
+        versionCode = 3
+        versionName = "1.2.0"
 
         // 桥接配置（全部指令经服务端桥接，客户端不持密钥）
         buildConfigField("String", "BRIDGE_URL", "\"http://183.131.51.12:10085\"")
