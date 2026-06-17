@@ -47,6 +47,10 @@
 #include "../native_library.hh"
 #include "../platform/windows/com_init_wrapper.hh"
 #include "../platform/windows/dpi.hh"
+// FLUENT_OVERLAY scrollbar support
+#ifndef WEBVIEW_SCROLLBAR_DISABLE
+#include <WebView2EnvironmentOptions.h>
+#endif
 #include "../platform/windows/iid.hh"
 #include "../platform/windows/reg_key.hh"
 #include "../platform/windows/theme.hh"
@@ -754,9 +758,18 @@ private:
           flag.clear();
         });
 
-    m_com_handler->set_attempt_handler([&] {
+    Microsoft::WRL::ComPtr<ICoreWebView2EnvironmentOptions> env_opts;
+#ifndef WEBVIEW_SCROLLBAR_DISABLE
+    env_opts = Microsoft::WRL::Make<CoreWebView2EnvironmentOptions>();
+    Microsoft::WRL::ComPtr<ICoreWebView2EnvironmentOptions8> opts8;
+    if (SUCCEEDED(env_opts.As(&opts8))) {
+      opts8->put_ScrollBarStyle(COREWEBVIEW2_SCROLLBAR_STYLE_FLUENT_OVERLAY);
+    }
+#endif
+
+    m_com_handler->set_attempt_handler([&, penv = env_opts.Get()] {
       return m_webview2_loader.create_environment_with_options(
-          nullptr, userDataFolder, nullptr, m_com_handler);
+          nullptr, userDataFolder, penv, m_com_handler);
     });
     m_com_handler->try_create_environment();
 

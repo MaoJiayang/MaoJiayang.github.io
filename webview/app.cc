@@ -1,14 +1,10 @@
 /**
  * 虚空终端 WebView2 内嵌浏览器
  *
- * 编译: cl /EHsc /O2 /std:c++17 webview.cc app.cc /I include
- *        /link user32.lib ole32.lib shell32.lib comctl32.lib
- *        /SUBSYSTEM:WINDOWS /OUT:webview.exe
- *
  * 功能:
  *   - WebView2 窗口加载 localhost:24007/terminal.html
- *   - Alt+K 全局热键: 切换置顶 + 半透明
- *   - JS 绑定 webview_close() → 退出
+ *   - Alt+1 全局热键: 切换置顶 + 半透明 + 手机尺寸
+ *   - 置顶时失焦则鼠标穿透（不误触游戏）
  *   - 启动时等待 HTTP server 就绪
  */
 
@@ -69,15 +65,13 @@ static bool waitForServer(const char *url, int timeoutSec) {
   return false;
 }
 
-// ---- 置顶+半透明+缩放 切换 (dispatch 回调) ----
+// ---- 置顶+半透明+缩放 切换 ----
 static void toggleTopmost(webview_t w, void *) {
   g_onTop = !g_onTop;
   if (g_onTop) {
-    // 保存大窗口尺寸
     GetWindowRect(g_hwnd, &g_bigRect);
     g_bigValid = true;
 
-    // 手机尺寸（用上次的位置和大小，首次居中 420x750）
     int x, y, ww, wh;
     if (g_smallValid) {
       x  = g_smallRect.left; y  = g_smallRect.top;
@@ -91,22 +85,18 @@ static void toggleTopmost(webview_t w, void *) {
     }
     SetWindowPos(g_hwnd, NULL, x, y, ww, wh, SWP_NOZORDER | SWP_SHOWWINDOW);
 
-    // 抢焦点 + 置顶
     BringWindowToTop(g_hwnd);
     SetForegroundWindow(g_hwnd);
     SetWindowPos(g_hwnd, HWND_TOPMOST, 0, 0, 0, 0,
                  SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
-    // 半透明
     LONG ex = GetWindowLong(g_hwnd, GWL_EXSTYLE);
     SetWindowLong(g_hwnd, GWL_EXSTYLE, ex | WS_EX_LAYERED);
     SetLayeredWindowAttributes(g_hwnd, 0, 180, LWA_ALPHA);
   } else {
-    // 记住小窗位置
     GetWindowRect(g_hwnd, &g_smallRect);
     g_smallValid = true;
 
-    // 还原大窗口（先置底）
     if (g_bigValid) {
       SetWindowPos(g_hwnd, HWND_BOTTOM,
         g_bigRect.left, g_bigRect.top,
@@ -115,14 +105,13 @@ static void toggleTopmost(webview_t w, void *) {
         SWP_NOACTIVATE | SWP_SHOWWINDOW);
     }
 
-    // 恢复不透明
     SetLayeredWindowAttributes(g_hwnd, 0, 255, LWA_ALPHA);
     LONG ex = GetWindowLong(g_hwnd, GWL_EXSTYLE);
     SetWindowLong(g_hwnd, GWL_EXSTYLE, ex & ~WS_EX_LAYERED);
   }
 }
 
-// ---- 窗口子类化 (仅处理 WM_HOTKEY) ----
+// ---- 窗口子类化 ----
 static LRESULT CALLBACK WndProc(HWND h, UINT m, WPARAM w, LPARAM l,
                                 UINT_PTR, DWORD_PTR) {
   if (m == WM_HOTKEY && w == 1 && g_wv) {
@@ -172,7 +161,6 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
   webview_set_size(g_wv, w, h, WEBVIEW_HINT_NONE);
 
   webview_init(g_wv, "window.__webview=1");
-
   webview_navigate(g_wv, defaultUrl);
   webview_run(g_wv);
 
