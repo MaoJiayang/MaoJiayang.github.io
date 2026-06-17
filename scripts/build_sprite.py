@@ -20,8 +20,8 @@ PROJ_DIR = os.path.dirname(SCRIPT_DIR)
 ICON_DIR = os.path.join(PROJ_DIR, 'icons')
 MAP_FILE = os.path.join(SCRIPT_DIR, 'icon_sources.json')
 
-CELL = 64        # 每个图标格子像素（2x Retina）
-DISPLAY = 32     # CSS 显示尺寸
+CELL = 128       # 每个图标格子像素（4x Retina）
+DISPLAY = 32     # CSS 显示尺寸（不变，CSS 仍按 32px 展示）
 COLS = 16        # 每行列数
 QUALITY = 85     # WebP 质量
 
