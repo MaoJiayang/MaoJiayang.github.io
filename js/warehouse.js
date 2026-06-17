@@ -14,6 +14,7 @@ var Warehouse = (function () {
   var warehouseCompactNum = true;
   var PREFS_KEY = 'wh_prefs';
   var _renderTimer = null;
+  var _listsRenderTimer = null;
   var _listsLoading = false;
 
   // 选择模式（供交易面板复用仓库选物品）
@@ -429,68 +430,45 @@ var Warehouse = (function () {
 
   function loadLists() {
     if (_listsLoading) return;
-    var cached = Trade.getListData();
-    if (cached) {
-      renderLists(cached);
+    // 复用 Trade 的缓存和加载逻辑
+    if (Trade.getListData()) {
+      renderLists();
       return;
     }
     _listsLoading = true;
     renderLists();
-    UI.executeWithConfirm('!清单 列表', null).then(function (d) {
-      _listsLoading = false;
-      renderLists(d);
-    }).catch(function () {
-      _listsLoading = false;
-      renderLists();
-    });
+    // 复用 Trade 的 loadContracts 来加载清单数据
+    Trade.loadContracts();
+    // 延迟检查数据是否已加载
+    var checkTimer = setInterval(function () {
+      if (Trade.getListData()) {
+        clearInterval(checkTimer);
+        _listsLoading = false;
+        renderLists();
+      }
+    }, 200);
+    // 10 秒超时
+    setTimeout(function () { clearInterval(checkTimer); _listsLoading = false; }, 10000);
   }
 
-  function renderLists(data) {
+  // 仓库的清单卡片渲染：包裹 Trade.renderListCard，加上点击打开操作面板
+  function _whListCardRenderer(l) {
+    var name = l.name || '';
+    return '<div class="wh-list-wrap" onclick="if(!event.target.closest(\'button\'))Warehouse.listActionSheet(\'' + UI.escAttr(name) + '\')">'
+      + Trade.renderListCard(l) + '</div>';
+  }
+
+  function renderLists() {
     var container = document.getElementById('wh-lists-content');
     if (!container) return;
 
-    if (_listsLoading && !data && !Trade.getListData()) {
+    if (_listsLoading && !Trade.getListData()) {
       container.innerHTML = '<div class="tr-empty">加载中…</div>';
       return;
     }
 
-    data = data || Trade.getListData();
-    var lists = [];
-    if (data) {
-      if (Array.isArray(data.lists)) lists = data.lists;
-      else if (Array.isArray(data)) lists = data;
-    }
-
-    var search = (document.getElementById('wh-lists-search').value || '').toLowerCase().trim();
-    var html = '<button class="ct-act-create-btn block" onclick="Trade.openListBuilder()">+ 创建清单</button>';
-
-    if (lists.length === 0) {
-      html += '<div class="tr-empty">暂无清单<br><span style="font-size:11px;opacity:.6">创建清单后可按清单批量存取</span></div>';
-    } else {
-      var filtered = lists;
-      if (search) {
-        filtered = lists.filter(function (l) {
-          var n = (l.name || '').toLowerCase();
-          if (n.indexOf(search) !== -1) return true;
-          if (l.items) {
-            for (var i = 0; i < l.items.length; i++) {
-              if (l.items[i].name && l.items[i].name.toLowerCase().indexOf(search) !== -1) return true;
-            }
-          }
-          return false;
-        });
-      }
-      if (filtered.length === 0) {
-        html += '<div class="tr-empty">' + (search ? '没有匹配的清单' : '暂无清单') + '</div>';
-      } else {
-        filtered.forEach(function (l) {
-          var name = l.name || '';
-          html += '<div class="wh-list-wrap" onclick="if(!event.target.closest(\'button\'))Warehouse.listActionSheet(\'' + UI.escAttr(name) + '\')">'
-            + Trade.renderListCard(l) + '</div>';
-        });
-      }
-    }
-    container.innerHTML = html;
+    // 委托给 Trade.renderLists，传入仓库自己的搜索框和卡片渲染函数
+    Trade.renderLists(container, 'wh-lists-search', _whListCardRenderer);
   }
 
   function listActionSheet(name) {
@@ -510,8 +488,8 @@ var Warehouse = (function () {
     });
     var listsSearch = document.getElementById('wh-lists-search');
     if (listsSearch) listsSearch.addEventListener('input', function () {
-      clearTimeout(_renderTimer);
-      _renderTimer = setTimeout(function () { renderLists(); }, 200);
+      clearTimeout(_listsRenderTimer);
+      _listsRenderTimer = setTimeout(function () { renderLists(); }, 200);
     });
     // 加载图标和物品目录
     fetch('icons/mapping.json')

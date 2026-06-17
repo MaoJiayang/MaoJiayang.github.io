@@ -1237,8 +1237,13 @@ var Trade = (function () {
 
   // ========== 清单渲染 ==========
 
-  function renderLists(container) {
-    var search = (document.getElementById('tr-contract-search').value || '').toLowerCase().trim();
+  // searchInputId: 搜索输入框 ID（可选，默认 tr-contract-search）
+  // cardRenderer: 自定义卡片渲染函数（可选，签名 function(listItem): string）
+  function renderLists(container, searchInputId, cardRenderer) {
+    searchInputId = searchInputId || 'tr-contract-search';
+    var searchEl = document.getElementById(searchInputId);
+    var search = (searchEl ? searchEl.value : '').toLowerCase().trim();
+
     var cd = contractCache[contractMode];
     var lists = cd && Array.isArray(cd.lists) ? cd.lists : [];
 
@@ -1262,7 +1267,8 @@ var Trade = (function () {
       if (filtered.length === 0) {
         html += '<div class="tr-empty">' + (search ? '没有匹配的清单' : '暂无清单') + '</div>';
       } else {
-        filtered.forEach(function (l) { html += renderListCard(l); });
+        var renderFn = cardRenderer || renderListCard;
+        filtered.forEach(function (l) { html += renderFn(l); });
       }
     }
     container.innerHTML = html;
