@@ -1245,6 +1245,8 @@ var Trade = (function () {
     var search = (searchEl ? searchEl.value : '').toLowerCase().trim();
 
     var cd = contractCache[contractMode];
+    // 仓库面板可能直接通过 setListData 设置了 listData，而非 contractCache
+    if ((!cd || !cd.lists) && listData) cd = listData;
     var lists = cd && Array.isArray(cd.lists) ? cd.lists : [];
 
     var html = '<button class="ct-act-create-btn block" onclick="Trade.openListBuilder()">+ 创建清单</button>';
@@ -1777,6 +1779,8 @@ var Trade = (function () {
     pickContractList: pickContractList,
     submitCreateContract: submitCreateContract,
     getListData: function () { return listData; },
+    setListData: function (d) { listData = d; },
     renderListCard: renderListCard,
+    renderLists: renderLists,
   };
 })();

@@ -430,25 +430,22 @@ var Warehouse = (function () {
 
   function loadLists() {
     if (_listsLoading) return;
-    // 复用 Trade 的缓存和加载逻辑
-    if (Trade.getListData()) {
+    var cached = Trade.getListData();
+    if (cached) {
       renderLists();
       return;
     }
     _listsLoading = true;
-    renderLists();
-    // 复用 Trade 的 loadContracts 来加载清单数据
-    Trade.loadContracts();
-    // 延迟检查数据是否已加载
-    var checkTimer = setInterval(function () {
-      if (Trade.getListData()) {
-        clearInterval(checkTimer);
-        _listsLoading = false;
-        renderLists();
-      }
-    }, 200);
-    // 10 秒超时
-    setTimeout(function () { clearInterval(checkTimer); _listsLoading = false; }, 10000);
+    renderLists(); // 显示"加载中…"
+    UI.executeWithConfirm('!清单 列表', null).then(function (d) {
+      _listsLoading = false;
+      // 存入 Trade 缓存，避免重复请求
+      Trade.setListData(d);
+      renderLists();
+    }).catch(function () {
+      _listsLoading = false;
+      renderLists();
+    });
   }
 
   // 仓库的清单卡片渲染：包裹 Trade.renderListCard，加上点击打开操作面板
