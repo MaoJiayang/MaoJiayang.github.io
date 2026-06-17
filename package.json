@@ -6,12 +6,13 @@
   "scripts": {
     "start": "node server.js",
     "start:electron": "electron .",
-    "build": "electron-builder --win portable",
+    "build": "node scripts/gen-icons.js && electron-builder --win portable",
     "build:bridge": "node -e \"try{require('fs').unlinkSync('dist/se-bridge-server.exe')}catch(_){};try{require('fs').unlinkSync('sea-prep-bridge.blob')}catch(_){}\" && node --experimental-sea-config sea-config-bridge.json && node -e \"var f=require('fs');f.mkdirSync('dist',{recursive:true});f.copyFileSync(process.execPath,'dist/se-bridge-server.exe')\" && node node_modules/postject/dist/cli.js dist/se-bridge-server.exe NODE_SEA_BLOB sea-prep-bridge.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2 && node -e \"try{require('fs').unlinkSync('sea-prep-bridge.blob')}catch(_){}\""
   },
   "devDependencies": {
     "electron": "^42.4.1",
     "electron-builder": "^26.15.3",
+    "png-to-ico": "^3.0.1",
     "postject": "^1.0.0-alpha.6",
     "resedit": "^3.0.2",
     "sharp": "^0.35.1"
@@ -43,7 +44,8 @@
     "compression": "store",
     "win": {
       "target": "portable",
-      "signAndEditExecutable": false
+      "signExecutable": false,
+      "icon": "icons/favicon.ico"
     },
     "portable": {
       "artifactName": "虚空终端.exe"

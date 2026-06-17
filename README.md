@@ -36,7 +36,7 @@ npm install
 
 # 构建（单文件 portable EXE）
 npm run build
-# → dist-electron/虚空终端.exe（~150MB，自包含 Chromium 运行时）
+# → dist-electron/虚空终端.exe（zip压缩后~150MB，自包含 Chromium 运行时）
 ```
 
 ### 开发
@@ -55,8 +55,9 @@ npm run start:electron   # Electron 窗口 + HTTP 服务器
 
 ### 维护
 
-- 目前使用 Electron 默认图标。自定义图标需额外工具（`signAndEditExecutable` 拉取 rcedit 会因网络问题超时），暂时关闭了资源编辑
+- 更换图标：替换 `icons/favicon.svg` → `npm run build`（构建时自动转换 PNG+ICO 并注入）
 - 修改窗口行为：编辑 `electron/main.js` → `npm run build`
+- 连接不上,设置代理：`$env:HTTPS_PROXY="http://127.0.0.1:7890"`
 - 清缓存测试：
 
 ```powershell

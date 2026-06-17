@@ -5,6 +5,8 @@ node_modules/
 dist/
 dist-electron/
 logs/
+icons/favicon.png
+icons/favicon.ico
 *.exe
 sea-prep.blob
 sea-prep-bridge.blob
