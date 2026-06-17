@@ -1,5 +1,0 @@
-{
-  "main": "bridge-server/bridge-server.js",
-  "output": "sea-prep-bridge.blob",
-  "disableExperimentalSEAWarning": true
-}

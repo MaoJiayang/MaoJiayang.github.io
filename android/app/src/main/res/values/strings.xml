@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_name">虚空终端</string>
-    <string name="notification_channel">虚空终端服务</string>
-    <string name="notification_running">虚空终端运行中</string>
-</resources>
