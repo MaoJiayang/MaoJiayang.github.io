@@ -13,6 +13,9 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : AppCompatActivity() {
 
@@ -23,6 +26,11 @@ class MainActivity : AppCompatActivity() {
         // 切换回 AppTheme（SplashTheme 仅用于启动瞬间）
         setTheme(R.style.AppTheme)
         super.onCreate(savedInstanceState)
+
+        // Edge-to-edge：让 WebView 的内容延伸到系统栏和刘海区域
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = android.graphics.Color.TRANSPARENT
+        window.navigationBarColor = android.graphics.Color.TRANSPARENT
 
         webView = WebView(this).apply {
             overScrollMode = View.OVER_SCROLL_NEVER  // 关掉橡皮筋效果
@@ -41,6 +49,14 @@ class MainActivity : AppCompatActivity() {
                         return WebResourceResponse("text/javascript", "UTF-8", null)
                     }
                     return super.shouldInterceptRequest(view, request)
+                }
+
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    super.onPageFinished(view, url)
+                    // 页面加载完成后重新注入安全区域（确保 CSS 变量生效）
+                    if (view != null) {
+                        view.post { view.requestApplyInsets() }
+                    }
                 }
             }
 
@@ -74,6 +90,18 @@ class MainActivity : AppCompatActivity() {
         }
         setContentView(webView)
 
+        // 内容延伸到系统栏和刘海区域（Android 15+ 强制要求）
+        ViewCompat.setOnApplyWindowInsetsListener(webView) { _, insets ->
+            val cutout = insets.getInsets(WindowInsetsCompat.Type.displayCutout())
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+            // 注入 CSS 安全区域变量到 WebView
+            injectSafeArea(webView, cutout.top, cutout.right, cutout.bottom, cutout.left,
+                           bars.top, bars.right, bars.bottom, bars.left,
+                           ime.bottom)
+            insets
+        }
+
         // 隐藏系统栏，内容占满全屏（下滑可临时唤出）
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.insetsController?.apply {
@@ -102,6 +130,32 @@ class MainActivity : AppCompatActivity() {
             webView.loadUrl("http://localhost:${BuildConfig.HTTP_PORT}/terminal.html")
         }, 500)
     }
+
+    // 将安全区域 insets 注入为 CSS 变量（Android WebView 不支持 env(safe-area-inset-*)）
+    private fun injectSafeArea(webView: WebView,
+                               cutoutTop: Int, cutoutRight: Int, cutoutBottom: Int, cutoutLeft: Int,
+                               barsTop: Int, barsRight: Int, barsBottom: Int, barsLeft: Int,
+                               imeBottom: Int) {
+        val density = resources.displayMetrics.density
+        // 安全区域取 cutout 和 systemBars 的最大值
+        val top = Math.max(cutoutTop, barsTop).toDp(density)
+        val right = Math.max(cutoutRight, barsRight).toDp(density)
+        val bottom = Math.max(cutoutBottom, barsBottom).toDp(density)
+        val left = Math.max(cutoutLeft, barsLeft).toDp(density)
+        val kb = imeBottom.toDp(density)
+
+        val js = """
+            document.documentElement.style.setProperty('--safe-area-inset-top', '${top}px');
+            document.documentElement.style.setProperty('--safe-area-inset-right', '${right}px');
+            document.documentElement.style.setProperty('--safe-area-inset-bottom', '${bottom}px');
+            document.documentElement.style.setProperty('--safe-area-inset-left', '${left}px');
+            document.documentElement.style.setProperty('--keyboard-inset-bottom', '${kb}px');
+        """.trimIndent()
+        webView.evaluateJavascript(js, null)
+    }
+
+    private fun Int.toDp(density: Float): Int =
+        (this / density).toInt()
 
     override fun onBackPressed() {
         if (webView.canGoBack()) {
